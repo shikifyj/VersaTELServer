@@ -1,10 +1,11 @@
 package v1alpha1
 
 import (
-	"net/http"
 	"github.com/emicklei/go-restful"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	restfulspec "github.com/emicklei/go-restful-openapi"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	"net/http"
 
 	"kubesphere.io/kubesphere/pkg/api"
 	"kubesphere.io/kubesphere/pkg/apiserver/runtime"
@@ -30,11 +31,26 @@ func AddToContainer(container *restful.Container) error {
 		Returns(http.StatusOK, api.StatusOK, URLResponse{}).
 		Doc("Api for versatel url"))
 
-	webservice.Route(webservice.GET("/linstor/node").
-		Reads("").
+
+
+	//webservice.Route(webservice.GET("/linstor/node").
+	//	Reads("").
+	//	To(handler.handleListNodes).
+	//	Returns(http.StatusOK, api.StatusOK, MessageList{}).
+	//	Doc("Get all linstor node"))
+
+
+	webservice.Route(webservice.GET("linstor/node").
 		To(handler.handleListNodes).
-		Returns(http.StatusOK, api.StatusOK, MessageList{}).
-		Doc("Get all linstor node"))
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level resources").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, api.ListResult{}))
+
 
 	webservice.Route(webservice.POST("/linstor/node").
 		To(handler.CreateNode).

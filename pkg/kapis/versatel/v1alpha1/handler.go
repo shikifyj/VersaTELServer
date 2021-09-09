@@ -1,12 +1,14 @@
 package v1alpha1
 
 import (
-	"fmt"
-	"github.com/emicklei/go-restful"
-	gp "kubesphere.io/kubesphere/pkg/utils/gopythonutil"
-	"github.com/DataDog/go-python3"
-	"kubesphere.io/kubesphere/pkg/api"
 	"encoding/json"
+	"fmt"
+	"github.com/DataDog/go-python3"
+	"github.com/emicklei/go-restful"
+	"kubesphere.io/kubesphere/pkg/api"
+	gp "kubesphere.io/kubesphere/pkg/utils/gopythonutil"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	linstorv1alpha1 "kubesphere.io/kubesphere/pkg/models/versatel/v1alpha1/linstor"
 )
 
 var PyStr = python3.PyUnicode_FromString
@@ -14,18 +16,21 @@ var PyInt = python3.PyLong_FromLong
 var GoStr = python3.PyUnicode_AsUTF8
 var GoInt = python3.PyLong_AsLong
 
-type handler struct {}
+type handler struct {
+	//linstorGetterV1alpha1  *linstorv1alpha1.linstorGetter
+}
+
 
 func newHandler() handler{
 	return handler{}
 }
-
 
 type MessageList struct {
 	Code int `json:"code"`
 	Count int `json:"count"`
 	Data []map[string]interface{} `json:"data"`
 }
+
 
 type MessageOP struct {
 	Result string `json:"result"`
@@ -68,16 +73,8 @@ func (h *handler) GetVersaTELURL (req *restful.Request, resp *restful.Response) 
 	})
 }
 
-
 func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response) {
-	//defer python3.Py_Finalize()
-	//process := gp.ImportModule("/home/samba/kubesphere.io/kubesphere/vplx","process")
 	process := gp.GetModule("process")
-	if process == nil {
-		panic("could not retrieve 'process'")
-	}
-	defer process.DecRef()
-
 
 	classProcess := process.GetAttrString("ProcessData")
 	//// 实例化类
@@ -95,12 +92,11 @@ func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response)
 	Data := classProcess.CallMethodArgs("process_data_node",obj)
 	Result := python3.PyUnicode_AsUTF8(Data)
 
-	message := MessageList{}
+	message := linstorv1alpha1.LinstorGetter{}
 	json.Unmarshal([]byte(Result),&message)
+	message.List(query)
 	resp.WriteAsJson(message)
 }
-
-
 
 func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 	node := new(LinstorNode)
@@ -140,7 +136,6 @@ func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 	resp.WriteAsJson(message)
 }
 
-
 func (h *handler) DeleteNode(req *restful.Request, resp *restful.Response) {
 	nodename := req.PathParameter("node")
 
@@ -172,9 +167,6 @@ func (h *handler) DeleteNode(req *restful.Request, resp *restful.Response) {
 	message := MessageOP{GoStr(Result),GoStr(Info)}
 	resp.WriteAsJson(message)
 }
-
-
-
 
 func (h *handler) UpdateNode(req *restful.Request, resp *restful.Response) {
 	id := req.PathParameter("node")
