@@ -1,18 +1,8 @@
-# import gevent
-# from gevent import monkey
-#
-# # 协程相关的补丁
-# monkey.patch_time()
-
-
 from execute import LinstorAPI
+import json
 
 
 class Scheduler():
-    """
-    多协程调度linstor、crm模块
-    """
-
     def __init__(self):
         pass
 
@@ -28,13 +18,29 @@ class Scheduler():
         res_data = linstor_api.get_resource()
         sp_data = linstor_api.get_storagepool()
 
+        print("调用了linstor api")
+
         return {'node_data':node_data,'res_data':res_data,'sp_data':sp_data}
 
 
-    def create_mul_conn(self):
-        pass
 
+class VersaTEL():
+    def process_data_node(self):
+        data = Scheduler().get_linstor_data()
+        data2 = {
+            "code": 0,
+            "count": 1,
+            "data": [
+                {
+                    "addr": "10.203.1.155:3366 (PLAIN)",
+                    "name": "vince1",
+                    "node_type": "COMBINED",
+                    "res_num": "1",
+                    "status": "ONLINE",
+                    "stp_num": "2"
+                }
+            ]
+        }
 
-
-    def create_rd(self):
-        pass
+        result_str = json.dumps(data2)
+        return result_str

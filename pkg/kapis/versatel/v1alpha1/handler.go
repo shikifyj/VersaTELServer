@@ -48,16 +48,20 @@ type URLResponse struct {
 	URL string `json:"URL"`
 }
 
-func init(){
-	gp.Initialize()
-	gp.ImportSystemModule()
-	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
-	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
-}
+//func init(){
+//	gp.Initialize()
+//	gp.ImportSystemModule()
+//	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
+//	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
+//}
 
 
 
 func (h *handler) GetVersaTELURL (req *restful.Request, resp *restful.Response) {
+	gp.Initialize()
+	gp.ImportSystemModule()
+	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
+	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
 	vtel := gp.GetModule("vtel")
 	//vtel := gp.ImportModule("/home/samba/kubesphere.io/kubesphere/pythoncode", "vtel") // 导入Python文件，获取模块对象
 	if vtel == nil {
@@ -76,8 +80,12 @@ func (h *handler) GetVersaTELURL (req *restful.Request, resp *restful.Response) 
 func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
 
-	process := gp.GetModule("process")
-	classProcess := process.GetAttrString("ProcessData")
+	gp.Initialize()
+	gp.ImportSystemModule()
+	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
+	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
+	process := gp.GetModule("scheduler")
+	classProcess := process.GetAttrString("VersaTEL")
 	//// 实例化类
 	if classProcess == nil {
 		panic("could not retrieve 'ProcessData'")
@@ -92,12 +100,12 @@ func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response)
 	defer EmptyTuple.DecRef()
 	Data := classProcess.CallMethodArgs("process_data_node",obj)
 	Result := python3.PyUnicode_AsUTF8(Data)
-
-	message := linstorv1alpha1.LinstorGetter{}
-	json.Unmarshal([]byte(Result),&message)
-	message.List(query)
-	resp.WriteAsJson(message)
-
+	Message := linstorv1alpha1.LinstorGetter{}
+	//Message := MessageList{}
+	json.Unmarshal([]byte(Result),&Message)
+	Message.List(query)
+	resp.WriteAsJson(Message)
+	fmt.Println(Message)
 
 }
 

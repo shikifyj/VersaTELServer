@@ -3,29 +3,6 @@
 import linstordb
 import json
 
-import copy
-
-dict_one = {
-    "addr": "10.203.1.158:3366 (PLAIN)",
-    "name": "ubuntu",
-    "node_type": "COMBINED",
-    "res_num": "0",
-    "res_num_son": [],
-    "status": "ONLINE",
-    "stp_num": "1"}
-
-
-def get_test_data(num):
-    list_data = []
-    for i in range(num):
-        dict_one.update({"name":f"ubuntu{i}"})
-        dict1 = copy.deepcopy(dict_one)
-        list_data.append(dict1)
-
-    return list_data
-
-
-
 
 
 class ProcessData():
@@ -217,57 +194,42 @@ class ProcessData():
     def process_data_node(self):
         # cur = self.linstor_db.cur
         print("调用process_data_node")
-        # cur = self.cur
-        # date = []
-        #
-        # sql_count_node = "select count(Node) from nodetb"
-        # sql_node = lambda id:"select Node,NodeType,Addresses,State from nodetb where id = %s" % id
-        # sql_count_res = lambda id:"SELECT COUNT(Resource) FROM resourcetb WHERE Node IN (SELECT Node FROM nodetb WHERE id = %s)" % id
-        # sql_count_stp = lambda id:"SELECT COUNT(Node) FROM storagepooltb WHERE Node IN (SELECT Node FROM nodetb WHERE id = %s)" % id
+        cur = self.cur
+        date = []
+
+        sql_count_node = "select count(Node) from nodetb"
+        sql_node = lambda id:"select Node,NodeType,Addresses,State from nodetb where id = %s" % id
+        sql_count_res = lambda id:"SELECT COUNT(Resource) FROM resourcetb WHERE Node IN (SELECT Node FROM nodetb WHERE id = %s)" % id
+        sql_count_stp = lambda id:"SELECT COUNT(Node) FROM storagepooltb WHERE Node IN (SELECT Node FROM nodetb WHERE id = %s)" % id
         # sql_res = lambda id:"SELECT Resource,StoragePool,Allocated,DeviceName,InUse,State FROM resourcetb WHERE Node IN ((SELECT Node FROM nodetb WHERE id = %s))" % id
-        #
-        # node_num = self.sql_fetch_one(sql_count_node)
-        #
-        # for i in range(1, (node_num + 1)):  # 从1开始循环到给定的整数，有没有更好的办法
-        #     node, nodetype, addr, status = self.sql_fetch_one(sql_node(i))
-        #     res_num = self.sql_fetch_one(sql_count_res(i))
-        #     stp_num = self.sql_fetch_one(sql_count_stp(i))
-        #     list_resdict = []
-        #     for res in self.sql_fetch_all(sql_res(i)):
-        #         res_name, stp_name, size, device_name, used, status = res
-        #         dic = {"res_name": res_name, "stp_name": stp_name, "size": size, "device_name": device_name,
-        #                "used": used, "status": status}
-        #         list_resdict.append(dic)
-        #     # for #返回res_num 对应的几个resource信息，
-        #     date_ = {"name": node,
-        #              "node_type": nodetype,
-        #              "res_num": str(res_num),
-        #              "stp_num": str(stp_num),
-        #              "addr": addr,
-        #              "status": status,
-        #              "res_num_son": list_resdict}
-        #     date.append(date_)
+
+        node_num = self.sql_fetch_one(sql_count_node)
+
+        for i in range(1, (node_num + 1)):  # 从1开始循环到给定的整数，有没有更好的办法
+            node, nodetype, addr, status = self.sql_fetch_one(sql_node(i))
+            res_num = self.sql_fetch_one(sql_count_res(i))
+            stp_num = self.sql_fetch_one(sql_count_stp(i))
+            # list_resdict = []
+            # for res in self.sql_fetch_all(sql_res(i)):
+            #     res_name, stp_name, size, device_name, used, status = res
+            #     dic = {"res_name": res_name, "stp_name": stp_name, "size": size, "device_name": device_name,
+            #            "used": used, "status": status}
+            #     list_resdict.append(dic)
+            # for #返回res_num 对应的几个resource信息，
+            date_ = {"name": node,
+                     "node_type": nodetype,
+                     "res_num": str(res_num),
+                     "stp_num": str(stp_num),
+                     "addr": addr,
+                     "status": status}
+                     # "res_num_son": list_resdict}
+            date.append(date_)
 
 
-        date = get_test_data(21) # for test
+        # date = get_test_data(21) # for test
         dict = {"code": 0, "msg": "", "count": len(date), "data": date}
-        # cur.close()
+        cur.close()
 
         result_str = json.dumps(dict)
         return result_str
 
-#
-# class ForTest():
-#     def __init__(self):
-#         pass
-#
-#
-#     def process_data_node(self):
-#         print("执行 ")
-#         return '{"code": 0,"count": 0,"data": []}'
-#
-#
-#
-# def process_data_node():
-#     print("执行 ")
-#     return '{"code": 0,"count": 0,"data": []}'

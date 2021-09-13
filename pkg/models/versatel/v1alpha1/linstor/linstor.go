@@ -15,6 +15,26 @@ type LinstorGetter struct {
 
 
 
+type Node struct {
+	Name string
+	Type string
+	ResourceNum string
+	StoragePoolNum string
+	Addr string
+	Status string
+}
+
+type StoragePool struct {
+	Name string
+	Node string
+	ResourceNum string
+
+
+}
+
+
+
+
 
 func (d *LinstorGetter) List(query *query.Query) {
 
