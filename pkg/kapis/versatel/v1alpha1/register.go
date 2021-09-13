@@ -49,7 +49,7 @@ func AddToContainer(container *restful.Container) error {
 		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
 		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
-		Returns(http.StatusOK, api.StatusOK, api.ListResult{}))
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
 
 	webservice.Route(webservice.POST("/linstor/node").

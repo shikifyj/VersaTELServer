@@ -28,7 +28,7 @@ func newHandler() handler{
 type MessageList struct {
 	Code int `json:"code"`
 	Count int `json:"count"`
-	Data []map[string]interface{} `json:"data"`
+	Data []map[string]string `json:"data"`
 }
 
 
@@ -74,8 +74,9 @@ func (h *handler) GetVersaTELURL (req *restful.Request, resp *restful.Response) 
 }
 
 func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response) {
-	process := gp.GetModule("process")
+	query := query.ParseQueryParameter(req)
 
+	process := gp.GetModule("process")
 	classProcess := process.GetAttrString("ProcessData")
 	//// 实例化类
 	if classProcess == nil {
@@ -96,6 +97,8 @@ func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response)
 	json.Unmarshal([]byte(Result),&message)
 	message.List(query)
 	resp.WriteAsJson(message)
+
+
 }
 
 func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
