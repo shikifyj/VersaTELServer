@@ -19,7 +19,6 @@ type LinstorGetter struct {
 
 
 
-
 func (d *LinstorGetter) List(query *query.Query) {
 
 	if len(query.Filters) != 0 {
@@ -97,3 +96,6 @@ func GetNodeData(ctx context.Context, c *client.Client) []map[string]string{
 	}
 	return nodesInfo
 }
+
+
+func CreateNode()
