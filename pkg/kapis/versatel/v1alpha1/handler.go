@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/DataDog/go-python3"
 	"github.com/emicklei/go-restful"
@@ -48,12 +47,12 @@ type URLResponse struct {
 	URL string `json:"URL"`
 }
 
-func init(){
-	gp.Initialize()
-	gp.ImportSystemModule()
-	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
-	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
-}
+//func init(){
+//	gp.Initialize()
+//	gp.ImportSystemModule()
+//	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
+//	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
+//}
 
 
 
@@ -75,30 +74,11 @@ func (h *handler) GetVersaTELURL (req *restful.Request, resp *restful.Response) 
 
 func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-
-	process := gp.GetModule("process")
-	classProcess := process.GetAttrString("ProcessData")
-	//// 实例化类
-	if classProcess == nil {
-		panic("could not retrieve 'ProcessData'")
-	}
-	defer classProcess.DecRef()
-	EmptyTuple := gp.GetEmptyTuple()
-	obj := classProcess.CallObject(EmptyTuple)
-	if obj == nil {
-		panic("could not retrieve 'obj'")
-	}
-	defer obj.DecRef()
-	defer EmptyTuple.DecRef()
-	Data := classProcess.CallMethodArgs("process_data_node",obj)
-	Result := python3.PyUnicode_AsUTF8(Data)
-
-	message := linstorv1alpha1.LinstorGetter{}
-	json.Unmarshal([]byte(Result),&message)
+	client, ctx := linstorv1alpha1.GetClient()
+	data := linstorv1alpha1.GetNodeData(ctx,client)
+	message := linstorv1alpha1.LinstorGetter{0,len(data),data}
 	message.List(query)
 	resp.WriteAsJson(message)
-
-
 }
 
 func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
