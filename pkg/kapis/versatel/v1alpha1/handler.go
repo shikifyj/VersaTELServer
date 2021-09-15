@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	//"fmt"
 	"github.com/DataDog/go-python3"
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/kubesphere/pkg/api"
@@ -37,9 +38,9 @@ type MessageOP struct {
 }
 
 type LinstorNode struct {
-	NodeName string
-	IP string
-	NodeType string
+	Name string `json:"name"`
+	IP string `json:"ip"`
+	NodeType string `json:"node_type"`
 }
 
 
@@ -47,12 +48,12 @@ type URLResponse struct {
 	URL string `json:"URL"`
 }
 
-//func init(){
-//	gp.Initialize()
-//	gp.ImportSystemModule()
-//	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
-//	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
-//}
+func init(){
+	gp.Initialize()
+	gp.ImportSystemModule()
+	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/vplx")
+	gp.ImportCustomModule("/home/samba/kubesphere.io/kubesphere/pythoncode")
+}
 
 
 
@@ -111,61 +112,74 @@ func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 	defer EmptyTuple.DecRef()
 
 
-	Data := classNode.CallMethodArgs("create_node",nodeObj,PyStr(node.NodeName),PyStr(node.IP),PyStr(node.NodeType))
+	Data := classNode.CallMethodArgs("create_node",nodeObj,PyStr(node.Name),PyStr(node.IP),PyStr(node.NodeType))
 	Result := python3.PyDict_GetItem(Data,PyStr("result"))
 	Info := python3.PyDict_GetItem(Data,PyStr("info"))
 
 	message := MessageOP{GoStr(Result),GoStr(Info)}
 	resp.WriteAsJson(message)
 }
+
+//func (h *handler) DeleteNode(req *restful.Request, resp *restful.Response) {
+//	nodename := req.PathParameter("node")
+//
+//	stor := gp.GetModule("execute.stor")
+//	if stor == nil {
+//		panic("could not retrieve 'execute.stor'")
+//	}
+//	defer stor.DecRef()
+//
+//
+//	classNode := stor.GetAttrString("Node")
+//	if classNode == nil {
+//		panic("could not retrieve 'Node'")
+//	}
+//	defer classNode.DecRef()
+//
+//	EmptyTuple := gp.GetEmptyTuple()
+//	nodeObj := classNode.CallObject(EmptyTuple)
+//	if nodeObj == nil {
+//		panic("could not retrieve 'nodeObj'")
+//	}
+//	defer nodeObj.DecRef()
+//	defer EmptyTuple.DecRef()
+//
+//	Data := classNode.CallMethodArgs("delete_node",nodeObj,PyStr(nodename))
+//	Result := python3.PyDict_GetItem(Data,PyStr("result"))
+//	Info := python3.PyDict_GetItem(Data,PyStr("info"))
+//
+//	message := MessageOP{GoStr(Result),GoStr(Info)}
+//	resp.WriteAsJson(message)
+//}
 
 func (h *handler) DeleteNode(req *restful.Request, resp *restful.Response) {
 	nodename := req.PathParameter("node")
-
-	stor := gp.GetModule("execute.stor")
-	if stor == nil {
-		panic("could not retrieve 'execute.stor'")
+	fmt.Println(nodename)
+	client, ctx := linstorv1alpha1.GetClient()
+	err := linstorv1alpha1.DeleteNode(ctx,client,string(nodename))
+	if err != nil {
+		panic(err)
 	}
-	defer stor.DecRef()
-
-
-	classNode := stor.GetAttrString("Node")
-	if classNode == nil {
-		panic("could not retrieve 'Node'")
-	}
-	defer classNode.DecRef()
-
-	EmptyTuple := gp.GetEmptyTuple()
-	nodeObj := classNode.CallObject(EmptyTuple)
-	if nodeObj == nil {
-		panic("could not retrieve 'nodeObj'")
-	}
-	defer nodeObj.DecRef()
-	defer EmptyTuple.DecRef()
-
-	Data := classNode.CallMethodArgs("delete_node",nodeObj,PyStr(nodename))
-	Result := python3.PyDict_GetItem(Data,PyStr("result"))
-	Info := python3.PyDict_GetItem(Data,PyStr("info"))
-
-	message := MessageOP{GoStr(Result),GoStr(Info)}
+	message := MessageOP{"SUCCESS",""}
 	resp.WriteAsJson(message)
 }
 
-func (h *handler) UpdateNode(req *restful.Request, resp *restful.Response) {
-	id := req.PathParameter("node")
-	fmt.Println(id)
 
-	linstor_node := new(LinstorNode)
-	err := req.ReadEntity(&linstor_node)
-
-	fmt.Println("-----")
-	fmt.Println(linstor_node)
-	if err != nil {
-		api.HandleBadRequest(resp, req, err)
-		return
-	}
-	// 执行
-	fmt.Println("------")
-
-
-}
+//func (h *handler) UpdateNode(req *restful.Request, resp *restful.Response) {
+//	id := req.PathParameter("node")
+//	fmt.Println(id)
+//
+//	linstor_node := new(LinstorNode)
+//	err := req.ReadEntity(&linstor_node)
+//
+//	fmt.Println("-----")
+//	fmt.Println(linstor_node)
+//	if err != nil {
+//		api.HandleBadRequest(resp, req, err)
+//		return
+//	}
+//	// 执行
+//	fmt.Println("------")
+//
+//
+//}

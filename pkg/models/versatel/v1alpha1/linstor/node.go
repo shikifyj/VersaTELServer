@@ -1,5 +1,11 @@
 package linstor
 
+import (
+	"fmt"
+	"context"
+	"github.com/LINBIT/golinstor/client"
+	log "github.com/sirupsen/logrus"
+)
 
 func GetNodeData(ctx context.Context, c *client.Client) []map[string]string{
 	nodes,err := c.Nodes.GetAll(ctx)
@@ -36,4 +42,6 @@ func GetNodeData(ctx context.Context, c *client.Client) []map[string]string{
 }
 
 
-func CreateNode()
+func DeleteNode(ctx context.Context, c *client.Client, nodename string) error {
+	return c.Nodes.Delete(ctx, nodename)
+}

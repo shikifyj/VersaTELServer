@@ -102,6 +102,7 @@ import (
 	"kubesphere.io/kubesphere/pkg/simple/client/sonarqube"
 	"kubesphere.io/kubesphere/pkg/utils/metrics"
 	utilnet "kubesphere.io/kubesphere/pkg/utils/net"
+	versatel "kubesphere.io/kubesphere/pkg/kapis/versatel/v1alpha1"
 )
 
 const (
@@ -267,6 +268,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 	urlruntime.Must(kubeedgev1alpha1.AddToContainer(s.container, s.Config.KubeEdgeOptions.Endpoint))
 	urlruntime.Must(notificationkapisv2beta1.AddToContainer(s.container, s.InformerFactory, s.KubernetesClient.Kubernetes(),
 		s.KubernetesClient.KubeSphere()))
+	urlruntime.Must(versatel.AddToContainer(s.container))
 }
 
 func (s *APIServer) Run(ctx context.Context) (err error) {
