@@ -67,6 +67,36 @@ func AddToContainer(container *restful.Container) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 
+	webservice.Route(webservice.GET("linstor/storagepool").
+		To(handler.handleListStorgePools).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level resources").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+
+	webservice.Route(webservice.POST("/linstor/storagepool").
+		To(handler.CreateStoragePool).
+		Doc("Create a linstor storagepool.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LinstorNode{}))
+
+	webservice.Route(webservice.DELETE("/linstor/storagepool/{storagepool}").
+		To(handler.DeleteStoragePool).
+		Doc("Delete the specified storagepool.").
+		Param(webservice.PathParameter("storagepool", "storagepoolname")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+
+
+
+
 
 
 	//webservice.Route(webservice.PUT("/linstornode/{node}").

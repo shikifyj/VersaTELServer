@@ -1,59 +1,75 @@
 package linstor
 
 import (
-	"fmt"
 	"context"
 	"github.com/LINBIT/golinstor/client"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 )
 
-func GetSPData(ctx context.Context, c *client.Client) []map[string]string{
-	resources, err := c.Resources.GetResourceView(ctx)
-	spInfo := []map[string]string{}
-	if err != nil {
-		log.Fatal(err)
+type DrivePool struct {
+	Kind client.ProviderKind
+	VG string
+	LV string
+}
+
+func (dp *DrivePool)GetStoragePoolProps() map[string]string{
+	switch dp.Kind {
+	case "LVM":
+		return map[string]string{"StorDriver/LvmVg":dp.VG}
+	case "LVM_THIN":
+		return map[string]string{"StorDriver/LvmVg":dp.VG,"StorDriver/ThinPool":dp.LV}
 	}
-
-
+	return nil
 }
 
 
+//func newDrivePool(kind, volume string) DrivePool {
+//
+//}
 
-func GetNodeData(ctx context.Context, c *client.Client) []map[string]string{
-	nodes,err := c.Nodes.GetAll(ctx)
+
+func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 	resources, err := c.Resources.GetResourceView(ctx)
-	nodesInfo := []map[string]string{}
+	spsInfo := []map[string]string{}
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, node := range nodes {
+	sps,_ := c.Nodes.GetStoragePoolView(ctx)
+	for _,sp := range sps{
 		resNum := 0
 		for _, res := range resources{
-			if res.NodeName == node.Name{
-				resNum ++
+			for _,v := range res.Volumes{
+				if v.StoragePoolName == sp.StoragePoolName{
+					resNum ++
+				}
 			}
 		}
-		sps,err := c.Nodes.GetStoragePools(ctx,node.Name)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defaultInterface := node.NetInterfaces[0]
-		addr := fmt.Sprintf("%s:%d (%s)",defaultInterface.Address,defaultInterface.SatellitePort,defaultInterface.SatelliteEncryptionType)
 
-		nodeInfo := map[string]string{
-			"name":node.Name,
-			"nodeType":node.Type,
-			"resourceNum": fmt.Sprintf("%d",resNum),
-			"storagePoolNum":fmt.Sprintf("%d",len(sps)),
-			"addr": addr,
-			"status":node.ConnectionStatus,
+		spInfo := map[string]string{
+			"name" : sp.StoragePoolName,
+			"node" : sp.NodeName,
+			"resNum": strconv.Itoa(resNum),
+			"driver" : sp.Props["StorDriver/LvmVg"],
+			"poolName" : sp.Props["StorDriver/StorPoolName"],
+			"freeCapacity" : FormatSize(sp.FreeCapacity),
+			"totalCapacity" : FormatSize(sp.TotalCapacity),
+			"supportsSnapshots" : strconv.FormatBool(sp.SupportsSnapshots),
 		}
-		nodesInfo = append(nodesInfo, nodeInfo)
+		if len(sp.Reports) == 0 {
+			spInfo["state"] = "OK"
+		}
+		spsInfo = append(spsInfo, spInfo)
 	}
-	return nodesInfo
+	return spsInfo
 }
 
+func CreateSP(ctx context.Context, c *client.Client,spName,nodeName string, pool DrivePool) error{
+	props := pool.GetStoragePoolProps()
+	sp := client.StoragePool{StoragePoolName:spName,ProviderKind:pool.Kind, Props: props}
+	return c.Nodes.CreateStoragePool(ctx,nodeName,sp)
+}
 
-func DeleteNode(ctx context.Context, c *client.Client, nodename string) error {
-	return c.Nodes.Delete(ctx, nodename)
+func DeleteSP(ctx context.Context, c *client.Client, spName,nodeName string) error {
+	return c.Nodes.DeleteStoragePool(ctx,nodeName,spName)
 }

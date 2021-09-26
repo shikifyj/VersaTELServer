@@ -2,6 +2,7 @@ package linstor
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	"context"
@@ -16,8 +17,6 @@ type LinstorGetter struct {
 	Count int `json:"count"`
 	Data []map[string]string `json:"data"`
 }
-
-
 
 func (d *LinstorGetter) List(query *query.Query) {
 
@@ -45,7 +44,6 @@ func (d *LinstorGetter) List(query *query.Query) {
 }
 
 
-
 func GetClient() (*client.Client, context.Context)  {
 	ctx := context.TODO()
 	u, err := url.Parse("http://10.203.1.158:3370")
@@ -58,4 +56,23 @@ func GetClient() (*client.Client, context.Context)  {
 		log.Fatal(err)
 	}
 	return c,ctx
+}
+
+
+func FormatSize(size int64) string{
+	sizeStr := ""
+	if size == 9223372036854775807{
+		return sizeStr
+	}
+
+	switch {
+	case size > 1024 * 1024 * 1024:
+		sizeStr = strconv.FormatInt(size/(1024*1024*1024),10)+" GB"
+	case size > 1024 * 1024 :
+		sizeStr = strconv.FormatInt(size/(1024*1024),10)+" MB"
+	case size > 1024:
+		sizeStr = strconv.FormatInt(size/1024,10)+" KB"
+	}
+
+	return sizeStr
 }
