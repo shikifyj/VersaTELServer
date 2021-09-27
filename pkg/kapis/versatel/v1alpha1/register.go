@@ -25,22 +25,7 @@ func AddToContainer(container *restful.Container) error {
 
 	tagsLinstor := []string{"linstor"}
 
-	webservice.Route(webservice.GET("/vtelurl").
-		Reads("").
-		To(handler.GetVersaTELURL).
-		Returns(http.StatusOK, api.StatusOK, URLResponse{}).
-		Doc("Api for versatel url"))
-
-
-
-	//webservice.Route(webservice.GET("/linstor/node").
-	//	Reads("").
-	//	To(handler.handleListNodes).
-	//	Returns(http.StatusOK, api.StatusOK, MessageList{}).
-	//	Doc("Get all linstor node"))
-
-
-	webservice.Route(webservice.GET("linstor/node").
+	webservice.Route(webservice.GET("/linstor/node").
 		To(handler.handleListNodes).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
@@ -84,11 +69,12 @@ func AddToContainer(container *restful.Container) error {
 		Doc("Create a linstor storagepool.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(LinstorNode{}))
+		Reads(LinstorSP{}))
 
-	webservice.Route(webservice.DELETE("/linstor/storagepool/{storagepool}").
+	webservice.Route(webservice.DELETE("/linstor/node/{node}/storagepool/{storagepool}").
 		To(handler.DeleteStoragePool).
 		Doc("Delete the specified storagepool.").
+		Param(webservice.PathParameter("node", "nodename")).
 		Param(webservice.PathParameter("storagepool", "storagepoolname")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))

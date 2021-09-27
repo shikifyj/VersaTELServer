@@ -5,6 +5,7 @@ import (
 	"github.com/LINBIT/golinstor/client"
 	log "github.com/sirupsen/logrus"
 	"strconv"
+	"strings"
 )
 
 type DrivePool struct {
@@ -22,11 +23,6 @@ func (dp *DrivePool)GetStoragePoolProps() map[string]string{
 	}
 	return nil
 }
-
-
-//func newDrivePool(kind, volume string) DrivePool {
-//
-//}
 
 
 func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
@@ -64,7 +60,17 @@ func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 	return spsInfo
 }
 
-func CreateSP(ctx context.Context, c *client.Client,spName,nodeName string, pool DrivePool) error{
+func CreateSP(ctx context.Context, c *client.Client,spName,nodeName,kind,volume string) error{
+	pool := DrivePool{}
+	if (kind == "LVM" || kind == "lvm"){
+		pool.Kind = client.LVM
+		pool.VG = volume
+	} else if (kind == "LVM_THIN" || kind == "lvm_thin") {
+		pool.Kind = client.LVM_THIN
+		volSlice := strings.Split(volume,"/")
+		pool.VG = volSlice[0]
+		pool.LV = volSlice[1]
+	}
 	props := pool.GetStoragePoolProps()
 	sp := client.StoragePool{StoragePoolName:spName,ProviderKind:pool.Kind, Props: props}
 	return c.Nodes.CreateStoragePool(ctx,nodeName,sp)
