@@ -71,7 +71,7 @@ func AddToContainer(container *restful.Container) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorSP{}))
 
-	webservice.Route(webservice.DELETE("/linstor/node/{node}/storagepool/{storagepool}").
+	webservice.Route(webservice.DELETE("/linstor/storagepool/{storagepool}/{node}").
 		To(handler.DeleteStoragePool).
 		Doc("Delete the specified storagepool.").
 		Param(webservice.PathParameter("node", "nodename")).
@@ -80,8 +80,31 @@ func AddToContainer(container *restful.Container) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 
+	webservice.Route(webservice.GET("linstor/resource").
+		To(handler.handleListResources).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level resources").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
+	webservice.Route(webservice.POST("/linstor/resource").
+		To(handler.CreateResource).
+		Doc("Create a linstor resource.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LinstorRes{}))
 
+	webservice.Route(webservice.DELETE("/linstor/resource/{resource}/{node}").
+		To(handler.DeleteResource).
+		Doc("Delete the specified storagepool.").
+		Param(webservice.PathParameter("node", "nodename")).
+		Param(webservice.PathParameter("resource", "resourcename")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 
 

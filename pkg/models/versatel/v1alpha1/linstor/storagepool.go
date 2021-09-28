@@ -24,7 +24,6 @@ func (dp *DrivePool)GetStoragePoolProps() map[string]string{
 	return nil
 }
 
-
 func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 	resources, err := c.Resources.GetResourceView(ctx)
 	spsInfo := []map[string]string{}

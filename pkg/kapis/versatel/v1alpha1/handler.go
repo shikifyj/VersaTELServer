@@ -47,6 +47,13 @@ type LinstorSP struct {
 	Volume string `json:"volume"`
 }
 
+type LinstorRes struct {
+	Name string `json:"name"`
+	NodeName string `json:"node_name"`
+	StorgePoolName string `json:"storgepool_name"`
+	Size uint64 `json:"size"`
+}
+
 
 type URLResponse struct {
 	URL string `json:"URL"`
@@ -149,3 +156,41 @@ func (h *handler) DeleteStoragePool(req *restful.Request, resp *restful.Response
 //
 //
 //}
+
+
+func (h *handler) handleListResources (req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient()
+	data := linstorv1alpha1.GetResources(ctx,client)
+	message := linstorv1alpha1.LinstorGetter{0,len(data),data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+
+func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
+	res := new(LinstorRes)
+	err := req.ReadEntity(&res)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient()
+	err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.NodeName,res.StorgePoolName,res.Size)
+	fmt.Println(err)
+	if err != nil{
+		resp.WriteAsJson(err)
+	}
+}
+
+
+func (h *handler) DeleteResource(req *restful.Request, resp *restful.Response) {
+	nodeName := req.PathParameter("node")
+	resName := req.PathParameter("resource")
+	client, ctx := linstorv1alpha1.GetClient()
+	err := linstorv1alpha1.DeleteResource(ctx,client,resName,nodeName)
+	if err != nil {
+		resp.WriteAsJson(err)
+	}
+}
+
