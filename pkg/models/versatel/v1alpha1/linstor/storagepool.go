@@ -45,14 +45,14 @@ func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 			"name" : sp.StoragePoolName,
 			"node" : sp.NodeName,
 			"resNum": strconv.Itoa(resNum),
-			"driver" : sp.Props["StorDriver/LvmVg"],
+			"driver" : string(sp.ProviderKind),
 			"poolName" : sp.Props["StorDriver/StorPoolName"],
 			"freeCapacity" : FormatSize(sp.FreeCapacity),
 			"totalCapacity" : FormatSize(sp.TotalCapacity),
 			"supportsSnapshots" : strconv.FormatBool(sp.SupportsSnapshots),
 		}
 		if len(sp.Reports) == 0 {
-			spInfo["state"] = "OK"
+			spInfo["status"] = "OK"
 		}
 		spsInfo = append(spsInfo, spInfo)
 	}
@@ -64,7 +64,7 @@ func CreateSP(ctx context.Context, c *client.Client,spName,nodeName,kind,volume 
 	if (kind == "LVM" || kind == "lvm"){
 		pool.Kind = client.LVM
 		pool.VG = volume
-	} else if (kind == "LVM_THIN" || kind == "lvm_thin") {
+	} else if (kind == "LVM THIN" || kind == "lvm thin") {
 		pool.Kind = client.LVM_THIN
 		volSlice := strings.Split(volume,"/")
 		pool.VG = volSlice[0]
