@@ -41,6 +41,12 @@ func GetNodeData(ctx context.Context, c *client.Client) []map[string]string{
 	return nodesInfo
 }
 
+
+func DescribeNode(ctx context.Context, c *client.Client, nodename string) error {
+	_, err := c.Nodes.Get(ctx,nodename)
+	return err
+}
+
 func CreateNode(ctx context.Context, c *client.Client, name,ip,nodeType string) error {
 	netInterfaces := []client.NetInterface{client.NetInterface{Name: "default",Address: ip, SatellitePort: 3366,SatelliteEncryptionType: "Plain"}}
 	node := client.Node{Name: name, Type: nodeType,NetInterfaces: netInterfaces}

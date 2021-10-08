@@ -24,6 +24,7 @@ func (dp *DrivePool)GetStoragePoolProps() map[string]string{
 	return nil
 }
 
+
 func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 	resources, err := c.Resources.GetResourceView(ctx)
 	spsInfo := []map[string]string{}
@@ -57,6 +58,18 @@ func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 		spsInfo = append(spsInfo, spInfo)
 	}
 	return spsInfo
+}
+
+
+
+func DescribeStoragePool(ctx context.Context, c *client.Client, spname string) bool {
+	sps, _ := c.Nodes.GetStoragePoolView(ctx)
+	for _, sp := range sps {
+		if spname == sp.StoragePoolName {
+			return true
+		}
+	}
+	return false
 }
 
 func CreateSP(ctx context.Context, c *client.Client,spName,nodeName,kind,volume string) error{

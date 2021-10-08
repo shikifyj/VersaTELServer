@@ -34,6 +34,10 @@ type MessageOP struct {
 	Info string `json:"info"`
 }
 
+type MessageExist struct {
+	Exist bool `json:"exist"`
+}
+
 type LinstorNode struct {
 	Name string `json:"name"`
 	IP string `json:"ip"`
@@ -76,6 +80,18 @@ func (h *handler) handleListNodes (req *restful.Request, resp *restful.Response)
 	resp.WriteAsJson(message)
 }
 
+func (h *handler) DescribeNode(req *restful.Request, resp *restful.Response) {
+	nodename := req.PathParameter("node")
+	client, ctx := linstorv1alpha1.GetClient()
+	err := linstorv1alpha1.DescribeNode(ctx,client,nodename)
+	if err != nil {
+		resp.WriteAsJson(MessageExist{false})
+	} else {
+		resp.WriteAsJson(MessageExist{true})
+	}
+}
+
+
 func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 	node := new(LinstorNode)
 	err := req.ReadEntity(&node)
@@ -111,6 +127,12 @@ func (h *handler) handleListStorgePools (req *restful.Request, resp *restful.Res
 	resp.WriteAsJson(message)
 }
 
+func (h *handler) DescribeStoragePool(req *restful.Request, resp *restful.Response) {
+	storagepoolName := req.PathParameter("storagepool")
+	client, ctx := linstorv1alpha1.GetClient()
+	exist := linstorv1alpha1.DescribeStoragePool(ctx,client,storagepoolName)
+	resp.WriteAsJson(MessageExist{exist})
+}
 
 func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response) {
 	storagePool := new(LinstorSP)
@@ -125,6 +147,7 @@ func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response
 		resp.WriteAsJson(err)
 	}
 }
+
 
 
 func (h *handler) DeleteStoragePool(req *restful.Request, resp *restful.Response) {
