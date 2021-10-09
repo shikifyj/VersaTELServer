@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -75,4 +76,27 @@ func FormatSize(size int64) string{
 	}
 
 	return sizeStr
+}
+
+
+func ParseSize(size string) (uint64,error) {
+	strSize := strings.ToUpper(size)
+	str := `^([0-9.]+)(K|M|G|T)(?:I?B)?$`
+	r := regexp.MustCompile(str)
+	matchsResult := r.FindStringSubmatch(strSize)
+	if len(matchsResult) == 0 {
+		return strconv.ParseUint(size,10,64)
+	}
+	finalSize, err := strconv.ParseUint(matchsResult[1],10,64)
+	switch matchsResult[2] {
+	case "K","KB","kb":
+		finalSize = finalSize * 1024
+	case "M","MB","mb":
+		finalSize = finalSize * 1024 * 1024
+	case "G","GB","gb":
+		finalSize = finalSize * 1024 * 1024 * 1024
+	case "T","TB","tb":
+		finalSize = finalSize * 1024 * 1024 * 1024 * 1024
+	}
+	return finalSize,err
 }

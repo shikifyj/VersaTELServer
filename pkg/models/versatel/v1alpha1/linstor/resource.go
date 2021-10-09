@@ -16,20 +16,25 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string{
 		mirrorway := strconv.Itoa(len(res.Volumes))
 		for _, vol := range res.Volumes{
 			resInfo := map[string]string{}
-			resInfo["Name"] = name
-			resInfo["MirrorWay"] = mirrorway
-			resInfo["Size"] = FormatSize(vol.AllocatedSizeKib)
-			resInfo["DeviceName"] = vol.DevicePath
-			resInfo["State"] = vol.State.DiskState
+			resInfo["name"] = name
+			resInfo["mirrorWay"] = mirrorway
+			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
+			resInfo["deviceName"] = vol.DevicePath
+			resInfo["status"] = vol.State.DiskState
 			resourcesInfo = append(resourcesInfo, resInfo)
 		}
 	}
 	return resourcesInfo
 }
 
-func CreateResource(ctx context.Context, c *client.Client,resName,nodeName,spName string,SizeKib uint64,) error {
+func CreateResource(ctx context.Context, c *client.Client,resName,nodeName,spName string,Size string) error {
 	// VolNr 应该可以在Resource的Props设置
 	var err error
+	size,errSize := ParseSize(Size)
+	if errSize != nil {
+		Message := client.ApiCallError{client.ApiCallRc{RetCode: -2, Message: "Error Size"}}
+		return Message
+	}
 
 	//创建 rd
 	if _, err := c.ResourceDefinitions.Get(ctx,resName); err != nil{
@@ -40,7 +45,7 @@ func CreateResource(ctx context.Context, c *client.Client,resName,nodeName,spNam
 			return err
 		}
 
-		vd := client.VolumeDefinition{SizeKib: SizeKib}
+		vd := client.VolumeDefinition{SizeKib: size}
 		vdCreate := client.VolumeDefinitionCreate{VolumeDefinition: vd}
 		err = c.ResourceDefinitions.CreateVolumeDefinition(ctx,resName, vdCreate)
 		if err != nil{

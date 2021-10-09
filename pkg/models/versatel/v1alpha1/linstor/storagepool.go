@@ -33,6 +33,9 @@ func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 	}
 	sps,_ := c.Nodes.GetStoragePoolView(ctx)
 	for _,sp := range sps{
+		if sp.StoragePoolName == "DfltDisklessStorPool" {
+			continue
+		}
 		resNum := 0
 		for _, res := range resources{
 			for _,v := range res.Volumes{

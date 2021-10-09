@@ -53,9 +53,9 @@ type LinstorSP struct {
 
 type LinstorRes struct {
 	Name string `json:"name"`
-	NodeName string `json:"node"`
-	StorgePoolName string `json:"storgepool"`
-	Size uint64 `json:"size"`
+	//Node string `json:"node"`
+	StorgePool [2]string `json:"storgepool"`
+	Size string `json:"size"`
 }
 
 type URLResponse struct {
@@ -198,8 +198,10 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient()
-	err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.NodeName,res.StorgePoolName,res.Size)
-	fmt.Println(err)
+	//err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.NodeName,res.StorgePoolName,res.Size)
+	fmt.Println(res.StorgePool)
+
+	err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.StorgePool[1],res.StorgePool[0],res.Size)
 	if err != nil{
 		resp.WriteAsJson(err)
 	}
