@@ -2,7 +2,6 @@ package linstor
 
 import (
 	"context"
-	"fmt"
 	"github.com/LINBIT/golinstor/client"
 	log "github.com/sirupsen/logrus"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
@@ -26,7 +25,6 @@ func (d *LinstorGetter) List(query *query.Query) {
 			newListData := make([]map[string]string,0)
 			for _, mapData := range d.Data{
 				if strings.Contains(mapData[string(k)], string(v)) {
-					fmt.Println("***",mapData)
 					newListData = append(newListData,mapData)
 				}
 			}
@@ -37,8 +35,6 @@ func (d *LinstorGetter) List(query *query.Query) {
 	}
 
 	startIndex, endIndex := query.Pagination.GetValidPagination(d.Count)
-	fmt.Println("startIndex:",startIndex)
-	fmt.Println("endIndex:",endIndex)
 	data := d.Data[startIndex:endIndex]
 	d.Data = data
 

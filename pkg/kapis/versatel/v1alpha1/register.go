@@ -104,6 +104,13 @@ func AddToContainer(container *restful.Container) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
+	webservice.Route(webservice.GET("/linstor/resource/{resource}").
+		To(handler.DescribeResource).
+		Doc("Retrieve resource details.").
+		Param(webservice.PathParameter("resource", "resourcename")).
+		Returns(http.StatusOK, api.StatusOK, MessageExist{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
 	webservice.Route(webservice.POST("/linstor/resource").
 		To(handler.CreateResource).
 		Doc("Create a linstor resource.").
@@ -111,10 +118,10 @@ func AddToContainer(container *restful.Container) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorRes{}))
 
-	webservice.Route(webservice.DELETE("/linstor/resource/{resource}/{node}").
+	webservice.Route(webservice.DELETE("/linstor/resource/{resource}").
 		To(handler.DeleteResource).
 		Doc("Delete the specified storagepool.").
-		Param(webservice.PathParameter("node", "nodename")).
+		//Param(webservice.PathParameter("node", "nodename")).
 		Param(webservice.PathParameter("resource", "resourcename")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))

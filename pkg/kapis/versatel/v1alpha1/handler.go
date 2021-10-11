@@ -54,7 +54,7 @@ type LinstorSP struct {
 type LinstorRes struct {
 	Name string `json:"name"`
 	//Node string `json:"node"`
-	StorgePool [2]string `json:"storgepool"`
+	StoragePool []string `json:"storagepool"`
 	Size string `json:"size"`
 }
 
@@ -189,6 +189,16 @@ func (h *handler) handleListResources (req *restful.Request, resp *restful.Respo
 	resp.WriteAsJson(message)
 }
 
+func (h *handler) DescribeResource(req *restful.Request, resp *restful.Response) {
+	resname := req.PathParameter("resource")
+	client, ctx := linstorv1alpha1.GetClient()
+	err := linstorv1alpha1.DescribeResource(ctx,client,resname)
+	if err != nil {
+		resp.WriteAsJson(MessageExist{false})
+	} else {
+		resp.WriteAsJson(MessageExist{true})
+	}
+}
 
 func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	res := new(LinstorRes)
@@ -198,10 +208,7 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient()
-	//err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.NodeName,res.StorgePoolName,res.Size)
-	fmt.Println(res.StorgePool)
-
-	err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.StorgePool[1],res.StorgePool[0],res.Size)
+	err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.StoragePool,res.Size)
 	if err != nil{
 		resp.WriteAsJson(err)
 	}
@@ -209,10 +216,10 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 
 
 func (h *handler) DeleteResource(req *restful.Request, resp *restful.Response) {
-	nodeName := req.PathParameter("node")
+	//nodeName := req.PathParameter("node")
 	resName := req.PathParameter("resource")
 	client, ctx := linstorv1alpha1.GetClient()
-	err := linstorv1alpha1.DeleteResource(ctx,client,resName,nodeName)
+	err := linstorv1alpha1.DeleteResource(ctx,client,resName)
 	if err != nil {
 		resp.WriteAsJson(err)
 	}
