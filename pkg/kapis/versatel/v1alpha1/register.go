@@ -118,6 +118,13 @@ func AddToContainer(container *restful.Container) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorRes{}))
 
+	webservice.Route(webservice.POST("/linstor/resource/diskless").
+		To(handler.CreateDiskless).
+		Doc("Create a linstor diskless resource.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LinstorRes{}))
+
 	webservice.Route(webservice.DELETE("/linstor/resource/{resource}").
 		To(handler.DeleteResource).
 		Doc("Delete the specified storagepool.").

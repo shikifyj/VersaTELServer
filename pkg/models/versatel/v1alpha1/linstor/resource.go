@@ -100,3 +100,10 @@ func DeleteResource(ctx context.Context, c *client.Client, resName string) error
 	err := c.ResourceDefinitions.Delete(ctx,resName)
 	return err
 }
+
+func CreateDisklessResource(ctx context.Context, c *client.Client, resName, nodeName string) error {
+	resProps := map[string]string{"StorPoolName": "DfltDisklessStorPool"}
+	res := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
+	resCreate := client.ResourceCreate{Resource: res}
+	return c.Resources.Create(ctx, resCreate)
+}

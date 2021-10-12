@@ -53,7 +53,7 @@ type LinstorSP struct {
 
 type LinstorRes struct {
 	Name string `json:"name"`
-	//Node string `json:"node"`
+	Node string `json:"node"`
 	StoragePool []string `json:"storagepool"`
 	Size string `json:"size"`
 }
@@ -213,6 +213,21 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 		resp.WriteAsJson(err)
 	}
 }
+
+func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
+	res := new(LinstorRes)
+	err := req.ReadEntity(&res)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient()
+	err = linstorv1alpha1.CreateDisklessResource(ctx,client,res.Name,res.Node)
+	if err != nil{
+		resp.WriteAsJson(err)
+	}
+}
+
 
 
 func (h *handler) DeleteResource(req *restful.Request, resp *restful.Response) {

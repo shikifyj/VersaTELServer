@@ -43,7 +43,7 @@ func (d *LinstorGetter) List(query *query.Query) {
 
 func GetClient() (*client.Client, context.Context)  {
 	ctx := context.TODO()
-	u, err := url.Parse("http://10.203.1.157:3370")
+	u, err := url.Parse("http://10.203.1.158:3370")
 	if err != nil {
 		log.Fatal(err)
 	}
