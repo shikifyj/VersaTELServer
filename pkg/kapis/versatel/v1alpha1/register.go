@@ -134,8 +134,6 @@ func AddToContainer(container *restful.Container) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 
-
-
 	//webservice.Route(webservice.PUT("/linstornode/{node}").
 	//	To(handler.UpdateNode).
 	//	Doc("Update node").

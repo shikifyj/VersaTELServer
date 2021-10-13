@@ -53,7 +53,7 @@ type LinstorSP struct {
 
 type LinstorRes struct {
 	Name string `json:"name"`
-	Node string `json:"node"`
+	Node []string `json:"node"`
 	StoragePool []string `json:"storagepool"`
 	Size string `json:"size"`
 }
@@ -209,6 +209,11 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	}
 	client, ctx := linstorv1alpha1.GetClient()
 	err = linstorv1alpha1.CreateResource(ctx,client,res.Name,res.StoragePool,res.Size)
+	if res.Node != nil {
+		for _, node := range res.Node{
+			err = linstorv1alpha1.CreateDisklessResource(ctx,client,res.Name,node)
+		}
+	}
 	if err != nil{
 		resp.WriteAsJson(err)
 	}
@@ -222,9 +227,11 @@ func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient()
-	err = linstorv1alpha1.CreateDisklessResource(ctx,client,res.Name,res.Node)
-	if err != nil{
-		resp.WriteAsJson(err)
+	for _, node := range res.Node {
+		err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
+		if err != nil {
+			resp.WriteAsJson(err)
+		}
 	}
 }
 

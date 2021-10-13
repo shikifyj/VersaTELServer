@@ -10,21 +10,39 @@ import (
 
 func GetResources(ctx context.Context, c *client.Client) []map[string]string{
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resourcesInfo := []map[string]string{}
-	for _, res := range resources{
-		name := res.Resource.Name
-		mirrorway := strconv.Itoa(len(res.Volumes))
-		for _, vol := range res.Volumes{
-			resInfo := map[string]string{}
-			resInfo["name"] = name
-			resInfo["mirrorWay"] = mirrorway
-			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-			resInfo["deviceName"] = vol.DevicePath
-			resInfo["status"] = vol.State.DiskState
-			resourcesInfo = append(resourcesInfo, resInfo)
+	resMap := map[string]map[string]string{}
+	mirrorWay := map[string]int{}
+	resArray := []map[string]string{}
+	for _, res := range resources {
+		resInfo := map[string]string{}
+		_, exist := mirrorWay[res.Resource.Name]
+		if !exist {
+			mirrorWay[res.Resource.Name] = 1
+		} else {
+			mirrorWay[res.Resource.Name]++
 		}
+
+
+		for _, vol := range res.Volumes {
+			if vol.State.DiskState == "Diskless" {
+				mirrorWay[res.Resource.Name]--
+				break
+			} else {
+				resInfo["name"] = res.Resource.Name
+				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
+				resInfo["deviceName"] = vol.DevicePath
+				resInfo["status"] = vol.State.DiskState
+				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+				resMap[res.Resource.Name] = resInfo
+				break
+			}
+		}
+
 	}
-	return resourcesInfo
+	for _,v := range resMap{
+		resArray = append(resArray, v)
+	}
+	return resArray
 }
 
 func DescribeResource(ctx context.Context, c *client.Client, resname string) error {
