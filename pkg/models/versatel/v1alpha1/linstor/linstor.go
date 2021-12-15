@@ -64,11 +64,13 @@ func FormatSize(size int64) string{
 
 	switch {
 	case size > 1024 * 1024 * 1024:
-		sizeStr = strconv.FormatInt(size/(1024*1024*1024),10)+" GB"
+		sizeStr = strconv.FormatInt(size/(1024*1024*1024),10)+" TB"
 	case size > 1024 * 1024 :
-		sizeStr = strconv.FormatInt(size/(1024*1024),10)+" MB"
+		sizeStr = strconv.FormatInt(size/(1024*1024),10)+" GB"
 	case size > 1024:
-		sizeStr = strconv.FormatInt(size/1024,10)+" KB"
+		sizeStr = strconv.FormatInt(size/1024,10)+" MB"
+	default:
+		sizeStr = strconv.FormatInt(size,10)+" KB"
 	}
 
 	return sizeStr
@@ -85,14 +87,14 @@ func ParseSize(size string) (uint64,error) {
 	}
 	finalSize, err := strconv.ParseUint(matchsResult[1],10,64)
 	switch matchsResult[2] {
-	case "K","KB","kb":
+	case "K","KB","KIB":
+		finalSize = finalSize
+	case "M","MB","MIB":
 		finalSize = finalSize * 1024
-	case "M","MB","mb":
+	case "G","GB","GIB":
 		finalSize = finalSize * 1024 * 1024
-	case "G","GB","gb":
+	case "T","TB","TIB":
 		finalSize = finalSize * 1024 * 1024 * 1024
-	case "T","TB","tb":
-		finalSize = finalSize * 1024 * 1024 * 1024 * 1024
 	}
 	return finalSize,err
 }

@@ -3,54 +3,216 @@ package linstor
 import (
 	"context"
 	"fmt"
-	"github.com/LINBIT/golinstor/client"
+	"sort"
 	"strconv"
+	"strings"
+
+	"github.com/LINBIT/golinstor/client"
 )
 
+// func GetResources(ctx context.Context, c *client.Client) []map[string]string {
+// 	resources, _ := c.Resources.GetResourceView(ctx)
+// 	resMap := map[string]map[string]string{}
+// 	mirrorWay := map[string]int{}
+// 	resArray := []map[string]string{}
+// 	for _, res := range resources {
+// 		resInfo := map[string]string{}
+// 		_, exist := mirrorWay[res.Resource.Name]
+// 		if !exist {
+// 			mirrorWay[res.Resource.Name] = 1
+// 		} else {
+// 			mirrorWay[res.Resource.Name]++
+// 		}
 
-func GetResources(ctx context.Context, c *client.Client) []map[string]string{
+// 		for _, vol := range res.Volumes {
+// 			if vol.State.DiskState == "Diskless" {
+// 				mirrorWay[res.Resource.Name]--
+// 				break
+// 			} else {
+// 				resInfo["name"] = res.Resource.Name
+// 				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
+// 				resInfo["deviceName"] = vol.DevicePath
+// 				resInfo["status"] = vol.State.DiskState
+// 				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+// 				resMap[res.Resource.Name] = resInfo
+// 				break
+// 			}
+// 		}
+
+// 	}
+// 	for _, v := range resMap {
+// 		resArray = append(resArray, v)
+// 	}
+// 	return resArray
+// }
+
+func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 	resources, _ := c.Resources.GetResourceView(ctx)
 	resMap := map[string]map[string]string{}
 	mirrorWay := map[string]int{}
 	resArray := []map[string]string{}
 	for _, res := range resources {
+		fmt.Println(res.Resource.Name)
+		// fmt.Println(res.Resource.Flags)
+		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // Connection
+		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // 可能Unused是false，InUse是ture
 		resInfo := map[string]string{}
+		resName := res.Resource.Name
 		_, exist := mirrorWay[res.Resource.Name]
 		if !exist {
 			mirrorWay[res.Resource.Name] = 1
 		} else {
 			mirrorWay[res.Resource.Name]++
 		}
-
-
 		for _, vol := range res.Volumes {
+			resInfo["name"] = resName
+			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
+			resInfo["deviceName"] = vol.DevicePath
+			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+			resInfo["createTime"] = strconv.FormatInt(res.CreateTimestamp, 10)
 			if vol.State.DiskState == "Diskless" {
-				mirrorWay[res.Resource.Name]--
+				mirrorWay[resName]--
 				break
-			} else {
-				resInfo["name"] = res.Resource.Name
-				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-				resInfo["deviceName"] = vol.DevicePath
-				resInfo["status"] = vol.State.DiskState
+			} else if strings.Contains(vol.State.DiskState, "SyncTarget") {
+				resInfo["status"] = "Synching"
+				if _, exist := resMap[resName]; exist && resMap[resName]["State"] == "Unhealthy" {
+					resMap[resName]["MirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+				} else {
+					resMap[resName] = resInfo
+				}
+			} else if vol.State.DiskState == "UpToDate" {
+				resInfo["status"] = "Healthy"
 				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-				resMap[res.Resource.Name] = resInfo
+				if _, exist := resMap[resName]; !exist {
+					resInfo["status"] = "Healthy"
+					resMap[resName] = resInfo
+				} else {
+					resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+				}
+			} else if vol.State.DiskState == "" {
+				resInfo["status"] = "Unhealthy"
+				resMap[resName] = resInfo
+			}
+
+		}
+	}
+	for _, v := range resMap {
+		resArray = append(resArray, v)
+	}
+
+	sort.SliceStable(resArray, func(i, j int) bool {
+		return resArray[i]["createTime"] > resArray[j]["createTime"]
+	})
+
+	return resArray
+}
+
+func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]string {
+	resources, _ := c.Resources.GetResourceView(ctx)
+	resMap := []map[string]string{}
+	resMap = append(resMap)
+
+	for _, res := range resources {
+		mapFlag := make(map[string]struct{}, len(res.Flags))
+		for _, v := range res.Flags {
+			mapFlag[v] = struct{}{}
+		}
+
+		resInfo := map[string]string{}
+		if res.State.InUse {
+			resInfo["usage"] = "InUse"
+		} else {
+			resInfo["usage"] = "Unused"
+		}
+
+		connFail := map[string][]string{}
+		for k, v := range res.LayerObject.Drbd.Connections {
+			if !v.Connected {
+				connFail[v.Message] = append(connFail[v.Message], k)
+			}
+		}
+		if len(connFail) != 0 {
+			connFailStr := make([]string, 0)
+			for k, v := range connFail {
+				connFailStr = append(connFailStr, k+"("+strings.Join(v, ",")+")")
+			}
+			resInfo["conn"] = strings.Join(connFailStr, ",")
+		} else {
+			resInfo["conn"] = "OK"
+		}
+
+		resInfo["status"] = "Unknow"
+		for _, vol := range res.Volumes {
+			if vol.State.DiskState != "Diskless" {
+				if _, ok := mapFlag["DELETE"]; ok {
+					resInfo["status"] = "DELETING"
+				} else if _, ok := mapFlag["INACTIVE"]; ok {
+					resInfo["status"] = "INACTIVE"
+				} else if vol.State.DiskState != "" {
+					resInfo["status"] = vol.State.DiskState
+				}
+				resInfo["name"] = res.Resource.Name
+				resInfo["node"] = res.Resource.NodeName
+				resInfo["storagepool"] = vol.StoragePoolName
+				resMap = append(resMap, resInfo)
 				break
 			}
 		}
 
 	}
-	for _,v := range resMap{
-		resArray = append(resArray, v)
+	return resMap
+}
+
+func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]string {
+	resources, _ := c.Resources.GetResourceView(ctx)
+	resMap := []map[string]string{}
+
+	for _, res := range resources {
+		resInfo := map[string]string{}
+
+		if res.State.InUse {
+			resInfo["usage"] = "InUse"
+		} else {
+			resInfo["usage"] = "Unused"
+		}
+
+		connFail := map[string][]string{}
+		for k, v := range res.LayerObject.Drbd.Connections {
+			if !v.Connected {
+				connFail[v.Message] = append(connFail[v.Message], k)
+			}
+		}
+		if len(connFail) != 0 {
+			connFailStr := make([]string, 0)
+			for k, v := range connFail {
+				connFailStr = append(connFailStr, k+"("+strings.Join(v, ",")+")")
+			}
+			resInfo["conn"] = strings.Join(connFailStr, ",")
+		} else {
+			resInfo["conn"] = "OK"
+		}
+
+		for _, vol := range res.Volumes {
+			if vol.State.DiskState == "Diskless" {
+				resInfo["status"] = "Diskless"
+				resInfo["name"] = res.Resource.Name
+				resInfo["node"] = res.Resource.NodeName
+				resInfo["storagepool"] = vol.StoragePoolName
+				resMap = append(resMap, resInfo)
+				break
+			}
+		}
+
 	}
-	return resArray
+	return resMap
 }
 
 func DescribeResource(ctx context.Context, c *client.Client, resname string) error {
-	_, err := c.ResourceDefinitions.Get(ctx,resname)
+	_, err := c.ResourceDefinitions.Get(ctx, resname)
 	return err
 }
 
-func CreateResource(ctx context.Context, c *client.Client,resName string, spNames []string, Size string) error {
+func CreateResource(ctx context.Context, c *client.Client, resName string, spNames []string, Size string) error {
 	// VolNr 应该可以在Resource的Props设置
 	var err error
 	size, errSize := ParseSize(Size)
@@ -65,6 +227,7 @@ func CreateResource(ctx context.Context, c *client.Client,resName string, spName
 		rdCreate := client.ResourceDefinitionCreate{ResourceDefinition: rd}
 		err = c.ResourceDefinitions.Create(ctx, rdCreate)
 		if err != nil {
+			c.ResourceDefinitions.Delete(ctx, resName)
 			return err
 		}
 
@@ -72,6 +235,7 @@ func CreateResource(ctx context.Context, c *client.Client,resName string, spName
 		vdCreate := client.VolumeDefinitionCreate{VolumeDefinition: vd}
 		err = c.ResourceDefinitions.CreateVolumeDefinition(ctx, resName, vdCreate)
 		if err != nil {
+			c.ResourceDefinitions.Delete(ctx, resName)
 			return err
 		}
 	} else {
@@ -82,13 +246,8 @@ func CreateResource(ctx context.Context, c *client.Client,resName string, spName
 
 	//创建resource
 	var nodeName string
-	sps, errSP := c.Nodes.GetStoragePoolView(ctx)
-	if errSP != nil {
-		return errSP
-	}
-
+	sps, _ := c.Nodes.GetStoragePoolView(ctx)
 	for _, spName := range spNames {
-		fmt.Println(spName)
 		for _, sp := range sps {
 			if sp.StoragePoolName == spName {
 				nodeName = sp.NodeName
@@ -98,13 +257,13 @@ func CreateResource(ctx context.Context, c *client.Client,resName string, spName
 		res := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
 		resCreate := client.ResourceCreate{Resource: res}
 		err = c.Resources.Create(ctx, resCreate)
-		if err != nil{
+		if err != nil {
+			c.ResourceDefinitions.Delete(ctx, resName)
 			return err
 		}
 	}
 	return nil
 }
-
 
 func DeleteResource(ctx context.Context, c *client.Client, resName string) error {
 	//err := c.Resources.Delete(ctx,resName,nodeName)
@@ -115,7 +274,7 @@ func DeleteResource(ctx context.Context, c *client.Client, resName string) error
 	//if len(resources) == 0 {
 	//	err = c.ResourceDefinitions.Delete(ctx,resName)
 	//}
-	err := c.ResourceDefinitions.Delete(ctx,resName)
+	err := c.ResourceDefinitions.Delete(ctx, resName)
 	return err
 }
 
