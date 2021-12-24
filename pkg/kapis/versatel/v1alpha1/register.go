@@ -18,9 +18,9 @@ const (
 
 var GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
 
-func AddToContainer(container *restful.Container) error {
+func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
-	handler := newHandler()
+	handler := newHandler(ip)
 
 	tagsLinstor := []string{"linstor"}
 

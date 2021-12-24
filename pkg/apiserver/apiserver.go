@@ -83,6 +83,7 @@ import (
 	servicemeshv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/servicemesh/metrics/v1alpha2"
 	tenantv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/tenant/v1alpha2"
 	terminalv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/terminal/v1alpha2"
+	versatel "kubesphere.io/kubesphere/pkg/kapis/versatel/v1alpha1"
 	"kubesphere.io/kubesphere/pkg/kapis/version"
 	"kubesphere.io/kubesphere/pkg/models/auth"
 	"kubesphere.io/kubesphere/pkg/models/iam/am"
@@ -102,7 +103,6 @@ import (
 	"kubesphere.io/kubesphere/pkg/simple/client/sonarqube"
 	"kubesphere.io/kubesphere/pkg/utils/metrics"
 	utilnet "kubesphere.io/kubesphere/pkg/utils/net"
-	versatel "kubesphere.io/kubesphere/pkg/kapis/versatel/v1alpha1"
 )
 
 const (
@@ -163,6 +163,9 @@ type APIServer struct {
 
 	// controller-runtime cache
 	RuntimeCache runtimecache.Cache
+
+	// linstor controller IP
+	LinstorIP string
 }
 
 func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
@@ -268,7 +271,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 	urlruntime.Must(kubeedgev1alpha1.AddToContainer(s.container, s.Config.KubeEdgeOptions.Endpoint))
 	urlruntime.Must(notificationkapisv2beta1.AddToContainer(s.container, s.InformerFactory, s.KubernetesClient.Kubernetes(),
 		s.KubernetesClient.KubeSphere()))
-	urlruntime.Must(versatel.AddToContainer(s.container))
+	urlruntime.Must(versatel.AddToContainer(s.container, s.LinstorIP))
 }
 
 func (s *APIServer) Run(ctx context.Context) (err error) {

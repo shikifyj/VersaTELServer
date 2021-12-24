@@ -2,30 +2,35 @@ package linstor
 
 import (
 	"context"
-	"github.com/LINBIT/golinstor/client"
-	log "github.com/sirupsen/logrus"
-	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/LINBIT/golinstor/client"
+	log "github.com/sirupsen/logrus"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 )
 
+type LinstorController struct {
+	IP string `yaml:"linstor"`
+}
 
 type LinstorGetter struct {
-	Code int `json:"code"`
-	Count int `json:"count"`
-	Data []map[string]string `json:"data"`
+	Code  int                 `json:"code"`
+	Count int                 `json:"count"`
+	Data  []map[string]string `json:"data"`
 }
 
 func (d *LinstorGetter) List(query *query.Query) {
 
 	if len(query.Filters) != 0 {
 		for k, v := range query.Filters {
-			newListData := make([]map[string]string,0)
-			for _, mapData := range d.Data{
+			newListData := make([]map[string]string, 0)
+			for _, mapData := range d.Data {
 				if strings.Contains(mapData[string(k)], string(v)) {
-					newListData = append(newListData,mapData)
+					newListData = append(newListData, mapData)
 				}
 			}
 			d.Data = newListData
@@ -40,10 +45,10 @@ func (d *LinstorGetter) List(query *query.Query) {
 
 }
 
-
-func GetClient() (*client.Client, context.Context)  {
+func GetClient(ip string) (*client.Client, context.Context) {
 	ctx := context.TODO()
-	u, err := url.Parse("http://10.203.1.158:3370")
+	controllerIP := fmt.Sprintf("http://%v", ip)
+	u, err := url.Parse(controllerIP)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,49 +57,47 @@ func GetClient() (*client.Client, context.Context)  {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return c,ctx
+	return c, ctx
 }
 
-
-func FormatSize(size int64) string{
+func FormatSize(size int64) string {
 	sizeStr := ""
-	if size == 9223372036854775807{
+	if size == 9223372036854775807 {
 		return sizeStr
 	}
 
 	switch {
-	case size > 1024 * 1024 * 1024:
-		sizeStr = strconv.FormatInt(size/(1024*1024*1024),10)+" TB"
-	case size > 1024 * 1024 :
-		sizeStr = strconv.FormatInt(size/(1024*1024),10)+" GB"
+	case size > 1024*1024*1024:
+		sizeStr = strconv.FormatInt(size/(1024*1024*1024), 10) + " TB"
+	case size > 1024*1024:
+		sizeStr = strconv.FormatInt(size/(1024*1024), 10) + " GB"
 	case size > 1024:
-		sizeStr = strconv.FormatInt(size/1024,10)+" MB"
+		sizeStr = strconv.FormatInt(size/1024, 10) + " MB"
 	default:
-		sizeStr = strconv.FormatInt(size,10)+" KB"
+		sizeStr = strconv.FormatInt(size, 10) + " KB"
 	}
 
 	return sizeStr
 }
 
-
-func ParseSize(size string) (uint64,error) {
+func ParseSize(size string) (uint64, error) {
 	strSize := strings.ToUpper(size)
 	str := `^([0-9.]+)(K|M|G|T)(?:I?B)?$`
 	r := regexp.MustCompile(str)
 	matchsResult := r.FindStringSubmatch(strSize)
 	if len(matchsResult) == 0 {
-		return strconv.ParseUint(size,10,64)
+		return strconv.ParseUint(size, 10, 64)
 	}
-	finalSize, err := strconv.ParseUint(matchsResult[1],10,64)
+	finalSize, err := strconv.ParseUint(matchsResult[1], 10, 64)
 	switch matchsResult[2] {
-	case "K","KB","KIB":
+	case "K", "KB", "KIB":
 		finalSize = finalSize
-	case "M","MB","MIB":
+	case "M", "MB", "MIB":
 		finalSize = finalSize * 1024
-	case "G","GB","GIB":
+	case "G", "GB", "GIB":
 		finalSize = finalSize * 1024 * 1024
-	case "T","TB","TIB":
+	case "T", "TB", "TIB":
 		finalSize = finalSize * 1024 * 1024 * 1024
 	}
-	return finalSize,err
+	return finalSize, err
 }

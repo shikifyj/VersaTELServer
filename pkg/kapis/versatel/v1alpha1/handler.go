@@ -16,10 +16,11 @@ import (
 
 type handler struct {
 	//linstorGetterV1alpha1  *linstorv1alpha1.linstorGetter
+	ControllerIP string
 }
 
-func newHandler() handler {
-	return handler{}
+func newHandler(ip string) handler {
+	return handler{ip}
 }
 
 type MessageList struct {
@@ -51,10 +52,10 @@ type LinstorSP struct {
 }
 
 type LinstorRes struct {
-	Name        string   `json:"name"`
-	Node        []string `json:"node"`
-	StoragePool []string `json:"storagepool"`
-	Size        string   `json:"size"`
+	Name        string     `json:"name"`
+	Node        []string   `json:"node"`
+	StoragePool [][]string `json:"storagepool"`
+	Size        string     `json:"size"`
 }
 
 type URLResponse struct {
@@ -70,7 +71,7 @@ type URLResponse struct {
 
 func (h *handler) handleListNodes(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetNodeData(ctx, client)
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
@@ -79,7 +80,7 @@ func (h *handler) handleListNodes(req *restful.Request, resp *restful.Response) 
 
 func (h *handler) DescribeNode(req *restful.Request, resp *restful.Response) {
 	nodename := req.PathParameter("node")
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err := linstorv1alpha1.DescribeNode(ctx, client, nodename)
 	if err != nil {
 		resp.WriteAsJson(MessageExist{false})
@@ -95,7 +96,7 @@ func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err = linstorv1alpha1.CreateNode(ctx, client, node.Name, node.IP, node.NodeType)
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -105,7 +106,7 @@ func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 func (h *handler) DeleteNode(req *restful.Request, resp *restful.Response) {
 	nodename := req.PathParameter("node")
 	fmt.Println(nodename)
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err := linstorv1alpha1.DeleteNode(ctx, client, string(nodename))
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -114,7 +115,7 @@ func (h *handler) DeleteNode(req *restful.Request, resp *restful.Response) {
 
 func (h *handler) handleListStorgePools(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetSPData(ctx, client)
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
@@ -123,7 +124,7 @@ func (h *handler) handleListStorgePools(req *restful.Request, resp *restful.Resp
 
 func (h *handler) DescribeStoragePool(req *restful.Request, resp *restful.Response) {
 	storagepoolName := req.PathParameter("storagepool")
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	exist := linstorv1alpha1.DescribeStoragePool(ctx, client, storagepoolName)
 	resp.WriteAsJson(MessageExist{exist})
 }
@@ -135,7 +136,7 @@ func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err = linstorv1alpha1.CreateSP(ctx, client, storagePool.Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -145,7 +146,7 @@ func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response
 func (h *handler) DeleteStoragePool(req *restful.Request, resp *restful.Response) {
 	nodeName := req.PathParameter("node")
 	spName := req.PathParameter("storagepool")
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err := linstorv1alpha1.DeleteSP(ctx, client, spName, nodeName)
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -173,7 +174,7 @@ func (h *handler) DeleteStoragePool(req *restful.Request, resp *restful.Response
 
 func (h *handler) handleListResources(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResources(ctx, client)
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
@@ -182,7 +183,7 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 
 func (h *handler) handleListResourcesDiskful(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResourcesDiskful(ctx, client)
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
@@ -191,7 +192,7 @@ func (h *handler) handleListResourcesDiskful(req *restful.Request, resp *restful
 
 func (h *handler) handleListResourcesDiskless(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResourceDiskless(ctx, client)
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
@@ -200,7 +201,7 @@ func (h *handler) handleListResourcesDiskless(req *restful.Request, resp *restfu
 
 func (h *handler) DescribeResource(req *restful.Request, resp *restful.Response) {
 	resname := req.PathParameter("resource")
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err := linstorv1alpha1.DescribeResource(ctx, client, resname)
 	if err != nil {
 		resp.WriteAsJson(MessageExist{false})
@@ -216,7 +217,8 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	client, ctx := linstorv1alpha1.GetClient()
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err = linstorv1alpha1.CreateResource(ctx, client, res.Name, res.StoragePool, res.Size)
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -240,7 +242,7 @@ func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	for _, node := range res.Node {
 		err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
 		if err != nil {
@@ -252,7 +254,7 @@ func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
 func (h *handler) DeleteResource(req *restful.Request, resp *restful.Response) {
 	//nodeName := req.PathParameter("node")
 	resName := req.PathParameter("resource")
-	client, ctx := linstorv1alpha1.GetClient()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err := linstorv1alpha1.DeleteResource(ctx, client, resName)
 	if err != nil {
 		resp.WriteAsJson(err)

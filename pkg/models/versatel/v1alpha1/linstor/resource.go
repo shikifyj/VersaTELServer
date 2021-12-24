@@ -212,7 +212,7 @@ func DescribeResource(ctx context.Context, c *client.Client, resname string) err
 	return err
 }
 
-func CreateResource(ctx context.Context, c *client.Client, resName string, spNames []string, Size string) error {
+func CreateResource(ctx context.Context, c *client.Client, resName string, sps [][]string, Size string) error {
 	// VolNr 应该可以在Resource的Props设置
 	var err error
 	size, errSize := ParseSize(Size)
@@ -246,13 +246,10 @@ func CreateResource(ctx context.Context, c *client.Client, resName string, spNam
 
 	//创建resource
 	var nodeName string
-	sps, _ := c.Nodes.GetStoragePoolView(ctx)
-	for _, spName := range spNames {
-		for _, sp := range sps {
-			if sp.StoragePoolName == spName {
-				nodeName = sp.NodeName
-			}
-		}
+	var spName string
+	for _, spAndNode := range sps {
+		spName = spAndNode[0]
+		nodeName = spAndNode[1]
 		resProps := map[string]string{"StorPoolName": spName}
 		res := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
 		resCreate := client.ResourceCreate{Resource: res}
@@ -262,6 +259,24 @@ func CreateResource(ctx context.Context, c *client.Client, resName string, spNam
 			return err
 		}
 	}
+
+	// sps, _ := c.Nodes.GetStoragePoolView(ctx)
+
+	// for _, spName := range spNames {
+	// 	for _, sp := range sps {
+	// 		if sp.StoragePoolName == spName {
+	// 			nodeName = sp.NodeName
+	// 		}
+	// 	}
+	// 	resProps := map[string]string{"StorPoolName": spName}
+	// 	res := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
+	// 	resCreate := client.ResourceCreate{Resource: res}
+	// 	err = c.Resources.Create(ctx, resCreate)
+	// 	if err != nil {
+	// 		c.ResourceDefinitions.Delete(ctx, resName)
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
