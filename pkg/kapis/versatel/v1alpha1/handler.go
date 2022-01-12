@@ -40,7 +40,7 @@ type MessageExist struct {
 
 type LinstorNode struct {
 	Name     string `json:"name"`
-	IP       string `json:"ip"`
+	IP       string `json:"addr"`
 	NodeType string `json:"node_type"`
 }
 
