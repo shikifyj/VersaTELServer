@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	fakesnapshot "github.com/kubernetes-csi/external-snapshotter/client/v3/clientset/versioned/fake"
+	fakesnapshot "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/fake"
 	fakeistio "istio.io/client-go/pkg/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	fakeapiextensions "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
@@ -222,6 +222,48 @@ func TestParseRequestParams(t *testing.T) {
 			expectedErr: false,
 		},
 		{
+			namespace: corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "default",
+					CreationTimestamp: metav1.Time{
+						Time: time.Unix(1585836666, 0),
+					},
+				},
+			},
+			params: reqParams{
+				time:          "1585839999",
+				metricFilter:  "ingress_request_count",
+				page:          "1",
+				limit:         "10",
+				order:         "desc",
+				target:        "ingress_request_count",
+				job:           "job-1",
+				podName:       "pod-1",
+				namespaceName: "default",
+				ingress:       "ingress-1",
+			},
+			lvl: monitoring.LevelIngress,
+			expected: queryOptions{
+				time:         time.Unix(1585839999, 0),
+				metricFilter: "ingress_request_count",
+				namedMetrics: model.IngressMetrics,
+				option: monitoring.IngressOption{
+					ResourceFilter: ".*",
+					NamespaceName:  "default",
+					Ingress:        "ingress-1",
+					Job:            "job-1",
+					Pod:            "pod-1",
+				},
+				target:     "ingress_request_count",
+				identifier: "ingress",
+				order:      "desc",
+				page:       1,
+				limit:      10,
+				Operation:  OperationQuery,
+			},
+			expectedErr: false,
+		},
+		{
 			params: reqParams{
 				time:      "1585830000",
 				operation: OperationQuery,
@@ -331,7 +373,7 @@ func TestParseRequestParams(t *testing.T) {
 
 			fakeInformerFactory.KubeSphereSharedInformerFactory()
 
-			handler := NewHandler(client, nil, nil, fakeInformerFactory, ksClient, nil, nil, nil)
+			handler := NewHandler(client, nil, nil, fakeInformerFactory, nil, nil, nil, nil)
 
 			result, err := handler.makeQueryOptions(tt.params, tt.lvl)
 			if err != nil {

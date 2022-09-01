@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"kubesphere.io/kubesphere/pkg/utils/reposcache"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakek8s "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
@@ -59,7 +61,7 @@ func TestOpenPitrixRepo(t *testing.T) {
 	}
 
 	// validate the corrupt repo
-	validateRes, err = repoOperator.ValidateRepo("http://www.baidu.com", &repo.Spec.Credential)
+	_, err = repoOperator.ValidateRepo("http://www.baidu.com", &repo.Spec.Credential)
 	if err == nil {
 		klog.Errorf("validate category failed")
 		t.Fail()
@@ -73,7 +75,7 @@ func TestOpenPitrixRepo(t *testing.T) {
 	}
 
 	// add category to indexer
-	repos, err := ksClient.ApplicationV1alpha1().HelmRepos().List(context.TODO(), metav1.ListOptions{})
+	repos, _ := ksClient.ApplicationV1alpha1().HelmRepos().List(context.TODO(), metav1.ListOptions{})
 	for _, repo := range repos.Items {
 		err := fakeInformerFactory.KubeSphereSharedInformerFactory().Application().V1alpha1().HelmRepos().
 			Informer().GetIndexer().Add(&repo)
@@ -111,5 +113,5 @@ func prepareRepoOperator() RepoInterface {
 	k8sClient = fakek8s.NewSimpleClientset()
 	fakeInformerFactory = informers.NewInformerFactories(k8sClient, ksClient, nil, nil, nil, nil)
 
-	return newRepoOperator(cachedReposData, fakeInformerFactory.KubeSphereSharedInformerFactory(), ksClient)
+	return newRepoOperator(reposcache.NewReposCache(), fakeInformerFactory.KubeSphereSharedInformerFactory(), ksClient)
 }

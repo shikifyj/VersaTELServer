@@ -17,17 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 
-	"kubesphere.io/kubesphere/pkg/client/clientset/versioned/fake"
-	"kubesphere.io/kubesphere/pkg/version"
-
-	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
@@ -39,12 +34,12 @@ import (
 	"k8s.io/klog"
 
 	"kubesphere.io/kubesphere/pkg/apiserver/runtime"
+	"kubesphere.io/kubesphere/pkg/client/clientset/versioned/fake"
 	"kubesphere.io/kubesphere/pkg/constants"
 	"kubesphere.io/kubesphere/pkg/informers"
 	alertingv2alpha1 "kubesphere.io/kubesphere/pkg/kapis/alerting/v2alpha1"
 	clusterkapisv1alpha1 "kubesphere.io/kubesphere/pkg/kapis/cluster/v1alpha1"
-	devopsv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/devops/v1alpha2"
-	devopsv1alpha3 "kubesphere.io/kubesphere/pkg/kapis/devops/v1alpha3"
+	kapisdevops "kubesphere.io/kubesphere/pkg/kapis/devops"
 	iamv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/iam/v1alpha2"
 	monitoringv1alpha3 "kubesphere.io/kubesphere/pkg/kapis/monitoring/v1alpha3"
 	networkv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/network/v1alpha2"
@@ -56,10 +51,12 @@ import (
 	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/kapis/resources/v1alpha3"
 	metricsv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/servicemesh/metrics/v1alpha2"
 	tenantv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/tenant/v1alpha2"
+	tenantv1alpha3 "kubesphere.io/kubesphere/pkg/kapis/tenant/v1alpha3"
 	terminalv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/terminal/v1alpha2"
 	"kubesphere.io/kubesphere/pkg/models/iam/group"
 	"kubesphere.io/kubesphere/pkg/simple/client/alerting"
 	"kubesphere.io/kubesphere/pkg/simple/client/k8s"
+	"kubesphere.io/kubesphere/pkg/version"
 )
 
 var output string
@@ -118,19 +115,19 @@ func generateSwaggerJson() []byte {
 	informerFactory := informers.NewNullInformerFactory()
 
 	urlruntime.Must(oauth.AddToContainer(container, nil, nil, nil, nil, nil, nil))
-	urlruntime.Must(clusterkapisv1alpha1.AddToContainer(container, informerFactory.KubernetesSharedInformerFactory(),
+	urlruntime.Must(clusterkapisv1alpha1.AddToContainer(container, clientsets.KubeSphere(), informerFactory.KubernetesSharedInformerFactory(),
 		informerFactory.KubeSphereSharedInformerFactory(), "", "", ""))
-	urlruntime.Must(devopsv1alpha2.AddToContainer(container, ""))
-	urlruntime.Must(devopsv1alpha3.AddToContainer(container, ""))
+	urlruntime.Must(kapisdevops.AddToContainer(container, ""))
 	urlruntime.Must(iamv1alpha2.AddToContainer(container, nil, nil, group.New(informerFactory, clientsets.KubeSphere(), clientsets.Kubernetes()), nil))
 	urlruntime.Must(monitoringv1alpha3.AddToContainer(container, clientsets.Kubernetes(), nil, nil, informerFactory, nil, nil))
-	urlruntime.Must(openpitrixv1.AddToContainer(container, informerFactory, fake.NewSimpleClientset(), nil))
+	urlruntime.Must(openpitrixv1.AddToContainer(container, informerFactory, fake.NewSimpleClientset(), nil, nil))
 	urlruntime.Must(openpitrixv2.AddToContainer(container, informerFactory, fake.NewSimpleClientset(), nil))
 	urlruntime.Must(operationsv1alpha2.AddToContainer(container, clientsets.Kubernetes()))
 	urlruntime.Must(resourcesv1alpha2.AddToContainer(container, clientsets.Kubernetes(), informerFactory, ""))
 	urlruntime.Must(resourcesv1alpha3.AddToContainer(container, informerFactory, nil))
-	urlruntime.Must(tenantv1alpha2.AddToContainer(container, informerFactory, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil))
-	urlruntime.Must(terminalv1alpha2.AddToContainer(container, clientsets.Kubernetes(), nil, nil))
+	urlruntime.Must(tenantv1alpha2.AddToContainer(container, informerFactory, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil))
+	urlruntime.Must(tenantv1alpha3.AddToContainer(container, informerFactory, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil))
+	urlruntime.Must(terminalv1alpha2.AddToContainer(container, clientsets.Kubernetes(), nil, nil, nil))
 	urlruntime.Must(metricsv1alpha2.AddToContainer(nil, container, clientsets.Kubernetes(), nil))
 	urlruntime.Must(networkv1alpha2.AddToContainer(container, ""))
 	alertingOptions := &alerting.Options{}
@@ -258,7 +255,7 @@ func generateSwaggerJson() []byte {
 	})
 
 	data, _ := json.MarshalIndent(swagger, "", "  ")
-	err := ioutil.WriteFile(output, data, 420)
+	err := ioutil.WriteFile(output, data, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -294,14 +291,4 @@ func enrichSwaggerObject(swo *spec.Swagger) {
 		"jwt": spec.APIKeyAuth("Authorization", "header"),
 	}
 	swo.Security = []map[string][]string{{"jwt": []string{}}}
-}
-
-func apiTree(container *restful.Container) {
-	buf := bytes.NewBufferString("\n")
-	for _, ws := range container.RegisteredWebServices() {
-		for _, route := range ws.Routes() {
-			buf.WriteString(fmt.Sprintf("%s %s\n", route.Method, route.Path))
-		}
-	}
-	log.Println(buf.String())
 }

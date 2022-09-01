@@ -19,12 +19,11 @@
 package capability
 
 import (
-	"github.com/google/go-cmp/cmp"
-	"k8s.io/api/storage/v1beta1"
-
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	storagev1 "k8s.io/api/storage/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,12 +47,13 @@ type fixture struct {
 	snapshotSupported bool
 	// Clients
 	k8sClient *k8sfake.Clientset
-	ksClient  *ksfake.Clientset
+	//nolint:unused
+	ksClient *ksfake.Clientset
 	// Objects from here preload into NewSimpleFake.
 	storageObjects []runtime.Object // include StorageClass
 	// Objects to put in the store.
 	storageClassLister []*storagev1.StorageClass
-	csiDriverLister    []*v1beta1.CSIDriver
+	csiDriverLister    []*storagev1.CSIDriver
 	// Actions expected to happen on the client.
 	actions []core.Action
 }
@@ -74,14 +74,14 @@ func (f *fixture) newController() (*StorageCapabilityController,
 	c := NewController(
 		f.k8sClient.StorageV1().StorageClasses(),
 		k8sInformers.Storage().V1().StorageClasses(),
-		k8sInformers.Storage().V1beta1().CSIDrivers(),
+		k8sInformers.Storage().V1().CSIDrivers(),
 	)
 
 	for _, storageClass := range f.storageClassLister {
 		_ = k8sInformers.Storage().V1().StorageClasses().Informer().GetIndexer().Add(storageClass)
 	}
 	for _, csiDriver := range f.csiDriverLister {
-		_ = k8sInformers.Storage().V1beta1().CSIDrivers().Informer().GetIndexer().Add(csiDriver)
+		_ = k8sInformers.Storage().V1().CSIDrivers().Informer().GetIndexer().Add(csiDriver)
 	}
 
 	return c, k8sInformers
@@ -197,8 +197,8 @@ func newStorageClass(name string, provisioner string) *storagev1.StorageClass {
 	}
 }
 
-func newCSIDriver(name string) *v1beta1.CSIDriver {
-	return &v1beta1.CSIDriver{
+func newCSIDriver(name string) *storagev1.CSIDriver {
+	return &storagev1.CSIDriver{
 		ObjectMeta: v1.ObjectMeta{
 			Name: name,
 		},
@@ -236,14 +236,13 @@ func TestCreateStorageClass(t *testing.T) {
 func TestStorageClassHadAnnotation(t *testing.T) {
 	fixture := newFixture(t, true)
 	storageClass := newStorageClass("csi-example", "csi.example.com")
-	storageClass.Annotations = map[string]string{annotationAllowSnapshot: "false", annotationAllowClone: "false"}
+	storageClass.Annotations = make(map[string]string)
 	storageClassUpdate := storageClass.DeepCopy()
-	csiDriver := newCSIDriver("csi.example.com")
+	storageClass.Annotations = map[string]string{annotationAllowSnapshot: "false", annotationAllowClone: "false"}
 
 	// Object exist
 	fixture.storageObjects = append(fixture.storageObjects, storageClass)
 	fixture.storageClassLister = append(fixture.storageClassLister, storageClass)
-	fixture.csiDriverLister = append(fixture.csiDriverLister, csiDriver)
 
 	// Action expected
 	fixture.expectUpdateStorageClassAction(storageClassUpdate)
@@ -264,6 +263,25 @@ func TestStorageClassHadOneAnnotation(t *testing.T) {
 	fixture.storageObjects = append(fixture.storageObjects, storageClass)
 	fixture.storageClassLister = append(fixture.storageClassLister, storageClass)
 	fixture.csiDriverLister = append(fixture.csiDriverLister, csiDriver)
+
+	// Action expected
+	fixture.expectUpdateStorageClassAction(storageClassUpdate)
+
+	// Run test
+	fixture.run(getKey(storageClass, t))
+}
+
+func TestStorageClassHadNoCSIDriver(t *testing.T) {
+	fixture := newFixture(t, true)
+	storageClass := newStorageClass("csi-example", "csi.example.com")
+	storageClass.Annotations = map[string]string{}
+	storageClassUpdate := storageClass.DeepCopy()
+	storageClass.Annotations = map[string]string{annotationAllowSnapshot: "false"}
+	storageClass.Annotations = map[string]string{annotationAllowClone: "false"}
+
+	// Object exist
+	fixture.storageObjects = append(fixture.storageObjects, storageClass)
+	fixture.storageClassLister = append(fixture.storageClassLister, storageClass)
 
 	// Action expected
 	fixture.expectUpdateStorageClassAction(storageClassUpdate)

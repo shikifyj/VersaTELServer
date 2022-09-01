@@ -30,7 +30,6 @@ import (
 	clusterv1alpha1 "kubesphere.io/api/cluster/v1alpha1"
 
 	"kubesphere.io/kubesphere/pkg/apiserver/request"
-	clusterinformer "kubesphere.io/kubesphere/pkg/client/informers/externalversions/cluster/v1alpha1"
 	"kubesphere.io/kubesphere/pkg/utils/clusterclient"
 )
 
@@ -47,8 +46,8 @@ type clusterDispatch struct {
 	clusterclient.ClusterClients
 }
 
-func NewClusterDispatch(clusterInformer clusterinformer.ClusterInformer) Dispatcher {
-	return &clusterDispatch{clusterclient.NewClusterClient(clusterInformer)}
+func NewClusterDispatch(cc clusterclient.ClusterClients) Dispatcher {
+	return &clusterDispatch{cc}
 }
 
 // Dispatch dispatch requests to designated cluster
@@ -57,7 +56,7 @@ func (c *clusterDispatch) Dispatch(w http.ResponseWriter, req *http.Request, han
 
 	if len(info.Cluster) == 0 {
 		klog.Warningf("Request with empty cluster, %v", req.URL)
-		http.Error(w, fmt.Sprintf("Bad request, empty cluster"), http.StatusBadRequest)
+		http.Error(w, "Bad request, empty cluster", http.StatusBadRequest)
 		return
 	}
 

@@ -21,14 +21,20 @@ import (
 	"flag"
 	"fmt"
 
+	openpitrixv1 "kubesphere.io/kubesphere/pkg/kapis/openpitrix/v1"
+	"kubesphere.io/kubesphere/pkg/utils/clusterclient"
+
+	"kubesphere.io/kubesphere/pkg/apiserver/authentication/token"
+
+	"k8s.io/client-go/kubernetes/scheme"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubesphere.io/kubesphere/pkg/apis"
 	"kubesphere.io/kubesphere/pkg/apiserver"
 	apiserverconfig "kubesphere.io/kubesphere/pkg/apiserver/config"
-	"kubesphere.io/kubesphere/pkg/client/clientset/versioned/scheme"
 	"kubesphere.io/kubesphere/pkg/informers"
 	genericoptions "kubesphere.io/kubesphere/pkg/server/options"
 	"kubesphere.io/kubesphere/pkg/simple/client/alerting"
@@ -56,6 +62,9 @@ type ServerRunOptions struct {
 
 	//
 	DebugMode bool
+
+	// Enable gops or not.
+	GOPSEnabled bool
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -70,6 +79,8 @@ func NewServerRunOptions() *ServerRunOptions {
 func (s *ServerRunOptions) Flags() (fss cliflag.NamedFlagSets) {
 	fs := fss.FlagSet("generic")
 	fs.BoolVar(&s.DebugMode, "debug", false, "Don't enable this if you don't know what it means.")
+	fs.BoolVar(&s.GOPSEnabled, "gops", false, "Whether to enable gops or not. When enabled this option, "+
+		"ks-apiserver will listen on a random port on 127.0.0.1, then you can use the gops tool to list and diagnose the ks-apiserver currently running.")
 	s.GenericServerRunOptions.AddFlags(fs, s.GenericServerRunOptions)
 	s.KubernetesOptions.AddFlags(fss.FlagSet("kubernetes"), s.KubernetesOptions)
 	s.AuthenticationOptions.AddFlags(fss.FlagSet("authentication"), s.AuthenticationOptions)
@@ -206,6 +217,13 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 		apiServer.AlertingClient = alertingClient
 	}
 
+	if s.Config.MultiClusterOptions.Enable {
+		cc := clusterclient.NewClusterClient(informerFactory.KubeSphereSharedInformerFactory().Cluster().V1alpha1().Clusters())
+		apiServer.ClusterClient = cc
+	}
+
+	apiServer.OpenpitrixClient = openpitrixv1.NewOpenpitrixClient(informerFactory, apiServer.KubernetesClient.KubeSphere(), s.OpenPitrixOptions, apiServer.ClusterClient, stopCh)
+
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%d", s.GenericServerRunOptions.InsecurePort),
 	}
@@ -229,7 +247,17 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 
 	apiServer.RuntimeCache, err = runtimecache.New(apiServer.KubernetesClient.Config(), runtimecache.Options{Scheme: sch})
 	if err != nil {
-		klog.Fatalf("unable to create runtime cache: %v", err)
+		klog.Fatalf("unable to create controller runtime cache: %v", err)
+	}
+
+	apiServer.RuntimeClient, err = runtimeclient.New(apiServer.KubernetesClient.Config(), runtimeclient.Options{Scheme: sch})
+	if err != nil {
+		klog.Fatalf("unable to create controller runtime client: %v", err)
+	}
+
+	apiServer.Issuer, err = token.NewIssuer(s.AuthenticationOptions)
+	if err != nil {
+		klog.Fatalf("unable to create issuer: %v", err)
 	}
 
 	apiServer.Server = server

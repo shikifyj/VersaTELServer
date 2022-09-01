@@ -24,24 +24,20 @@ import (
 	"strconv"
 	"time"
 
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	snapshotclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
+	snapinformers "github.com/kubernetes-csi/external-snapshotter/client/v4/informers/externalversions/volumesnapshot/v1"
+	snapshotlisters "github.com/kubernetes-csi/external-snapshotter/client/v4/listers/volumesnapshot/v1"
 	storagev1 "k8s.io/api/storage/v1"
-
-	snapshotv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v3/apis/volumesnapshot/v1beta1"
-	snapshotclient "github.com/kubernetes-csi/external-snapshotter/client/v3/clientset/versioned/typed/volumesnapshot/v1beta1"
-	snapinformers "github.com/kubernetes-csi/external-snapshotter/client/v3/informers/externalversions/volumesnapshot/v1beta1"
-	snapshotlisters "github.com/kubernetes-csi/external-snapshotter/client/v3/listers/volumesnapshot/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	storageinformersv1 "k8s.io/client-go/informers/storage/v1"
-	"k8s.io/client-go/kubernetes/scheme"
 	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
-
-	crdscheme "kubesphere.io/kubesphere/pkg/client/clientset/versioned/scheme"
 )
 
 const annotationAllowSnapshot = "storageclass.kubesphere.io/allow-snapshot"
@@ -63,9 +59,6 @@ func NewController(
 	snapshotClassClient snapshotclient.VolumeSnapshotClassInterface,
 	snapshotClassInformer snapinformers.VolumeSnapshotClassInformer,
 ) *VolumeSnapshotClassController {
-
-	utilruntime.Must(crdscheme.AddToScheme(scheme.Scheme))
-
 	controller := &VolumeSnapshotClassController{
 		storageClassLister:     storageClassInformer.Lister(),
 		storageClassSynced:     storageClassInformer.Informer().HasSynced,
@@ -188,10 +181,10 @@ func (c *VolumeSnapshotClassController) syncHandler(key string) error {
 				_, err = c.snapshotClassLister.Get(name)
 				if err != nil {
 					if errors.IsNotFound(err) {
-						volumeSnapshotClassCreate := &snapshotv1beta1.VolumeSnapshotClass{
+						volumeSnapshotClassCreate := &snapshotv1.VolumeSnapshotClass{
 							ObjectMeta:     metav1.ObjectMeta{Name: name},
 							Driver:         storageClass.Provisioner,
-							DeletionPolicy: snapshotv1beta1.VolumeSnapshotContentDelete,
+							DeletionPolicy: snapshotv1.VolumeSnapshotContentDelete,
 						}
 						_, err = c.snapshotClassClient.Create(context.Background(), volumeSnapshotClassCreate, metav1.CreateOptions{})
 					}

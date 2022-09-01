@@ -2,10 +2,15 @@
 # Use of this source code is governed by a Apache license
 # that can be found in the LICENSE file.
 
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
 
-GV="network:v1alpha1 servicemesh:v1alpha2 tenant:v1alpha1 tenant:v1alpha2 devops:v1alpha1 iam:v1alpha2 devops:v1alpha3 cluster:v1alpha1 storage:v1alpha1 auditing:v1alpha1 types:v1beta1 quota:v1alpha2 application:v1alpha1 notification:v2beta1"
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true,allowDangerousTypes=true"
+
+GV="network:v1alpha1 servicemesh:v1alpha2 tenant:v1alpha1 tenant:v1alpha2 devops:v1alpha1 iam:v1alpha2 devops:v1alpha3 cluster:v1alpha1 storage:v1alpha1 auditing:v1alpha1 types:v1beta1 types:v1beta2 quota:v1alpha2 application:v1alpha1 notification:v2beta1 notification:v2beta2 gateway:v1alpha1 alerting:v2beta1"
+MANIFESTS="application/* cluster/* iam/* network/v1alpha1 quota/* storage/* tenant/* gateway/* alerting/*"
+
+# App Version
+APP_VERSION = v3.2.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -51,7 +56,7 @@ binary: | ks-apiserver ks-controller-manager; $(info $(M)...Build all of binary.
 
 # Build ks-apiserver binary
 ks-apiserver: ; $(info $(M)...Begin to build ks-apiserver binary.)  @ ## Build ks-apiserver.
-	 hack/gobuild.sh cmd/ks-apiserver; 
+	hack/gobuild.sh cmd/ks-apiserver;
 
 # Build ks-controller-manager binary
 ks-controller-manager: ; $(info $(M)...Begin to build ks-controller-manager binary.)  @ ## Build ks-controller-manager.
@@ -65,7 +70,10 @@ verify-all: ; $(info $(M)...Begin to run all verify scripts hack/verify-*.sh.)  
 e2e: ;$(info $(M)...Begin to build e2e binary.)  @ ## Build e2e binary.
 	hack/build_e2e.sh test/e2e
 
-# Run go fmt against code 
+kind-e2e: ;$(info $(M)...Run e2e test.) @ ## Run e2e test in kind.
+	hack/kind_e2e.sh
+
+# Run go fmt against code
 fmt: ;$(info $(M)...Begin to run go fmt against code.)  @ ## Run go fmt against code.
 	gofmt -w ./pkg ./cmd ./tools ./api
 
@@ -79,14 +87,7 @@ vet: ;$(info $(M)...Begin to run go vet against code.)  @ ## Run go vet against 
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: ;$(info $(M)...Begin to generate manifests e.g. CRD, RBAC etc..)  @ ## Generate manifests e.g. CRD, RBAC etc.
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/application/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/cluster/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/devops/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/iam/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/network/v1alpha1/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/quota/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/storage/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
-	go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go object:headerFile=./hack/boilerplate.go.txt paths=kubesphere.io/api/tenant/... rbac:roleName=controller-perms ${CRD_OPTIONS} output:crd:artifacts:config=config/crds
+	hack/generate_manifests.sh ${CRD_OPTIONS} ${MANIFESTS}
 
 deploy: manifests ;$(info $(M)...Begin to deploy.)  @ ## Deploy.
 	kubectl apply -f config/crds
@@ -95,6 +96,7 @@ deploy: manifests ;$(info $(M)...Begin to deploy.)  @ ## Deploy.
 mockgen: ;$(info $(M)...Begin to mockgen.)  @ ## Mockgen.
 	mockgen -package=openpitrix -source=pkg/simple/client/openpitrix/openpitrix.go -destination=pkg/simple/client/openpitrix/mock.go
 
+# Deprecated deepcopy cause we will replace deepcopy-gen with controller-gen
 deepcopy: ;$(info $(M)...Begin to deepcopy.)  @ ## Deepcopy.
 	hack/generate_group.sh "deepcopy" kubesphere.io/api kubesphere.io/api ${GV} --output-base=staging/src/  -h "hack/boilerplate.go.txt"
 
@@ -123,7 +125,7 @@ container-cross-push: ; $(info $(M)...Begin to build and push.)  @ ## Build and 
 
 helm-package: ; $(info $(M)...Begin to helm-package.)  @ ## Helm-package.
 	ls config/crds/ | xargs -i cp -r config/crds/{} config/ks-core/crds/
-	helm package config/ks-core --app-version=v3.1.0 --version=0.1.0 -d ./bin
+	helm package config/ks-core --app-version=${APP_VERSION} --version=0.1.0 -d ./bin
 
 helm-deploy: ; $(info $(M)...Begin to helm-deploy.)  @ ## Helm-deploy.
 	ls config/crds/ | xargs -i cp -r config/crds/{} config/ks-core/crds/
@@ -137,15 +139,28 @@ helm-uninstall: ; $(info $(M)...Begin to helm-uninstall.)  @ ## Helm-uninstall.
 	kubectl delete -f https://raw.githubusercontent.com/kubesphere/ks-installer/master/roles/ks-core/prepare/files/ks-init/role-templates.yaml
 
 # Run tests
-test: vet ;$(info $(M)...Begin to run tests.)  @ ## Run tests.
-	export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT=2m; go test ./pkg/... ./cmd/... -covermode=atomic -coverprofile=coverage.txt
+ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
+test: vet test-env ;$(info $(M)...Begin to run tests.)  @ ## Run tests.
+	export KUBEBUILDER_ASSETS=$(shell pwd)/testbin/bin; go test ./pkg/... ./cmd/... -covermode=atomic -coverprofile=coverage.txt
 	cd staging/src/kubesphere.io/api ; GOFLAGS="" go test ./...
 	cd staging/src/kubesphere.io/client-go ; GOFLAGS="" go test ./...
+
+.PHONY: test-env
+test-env: ;$(info $(M)...Begin to setup test env) @ ## Download unit test libraries e.g. kube-apiserver etcd.
+	@hack/setup-kubebuilder-env.sh
 
 .PHONY: clean
 clean: ;$(info $(M)...Begin to clean.)  @ ## Clean.
 	-make -C ./pkg/version clean
 	@echo "ok"
 
+# Deprecated clientset cause we will replace code-generate with controller-runtime cache
 clientset:  ;$(info $(M)...Begin to find or download controller-gen.)  @ ## Find or download controller-gen,download controller-gen if necessary.
 	./hack/generate_client.sh ${GV}
+
+# Fix invalid file's license.
+update-licenses: ;$(info $(M)...Begin to update licenses.)
+	@hack/update-licenses.sh
+
+golint:
+	@hack/verify-golangci-lint.sh

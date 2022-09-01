@@ -17,7 +17,7 @@ limitations under the License.
 package notification
 
 type Options struct {
-	Endpoint string
+	Endpoint string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 }
 
 func NewNotificationOptions() *Options {
@@ -28,6 +28,7 @@ func NewNotificationOptions() *Options {
 
 func (s *Options) ApplyTo(options *Options) {
 	if options == nil {
+		//nolint:staticcheck
 		options = s
 		return
 	}
