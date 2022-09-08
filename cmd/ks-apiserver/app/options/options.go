@@ -259,6 +259,7 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 	if err != nil {
 		klog.Fatalf("unable to create issuer: %v", err)
 	}
+	apiServer.LinstorIP = s.GenericServerRunOptions.Linstor
 
 	apiServer.Server = server
 
