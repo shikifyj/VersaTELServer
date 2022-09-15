@@ -123,6 +123,9 @@ var NodeMetrics = []string{
 	"node_pod_abnormal_ratio",
 	"node_pleg_quantile",
 
+	"node_device_size_usage",
+	"node_device_size_utilisation",
+
 	// meter
 	"meter_node_cpu_usage",
 	"meter_node_memory_usage_wo_cache",
@@ -261,6 +264,8 @@ var ContainerMetrics = []string{
 	"container_cpu_usage",
 	"container_memory_usage",
 	"container_memory_usage_wo_cache",
+	"container_processes_usage",
+	"container_threads_usage",
 }
 
 var PVCMetrics = []string{
@@ -274,11 +279,30 @@ var PVCMetrics = []string{
 	"pvc_bytes_utilisation",
 }
 
+var IngressMetrics = []string{
+	"ingress_request_count",
+	"ingress_request_5xx_count",
+	"ingress_request_4xx_count",
+	"ingress_active_connections",
+	"ingress_success_rate",
+	"ingress_request_duration_average",
+	"ingress_request_duration_50percentage",
+	"ingress_request_duration_95percentage",
+	"ingress_request_duration_99percentage",
+	"ingress_request_volume",
+	"ingress_request_volume_by_ingress",
+	"ingress_request_network_sent",
+	"ingress_request_network_received",
+	"ingress_request_memory_bytes",
+	"ingress_request_cpu_usage",
+}
+
 var EtcdMetrics = []string{
 	"etcd_server_list",
 	"etcd_server_total",
 	"etcd_server_up_total",
 	"etcd_server_has_leader",
+	"etcd_server_is_leader",
 	"etcd_server_leader_changes",
 	"etcd_server_proposals_failed_rate",
 	"etcd_server_proposals_applied_rate",

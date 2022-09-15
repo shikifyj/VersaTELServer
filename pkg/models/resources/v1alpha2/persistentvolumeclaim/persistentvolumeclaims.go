@@ -19,7 +19,7 @@ package persistentvolumeclaim
 import (
 	"strconv"
 
-	snapshotinformer "github.com/kubernetes-csi/external-snapshotter/client/v3/informers/externalversions"
+	snapshotinformer "github.com/kubernetes-csi/external-snapshotter/client/v4/informers/externalversions"
 	"k8s.io/client-go/informers"
 
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2"
@@ -123,6 +123,7 @@ func (s *persistentVolumeClaimSearcher) Search(namespace string, conditions *par
 
 	r := make([]interface{}, 0)
 	for _, i := range result {
+		i = i.DeepCopy()
 		inUse := s.countPods(i.Name, i.Namespace)
 		isSnapshotAllow := s.isSnapshotAllowed(i.GetAnnotations()["volume.beta.kubernetes.io/storage-provisioner"])
 		if i.Annotations == nil {

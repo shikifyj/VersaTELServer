@@ -165,7 +165,7 @@ func matchPackageFailedError(err error, res *ValidatePackageResponse) {
 
 	case strings.HasPrefix(errStr, "missing file ["):
 
-		matched := regexp.MustCompile("missing file \\[(.+)]").FindStringSubmatch(errStr)
+		matched := regexp.MustCompile(`missing file \\[(.+)]`).FindStringSubmatch(errStr)
 		if len(matched) > 0 {
 			errorDetails[matched[1]] = "not found"
 		}
@@ -258,10 +258,8 @@ func convertApplication(rls *v1alpha1.HelmRelease, rlsInfos []*resource.Info) *A
 	}
 
 	app.ReleaseInfo = make([]runtime.Object, 0, len(rlsInfos))
-	if rlsInfos != nil {
-		for _, info := range rlsInfos {
-			app.ReleaseInfo = append(app.ReleaseInfo, info.Object)
-		}
+	for _, info := range rlsInfos {
+		app.ReleaseInfo = append(app.ReleaseInfo, info.Object)
 	}
 
 	return app
@@ -338,7 +336,10 @@ func convertApp(app *v1alpha1.HelmApplication, versions []*v1alpha1.HelmApplicat
 	}
 
 	out.AppVersionTypes = "helm"
-	out.Isv = app.GetWorkspace()
+	// If this keys exists, the workspace of this app has been deleted, set the isv to empty.
+	if _, exists := app.Annotations[constants.DanglingAppCleanupKey]; !exists {
+		out.Isv = app.GetWorkspace()
+	}
 
 	out.ClusterTotal = &rlsCount
 	out.Owner = app.GetCreator()
@@ -398,6 +399,18 @@ func convertAppVersion(in *v1alpha1.HelmApplicationVersion) *AppVersion {
 		out.Icon = in.Spec.Icon
 	}
 
+	// The field Maintainers and Sources were a string field, so I encode the helm field's maintainers and sources,
+	// which are array, to string.
+	if len(in.Spec.Maintainers) > 0 {
+		maintainers, _ := json.Marshal(in.Spec.Maintainers)
+		out.Maintainers = string(maintainers)
+	}
+
+	if len(in.Spec.Sources) > 0 {
+		source, _ := json.Marshal(in.Spec.Sources)
+		out.Sources = string(source)
+	}
+
 	out.Status = in.State()
 	out.Owner = in.GetCreator()
 	out.Name = in.GetVersionName()
@@ -416,6 +429,10 @@ func convertRepo(in *v1alpha1.HelmRepo) *Repo {
 	out.Name = in.GetTrueName()
 
 	out.Status = in.Status.State
+	// set default status `syncing` when helmrepo not reconcile yet
+	if out.Status == "" {
+		out.Status = v1alpha1.RepoStateSyncing
+	}
 	date := strfmt.DateTime(time.Unix(in.CreationTimestamp.Unix(), 0))
 	out.CreateTime = &date
 
@@ -424,6 +441,7 @@ func convertRepo(in *v1alpha1.HelmRepo) *Repo {
 
 	cred, _ := json.Marshal(in.Spec.Credential)
 	out.Credential = string(cred)
+	out.SyncPeriod = in.Annotations[v1alpha1.RepoSyncPeriod]
 
 	out.URL = in.Spec.Url
 	return &out
@@ -561,6 +579,8 @@ func buildApplicationVersion(app *v1alpha1.HelmApplication, chrt helmrepoindex.V
 				Icon:        chrt.GetIcon(),
 				Home:        chrt.GetHome(),
 				Description: stringutils.ShortenString(chrt.GetDescription(), v1alpha1.MsgLen),
+				Sources:     chrt.GetRawSources(),
+				Maintainers: chrt.GetRawMaintainers(),
 			},
 			Created: &t,
 			// set data to nil before save app version to etcd
@@ -587,10 +607,7 @@ func filterAppByName(app *v1alpha1.HelmApplication, namePart string) bool {
 	}
 
 	name := app.GetTrueName()
-	if strings.Contains(strings.ToLower(name), strings.ToLower(namePart)) {
-		return true
-	}
-	return false
+	return strings.Contains(strings.ToLower(name), strings.ToLower(namePart))
 }
 
 func filterAppByStates(app *v1alpha1.HelmApplication, state []string) bool {
@@ -731,7 +748,7 @@ func filterReleaseByStates(rls *v1alpha1.HelmRelease, state []string) bool {
 }
 
 func filterReleasesWithAppVersions(releases []*v1alpha1.HelmRelease, appVersions map[string]*v1alpha1.HelmApplicationVersion) []*v1alpha1.HelmRelease {
-	if appVersions == nil || len(appVersions) == 0 || len(releases) == 0 {
+	if len(appVersions) == 0 || len(releases) == 0 {
 		return []*v1alpha1.HelmRelease{}
 	}
 
@@ -785,10 +802,6 @@ func dataKeyInStorage(workspace, id string) string {
 	return path.Join(workspace, id)
 }
 
-func attachmentKeyInStorage(ws, id string) string {
-	return path.Join(ws, id)
-}
-
 func convertAppVersionReview(app *v1alpha1.HelmApplication, appVersion *v1alpha1.HelmApplicationVersion) *AppVersionReview {
 	review := &AppVersionReview{}
 	status := appVersion.Status
@@ -799,6 +812,7 @@ func convertAppVersionReview(app *v1alpha1.HelmApplication, appVersion *v1alpha1
 	review.VersionID = appVersion.GetHelmApplicationVersionId()
 	review.Phase = AppVersionReviewPhaseOAIGen{}
 	review.VersionName = appVersion.GetVersionName()
+	review.Workspace = appVersion.GetWorkspace()
 
 	review.StatusTime = strfmt.DateTime(status.Audit[0].Time.Time)
 	review.AppName = app.GetTrueName()

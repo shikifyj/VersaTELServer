@@ -52,7 +52,6 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 	mirrorWay := map[string]int{}
 	resArray := []map[string]string{}
 	for _, res := range resources {
-		fmt.Println(res.Resource.Name)
 		// fmt.Println(res.Resource.Flags)
 		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // Connection
 		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // 可能Unused是false，InUse是ture
@@ -69,7 +68,9 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
 			resInfo["deviceName"] = vol.DevicePath
 			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-			resInfo["createTime"] = strconv.FormatInt(res.CreateTimestamp, 10)
+			if res.CreateTimestamp != nil {
+				resInfo["createTime"] = res.CreateTimestamp.Time.String()
+			}
 			if vol.State.DiskState == "Diskless" {
 				mirrorWay[resName]--
 				break
@@ -119,7 +120,7 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 		}
 
 		resInfo := map[string]string{}
-		if res.State.InUse {
+		if *res.State.InUse {
 			resInfo["usage"] = "InUse"
 		} else {
 			resInfo["usage"] = "Unused"
@@ -170,7 +171,7 @@ func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]str
 	for _, res := range resources {
 		resInfo := map[string]string{}
 
-		if res.State.InUse {
+		if *res.State.InUse {
 			resInfo["usage"] = "InUse"
 		} else {
 			resInfo["usage"] = "Unused"

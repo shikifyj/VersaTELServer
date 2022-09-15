@@ -17,10 +17,11 @@ limitations under the License.
 package informers
 
 import (
+	"reflect"
 	"time"
 
-	snapshotclient "github.com/kubernetes-csi/external-snapshotter/client/v3/clientset/versioned"
-	snapshotinformer "github.com/kubernetes-csi/external-snapshotter/client/v3/informers/externalversions"
+	snapshotclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
+	snapshotinformer "github.com/kubernetes-csi/external-snapshotter/client/v4/informers/externalversions"
 	prominformers "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
 	promresourcesclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -49,6 +50,11 @@ type InformerFactory interface {
 
 	// Start shared informer factory one by one if they are not nil
 	Start(stopCh <-chan struct{})
+}
+
+type GenericInformerFactory interface {
+	Start(stopCh <-chan struct{})
+	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 }
 
 type informerFactories struct {

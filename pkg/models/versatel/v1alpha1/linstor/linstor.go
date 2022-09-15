@@ -59,22 +59,23 @@ func GetClient(ip string) (*client.Client, context.Context) {
 	}
 	return c, ctx
 }
-
 func FormatSize(size int64) string {
 	sizeStr := ""
 	if size == 9223372036854775807 {
 		return sizeStr
 	}
-
+	sizefl := float64(size)
 	switch {
 	case size > 1024*1024*1024:
-		sizeStr = strconv.FormatInt(size/(1024*1024*1024), 10) + " TB"
+		sizeStr = fmt.Sprintf("%.2f", sizefl/(1024*1024*1024)) + " TiB"
 	case size > 1024*1024:
-		sizeStr = strconv.FormatInt(size/(1024*1024), 10) + " GB"
+		sizeStr = fmt.Sprintf("%.2f", sizefl/(1024*1024)) + " GiB"
+		//sizeStr = strconv.FormatFloat(size/(1024*1024), 10) + " GiB"
 	case size > 1024:
-		sizeStr = strconv.FormatInt(size/1024, 10) + " MB"
+		sizeStr = fmt.Sprintf("%.2f", sizefl/(1024)) + " MiB"
+		//sizeStr = strconv.FormatFloat(size/1024, 10) + " MiB"
 	default:
-		sizeStr = strconv.FormatInt(size, 10) + " KB"
+		sizeStr = fmt.Sprintf("%.2f", sizefl) + " KiB"
 	}
 
 	return sizeStr

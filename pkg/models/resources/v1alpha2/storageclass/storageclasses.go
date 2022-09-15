@@ -20,7 +20,7 @@ import (
 	"sort"
 	"strconv"
 
-	snapshotinformer "github.com/kubernetes-csi/external-snapshotter/client/v3/informers/externalversions"
+	snapshotinformer "github.com/kubernetes-csi/external-snapshotter/client/v4/informers/externalversions"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -91,6 +91,7 @@ func (s *storageClassesSearcher) Search(namespace string, conditions *params.Con
 
 	r := make([]interface{}, 0)
 	for _, i := range result {
+		i = i.DeepCopy()
 		count := s.countPersistentVolumeClaims(i.Name)
 		if i.Annotations == nil {
 			i.Annotations = make(map[string]string)

@@ -20,18 +20,28 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 
 	networkv1alpha1 "kubesphere.io/api/network/v1alpha1"
 
-	authoptions "kubesphere.io/kubesphere/pkg/apiserver/authentication/options"
-	authorizationoptions "kubesphere.io/kubesphere/pkg/apiserver/authorization/options"
+	"kubesphere.io/kubesphere/pkg/apiserver/authentication"
+	"kubesphere.io/kubesphere/pkg/apiserver/authorization"
+	"kubesphere.io/kubesphere/pkg/constants"
+	"kubesphere.io/kubesphere/pkg/models/terminal"
 	"kubesphere.io/kubesphere/pkg/simple/client/alerting"
 	"kubesphere.io/kubesphere/pkg/simple/client/auditing"
 	"kubesphere.io/kubesphere/pkg/simple/client/cache"
 	"kubesphere.io/kubesphere/pkg/simple/client/devops/jenkins"
+	"kubesphere.io/kubesphere/pkg/simple/client/edgeruntime"
 	"kubesphere.io/kubesphere/pkg/simple/client/events"
+	"kubesphere.io/kubesphere/pkg/simple/client/gateway"
+	"kubesphere.io/kubesphere/pkg/simple/client/gpu"
 	"kubesphere.io/kubesphere/pkg/simple/client/k8s"
 	"kubesphere.io/kubesphere/pkg/simple/client/kubeedge"
 	"kubesphere.io/kubesphere/pkg/simple/client/ldap"
@@ -74,6 +84,11 @@ import (
 // mysql-host is missing in command line flags, all other mysql command line flags
 // will be ignored.
 
+var (
+	// singleton instance of config package
+	_config = defaultConfig()
+)
+
 const (
 	// DefaultConfigurationName is the default name of configuration
 	defaultConfigurationName = "kubesphere"
@@ -82,28 +97,87 @@ const (
 	defaultConfigurationPath = "/etc/kubesphere"
 )
 
+type config struct {
+	cfg         *Config
+	cfgChangeCh chan Config
+	watchOnce   sync.Once
+	loadOnce    sync.Once
+}
+
+func (c *config) watchConfig() <-chan Config {
+	c.watchOnce.Do(func() {
+		viper.WatchConfig()
+		viper.OnConfigChange(func(in fsnotify.Event) {
+			cfg := New()
+			if err := viper.Unmarshal(cfg); err != nil {
+				klog.Warning("config reload error", err)
+			} else {
+				c.cfgChangeCh <- *cfg
+			}
+		})
+	})
+	return c.cfgChangeCh
+}
+
+func (c *config) loadFromDisk() (*Config, error) {
+	var err error
+	c.loadOnce.Do(func() {
+		if err = viper.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				err = fmt.Errorf("error parsing configuration file %s", err)
+			}
+		}
+		err = viper.Unmarshal(c.cfg)
+	})
+	return c.cfg, err
+}
+
+func defaultConfig() *config {
+	viper.SetConfigName(defaultConfigurationName)
+	viper.AddConfigPath(defaultConfigurationPath)
+
+	// Load from current working directory, only used for debugging
+	viper.AddConfigPath(".")
+
+	// Load from Environment variables
+	viper.SetEnvPrefix("kubesphere")
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	return &config{
+		cfg:         New(),
+		cfgChangeCh: make(chan Config),
+		watchOnce:   sync.Once{},
+		loadOnce:    sync.Once{},
+	}
+}
+
 // Config defines everything needed for apiserver to deal with external services
 type Config struct {
-	DevopsOptions         *jenkins.Options                           `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
-	SonarQubeOptions      *sonarqube.Options                         `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
-	KubernetesOptions     *k8s.KubernetesOptions                     `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
-	ServiceMeshOptions    *servicemesh.Options                       `json:"servicemesh,omitempty" yaml:"servicemesh,omitempty" mapstructure:"servicemesh"`
-	NetworkOptions        *network.Options                           `json:"network,omitempty" yaml:"network,omitempty" mapstructure:"network"`
-	LdapOptions           *ldap.Options                              `json:"-,omitempty" yaml:"ldap,omitempty" mapstructure:"ldap"`
-	RedisOptions          *cache.Options                             `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
-	S3Options             *s3.Options                                `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
-	OpenPitrixOptions     *openpitrix.Options                        `json:"openpitrix,omitempty" yaml:"openpitrix,omitempty" mapstructure:"openpitrix"`
-	MonitoringOptions     *prometheus.Options                        `json:"monitoring,omitempty" yaml:"monitoring,omitempty" mapstructure:"monitoring"`
-	LoggingOptions        *logging.Options                           `json:"logging,omitempty" yaml:"logging,omitempty" mapstructure:"logging"`
-	AuthenticationOptions *authoptions.AuthenticationOptions         `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication"`
-	AuthorizationOptions  *authorizationoptions.AuthorizationOptions `json:"authorization,omitempty" yaml:"authorization,omitempty" mapstructure:"authorization"`
-	MultiClusterOptions   *multicluster.Options                      `json:"multicluster,omitempty" yaml:"multicluster,omitempty" mapstructure:"multicluster"`
-	EventsOptions         *events.Options                            `json:"events,omitempty" yaml:"events,omitempty" mapstructure:"events"`
-	AuditingOptions       *auditing.Options                          `json:"auditing,omitempty" yaml:"auditing,omitempty" mapstructure:"auditing"`
-	AlertingOptions       *alerting.Options                          `json:"alerting,omitempty" yaml:"alerting,omitempty" mapstructure:"alerting"`
-	NotificationOptions   *notification.Options                      `json:"notification,omitempty" yaml:"notification,omitempty" mapstructure:"notification"`
-	KubeEdgeOptions       *kubeedge.Options                          `json:"kubeedge,omitempty" yaml:"kubeedge,omitempty" mapstructure:"kubeedge"`
-	MeteringOptions       *metering.Options                          `json:"metering,omitempty" yaml:"metering,omitempty" mapstructure:"metering"`
+	DevopsOptions         *jenkins.Options        `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
+	SonarQubeOptions      *sonarqube.Options      `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
+	KubernetesOptions     *k8s.KubernetesOptions  `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
+	ServiceMeshOptions    *servicemesh.Options    `json:"servicemesh,omitempty" yaml:"servicemesh,omitempty" mapstructure:"servicemesh"`
+	NetworkOptions        *network.Options        `json:"network,omitempty" yaml:"network,omitempty" mapstructure:"network"`
+	LdapOptions           *ldap.Options           `json:"-,omitempty" yaml:"ldap,omitempty" mapstructure:"ldap"`
+	RedisOptions          *cache.Options          `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
+	S3Options             *s3.Options             `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
+	OpenPitrixOptions     *openpitrix.Options     `json:"openpitrix,omitempty" yaml:"openpitrix,omitempty" mapstructure:"openpitrix"`
+	MonitoringOptions     *prometheus.Options     `json:"monitoring,omitempty" yaml:"monitoring,omitempty" mapstructure:"monitoring"`
+	LoggingOptions        *logging.Options        `json:"logging,omitempty" yaml:"logging,omitempty" mapstructure:"logging"`
+	AuthenticationOptions *authentication.Options `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication"`
+	AuthorizationOptions  *authorization.Options  `json:"authorization,omitempty" yaml:"authorization,omitempty" mapstructure:"authorization"`
+	MultiClusterOptions   *multicluster.Options   `json:"multicluster,omitempty" yaml:"multicluster,omitempty" mapstructure:"multicluster"`
+	EventsOptions         *events.Options         `json:"events,omitempty" yaml:"events,omitempty" mapstructure:"events"`
+	AuditingOptions       *auditing.Options       `json:"auditing,omitempty" yaml:"auditing,omitempty" mapstructure:"auditing"`
+	AlertingOptions       *alerting.Options       `json:"alerting,omitempty" yaml:"alerting,omitempty" mapstructure:"alerting"`
+	NotificationOptions   *notification.Options   `json:"notification,omitempty" yaml:"notification,omitempty" mapstructure:"notification"`
+	KubeEdgeOptions       *kubeedge.Options       `json:"kubeedge,omitempty" yaml:"kubeedge,omitempty" mapstructure:"kubeedge"`
+	EdgeRuntimeOptions    *edgeruntime.Options    `json:"edgeruntime,omitempty" yaml:"edgeruntime,omitempty" mapstructure:"edgeruntime"`
+	MeteringOptions       *metering.Options       `json:"metering,omitempty" yaml:"metering,omitempty" mapstructure:"metering"`
+	GatewayOptions        *gateway.Options        `json:"gateway,omitempty" yaml:"gateway,omitempty" mapstructure:"gateway"`
+	GPUOptions            *gpu.Options            `json:"gpu,omitempty" yaml:"gpu,omitempty" mapstructure:"gpu"`
+	TerminalOptions       *terminal.Options       `json:"terminal,omitempty" yaml:"terminal,omitempty" mapstructure:"terminal"`
 }
 
 // newConfig creates a default non-empty Config
@@ -122,45 +196,29 @@ func New() *Config {
 		AlertingOptions:       alerting.NewAlertingOptions(),
 		NotificationOptions:   notification.NewNotificationOptions(),
 		LoggingOptions:        logging.NewLoggingOptions(),
-		AuthenticationOptions: authoptions.NewAuthenticateOptions(),
-		AuthorizationOptions:  authorizationoptions.NewAuthorizationOptions(),
+		AuthenticationOptions: authentication.NewOptions(),
+		AuthorizationOptions:  authorization.NewOptions(),
 		MultiClusterOptions:   multicluster.NewOptions(),
 		EventsOptions:         events.NewEventsOptions(),
 		AuditingOptions:       auditing.NewAuditingOptions(),
 		KubeEdgeOptions:       kubeedge.NewKubeEdgeOptions(),
+		EdgeRuntimeOptions:    edgeruntime.NewEdgeRuntimeOptions(),
 		MeteringOptions:       metering.NewMeteringOptions(),
+		GatewayOptions:        gateway.NewGatewayOptions(),
+		GPUOptions:            gpu.NewGPUOptions(),
+		TerminalOptions:       terminal.NewTerminalOptions(),
 	}
 }
 
 // TryLoadFromDisk loads configuration from default location after server startup
 // return nil error if configuration file not exists
 func TryLoadFromDisk() (*Config, error) {
-	viper.SetConfigName(defaultConfigurationName)
-	viper.AddConfigPath(defaultConfigurationPath)
+	return _config.loadFromDisk()
+}
 
-	// Load from current working directory, only used for debugging
-	viper.AddConfigPath(".")
-
-	// Load from Environment variables
-	viper.SetEnvPrefix("kubesphere")
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			return nil, err
-		} else {
-			return nil, fmt.Errorf("error parsing configuration file %s", err)
-		}
-	}
-
-	conf := New()
-
-	if err := viper.Unmarshal(conf); err != nil {
-		return nil, err
-	}
-
-	return conf, nil
+// WatchConfigChange return config change channel
+func WatchConfigChange() <-chan Config {
+	return _config.watchConfig()
 }
 
 // convertToMap simply converts config to map[string]bool
@@ -296,4 +354,26 @@ func (conf *Config) stripEmptyOptions() {
 	if conf.KubeEdgeOptions != nil && conf.KubeEdgeOptions.Endpoint == "" {
 		conf.KubeEdgeOptions = nil
 	}
+
+	if conf.EdgeRuntimeOptions != nil && conf.EdgeRuntimeOptions.Endpoint == "" {
+		conf.EdgeRuntimeOptions = nil
+	}
+
+	if conf.GPUOptions != nil && len(conf.GPUOptions.Kinds) == 0 {
+		conf.GPUOptions = nil
+	}
+}
+
+// GetFromConfigMap returns KubeSphere ruuning config by the given ConfigMap.
+func GetFromConfigMap(cm *corev1.ConfigMap) (*Config, error) {
+	c := &Config{}
+	value, ok := cm.Data[constants.KubeSphereConfigMapDataKey]
+	if !ok {
+		return nil, fmt.Errorf("failed to get configmap kubesphere.yaml value")
+	}
+
+	if err := yaml.Unmarshal([]byte(value), c); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal value from configmap. err: %s", err)
+	}
+	return c, nil
 }

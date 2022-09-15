@@ -17,10 +17,6 @@ limitations under the License.
 package iam
 
 import (
-	"context"
-	"fmt"
-
-	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"kubesphere.io/client-go/client"
@@ -34,13 +30,10 @@ import (
 func NewClient(s *runtime.Scheme, user, passsword string) (client.Client, error) {
 
 	ctx := framework.TestContext
-	token, err := getToken(ctx.Host, user, passsword)
-	if err != nil {
-		return nil, err
-	}
 	config := &rest.Config{
-		Host:        ctx.Host,
-		BearerToken: token.AccessToken,
+		Host:     ctx.Host,
+		Username: user,
+		Password: passsword,
 	}
 
 	return generic.New(config, client.Options{Scheme: s})
@@ -48,24 +41,11 @@ func NewClient(s *runtime.Scheme, user, passsword string) (client.Client, error)
 
 func NewRestClient(user, passsword string) (*restclient.RestClient, error) {
 	ctx := framework.TestContext
-	token, err := getToken(ctx.Host, user, passsword)
-	if err != nil {
-		return nil, err
-	}
 	config := &rest.Config{
-		Host:        ctx.Host,
-		BearerToken: token.AccessToken,
+		Host:     ctx.Host,
+		Username: user,
+		Password: passsword,
 	}
 
 	return restclient.NewForConfig(config)
-}
-
-func getToken(host, user, password string) (*oauth2.Token, error) {
-	config := &oauth2.Config{
-		Endpoint: oauth2.Endpoint{
-			TokenURL:  fmt.Sprintf("%s/oauth/token", host),
-			AuthStyle: oauth2.AuthStyleInParams,
-		},
-	}
-	return config.PasswordCredentialsToken(context.TODO(), user, password)
 }

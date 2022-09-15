@@ -32,7 +32,6 @@ func AddToContainer(container *restful.Container, k8sDiscovery discovery.Discove
 	webservice.Route(webservice.GET("/version").
 		To(func(request *restful.Request, response *restful.Response) {
 			ksVersion := version.Get()
-
 			if k8sDiscovery != nil {
 				k8sVersion, err := k8sDiscovery.ServerVersion()
 				if err == nil {
@@ -41,6 +40,7 @@ func AddToContainer(container *restful.Container, k8sDiscovery discovery.Discove
 					klog.Errorf("Failed to get kubernetes version, error %v", err)
 				}
 			}
+			ksVersion.GitVersion = "3.3.0"
 
 			response.WriteAsJson(ksVersion)
 		})).

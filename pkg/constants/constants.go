@@ -31,6 +31,8 @@ const (
 	IngressControllerNamespace    = KubeSphereControlNamespace
 	AdminUserName                 = "admin"
 	IngressControllerPrefix       = "kubesphere-router-"
+	KubeSphereConfigName          = "kubesphere-config"
+	KubeSphereConfigMapDataKey    = "kubesphere.yaml"
 
 	ClusterNameLabelKey               = "kubesphere.io/cluster"
 	NameLabelKey                      = "kubesphere.io/name"
@@ -41,6 +43,7 @@ const (
 	ChartApplicationIdLabelKey        = "application.kubesphere.io/app-id"
 	ChartApplicationVersionIdLabelKey = "application.kubesphere.io/app-version-id"
 	CategoryIdLabelKey                = "application.kubesphere.io/app-category-id"
+	DanglingAppCleanupKey             = "application.kubesphere.io/app-cleanup"
 	CreatorAnnotationKey              = "kubesphere.io/creator"
 	UsernameLabelKey                  = "kubesphere.io/username"
 	DevOpsProjectLabelKey             = "kubesphere.io/devopsproject"
@@ -70,6 +73,11 @@ const (
 	OpenpitrixAttachmentTag  = "Attachment"
 	OpenpitrixRepositoryTag  = "Repository"
 	OpenpitrixManagementTag  = "App Management"
+	// HelmRepoMinSyncPeriod min sync period in seconds
+	HelmRepoMinSyncPeriod = 180
+
+	CleanupDanglingAppOngoing = "ongoing"
+	CleanupDanglingAppDone    = "done"
 
 	DevOpsCredentialTag  = "DevOps Credential"
 	DevOpsPipelineTag    = "DevOps Pipeline"
@@ -93,6 +101,8 @@ const (
 	ClusterResourcesTag   = "Cluster Resources"
 	ComponentStatusTag    = "Component Status"
 
+	GatewayTag = "Gateway"
+
 	NetworkTopologyTag = "Network Topology"
 
 	KubeSphereMetricsTag = "KubeSphere Metrics"
@@ -101,6 +111,7 @@ const (
 	NamespaceMetricsTag  = "Namespace Metrics"
 	PodMetricsTag        = "Pod Metrics"
 	PVCMetricsTag        = "PVC Metrics"
+	IngressMetricsTag    = "Ingress Metrics"
 	ContainerMetricsTag  = "Container Metrics"
 	WorkloadMetricsTag   = "Workload Metrics"
 	WorkspaceMetricsTag  = "Workspace Metrics"
@@ -129,6 +140,8 @@ const (
 	NotificationTag             = "Notification"
 	NotificationSecretNamespace = "kubesphere-monitoring-federated"
 	NotificationManagedLabel    = "notification.kubesphere.io/managed"
+
+	DashboardTag = "Dashboard"
 )
 
 var (

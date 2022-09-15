@@ -38,9 +38,11 @@ func GetSPData(ctx context.Context, c *client.Client) []map[string]string {
 		}
 		resNum := 0
 		for _, res := range resources{
-			for _,v := range res.Volumes{
-				if v.StoragePoolName == sp.StoragePoolName{
-					resNum ++
+			if res.NodeName == sp.NodeName{
+				for _,v := range res.Volumes{
+					if v.StoragePoolName == sp.StoragePoolName{
+						resNum ++
+					}
 				}
 			}
 		}
