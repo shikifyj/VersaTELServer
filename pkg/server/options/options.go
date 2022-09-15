@@ -40,6 +40,9 @@ type ServerRunOptions struct {
 
 	// tls private key file
 	TlsPrivateKey string
+
+	// linstor controller IP
+	Linstor string
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -50,6 +53,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		SecurePort:    0,
 		TlsCertFile:   "",
 		TlsPrivateKey: "",
+		Linstor:       "127.0.0.1:3370",
 	}
 
 	return &s
@@ -90,4 +94,5 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet, c *ServerRunOptions) {
 	fs.IntVar(&s.SecurePort, "secure-port", s.SecurePort, "secure port number")
 	fs.StringVar(&s.TlsCertFile, "tls-cert-file", c.TlsCertFile, "tls cert file")
 	fs.StringVar(&s.TlsPrivateKey, "tls-private-key", c.TlsPrivateKey, "tls private key")
+	fs.StringVar(&s.Linstor, "linstor", c.Linstor, "linstor-controller IP")
 }

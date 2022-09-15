@@ -1,0 +1,1848 @@
+   0.0 TEL | Telepresence 0.109 launched at Tue Sep  7 17:17:24 2021
+   0.0 TEL |   /usr/bin/telepresence --namespace kubesphere-system --swap-deployment ks-apiserver
+   0.0 TEL | uname: uname_result(system='Linux', node='ubuntu', release='4.15.0-76-generic', version='#86-Ubuntu SMP Fri Jan 17 17:24:28 UTC 2020', machine='x86_64', processor='x86_64')
+   0.0 TEL | Platform: linux
+   0.0 TEL | WSL: False
+   0.0 TEL | Python 3.7.5 (default, Feb 23 2021, 13:22:40)
+   0.0 TEL | [GCC 8.4.0]
+   0.0 TEL | BEGIN SPAN main.py:40(main)
+   0.0 TEL | BEGIN SPAN startup.py:83(set_kube_command)
+   0.0 TEL | Found kubectl -> /usr/local/bin/kubectl
+   0.0 TEL | [1] Capturing: kubectl config current-context
+   0.3 TEL | [1] captured in 0.28 secs.
+   0.3 TEL | [2] Capturing: kubectl --context kubernetes-admin@cluster.local version --short
+   0.8 TEL | [2] captured in 0.51 secs.
+   0.8 TEL | [3] Capturing: kubectl --context kubernetes-admin@cluster.local config view -o json
+   1.0 TEL | [3] captured in 0.22 secs.
+   1.0 TEL | [4] Capturing: kubectl --context kubernetes-admin@cluster.local api-versions
+   1.6 TEL | [4] captured in 0.52 secs.
+   1.6 TEL | Command: kubectl 1.20.4
+   1.6 TEL | Context: kubernetes-admin@cluster.local, namespace: kubesphere-system, version: 1.20.4
+   1.6 TEL | END SPAN startup.py:83(set_kube_command)    1.5s
+   1.6 >>> | Using a Pod instead of a Deployment for the Telepresence proxy. If you experience problems, please file an issue!
+   1.6 >>> | Set the environment variable TELEPRESENCE_USE_DEPLOYMENT to any non-empty value to force the old behavior, e.g.,
+   1.6 >>> |     env TELEPRESENCE_USE_DEPLOYMENT=1 telepresence --run curl hello
+   1.6 >>> | 
+   1.6 TEL | [5] Capturing: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system get deploy ks-apiserver -o json
+   1.8   5 | {
+   1.8   5 |     "apiVersion": "apps/v1",
+   1.8   5 |     "kind": "Deployment",
+   1.8   5 |     "metadata": {
+   1.8   5 |         "annotations": {
+   1.8   5 |             "deployment.kubernetes.io/revision": "9",
+   1.8   5 |             "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"ks-apiserver\",\"tier\":\"backend\",\"version\":\"v3.1.1\"},\"name\":\"ks-apiserver\",\"namespace\":\"kubesphere-system\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"ks-apiserver\",\"tier\":\"backend\",\"version\":\"v3.1.1\"}},\"strategy\":{\"rollingUpdate\":{\"maxSurge\":0},\"type\":\"RollingUpdate\"},\"template\":{\"metadata\":{\"labels\":{\"app\":\"ks-apiserver\",\"tier\":\"backend\",\"version\":\"v3.1.1\"}},\"spec\":{\"affinity\":{\"nodeAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"preference\":{\"matchExpressions\":[{\"key\":\"node-role.kubernetes.io/master\",\"operator\":\"In\",\"values\":[\"\"]}]},\"weight\":100}]}},\"containers\":[{\"command\":[\"ks-apiserver\",\"--logtostderr=true\"],\"image\":\"registry.cn-beijing.aliyuncs.com/kubesphereio/ks-apiserver:v3.1.1\",\"imagePullPolicy\":\"IfNotPresent\",\"livenessProbe\":{\"failureThreshold\":8,\"httpGet\":{\"path\":\"/kapis/version\",\"port\":9090,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":15,\"timeoutSeconds\":15},\"name\":\"ks-apiserver\",\"ports\":[{\"containerPort\":9090,\"protocol\":\"TCP\"}],\"resources\":{\"limits\":{\"cpu\":1,\"memory\":\"1024Mi\"},\"requests\":{\"cpu\":\"20m\",\"memory\":\"100Mi\"}},\"volumeMounts\":[{\"mountPath\":\"/var/run/docker.sock\",\"name\":\"docker-sock\"},{\"mountPath\":\"/etc/kubesphere/ingress-controller\",\"name\":\"ks-router-config\"},{\"mountPath\":\"/etc/kubesphere/\",\"name\":\"kubesphere-config\"},{\"mountPath\":\"/etc/localtime\",\"name\":\"host-time\"}]}],\"serviceAccount\":\"kubesphere\",\"serviceAccountName\":\"kubesphere\",\"tolerations\":[{\"effect\":\"NoSchedule\",\"key\":\"node-role.kubernetes.io/master\"},{\"key\":\"CriticalAddonsOnly\",\"operator\":\"Exists\"},{\"effect\":\"NoExecute\",\"key\":\"node.kubernetes.io/not-ready\",\"operator\":\"Exists\",\"tolerationSeconds\":60},{\"effect\":\"NoExecute\",\"key\":\"node.kubernetes.io/unreachable\",\"operator\":\"Exists\",\"tolerationSeconds\":60}],\"volumes\":[{\"hostPath\":{\"path\":\"/var/run/docker.sock\",\"type\":\"\"},\"name\":\"docker-sock\"},{\"configMap\":{\"defaultMode\":420,\"name\":\"ks-router-config\"},\"name\":\"ks-router-config\"},{\"configMap\":{\"defaultMode\":420,\"name\":\"kubesphere-config\"},\"name\":\"kubesphere-config\"},{\"hostPath\":{\"path\":\"/etc/localtime\",\"type\":\"\"},\"name\":\"host-time\"}]}}}}\n"
+   1.8   5 |         },
+   1.8   5 |         "creationTimestamp": "2021-08-16T07:10:41Z",
+   1.8   5 |         "generation": 25,
+   1.8   5 |         "labels": {
+   1.8   5 |             "app": "ks-apiserver",
+   1.8   5 |             "tier": "backend",
+   1.8   5 |             "version": "v3.1.1"
+   1.8   5 |         },
+   1.8   5 |         "managedFields": [
+   1.8   5 |             {
+   1.8   5 |                 "apiVersion": "apps/v1",
+   1.8   5 |                 "fieldsType": "FieldsV1",
+   1.8   5 |                 "fieldsV1": {
+   1.8   5 |                     "f:metadata": {
+   1.8   5 |                         "f:annotations": {
+   1.8   5 |                             ".": {},
+   1.8   5 |                             "f:kubectl.kubernetes.io/last-applied-configuration": {}
+   1.8   5 |                         },
+   1.8   5 |                         "f:labels": {
+   1.8   5 |                             ".": {},
+   1.8   5 |                             "f:app": {},
+   1.8   5 |                             "f:tier": {},
+   1.8   5 |                             "f:version": {}
+   1.8   5 |                         }
+   1.8   5 |                     },
+   1.8   5 |                     "f:spec": {
+   1.8   5 |                         "f:progressDeadlineSeconds": {},
+   1.8   5 |                         "f:revisionHistoryLimit": {},
+   1.8   5 |                         "f:selector": {},
+   1.8   5 |                         "f:strategy": {
+   1.8   5 |                             "f:rollingUpdate": {
+   1.8   5 |                                 ".": {},
+   1.8   5 |                                 "f:maxSurge": {},
+   1.8   5 |                                 "f:maxUnavailable": {}
+   1.8   5 |                             },
+   1.8   5 |                             "f:type": {}
+   1.8   5 |                         },
+   1.8   5 |                         "f:template": {
+   1.8   5 |                             "f:metadata": {
+   1.8   5 |                                 "f:annotations": {
+   1.8   5 |                                     ".": {},
+   1.8   5 |                                     "f:kubectl.kubernetes.io/restartedAt": {}
+   1.8   5 |                                 },
+   1.8   5 |                                 "f:labels": {
+   1.8   5 |                                     ".": {},
+   1.8   5 |                                     "f:app": {},
+   1.8   5 |                                     "f:tier": {},
+   1.8   5 |                                     "f:version": {}
+   1.8   5 |                                 }
+   1.8   5 |                             },
+   1.8   5 |                             "f:spec": {
+   1.8   5 |                                 "f:affinity": {
+   1.8   5 |                                     ".": {},
+   1.8   5 |                                     "f:nodeAffinity": {
+   1.8   5 |                                         ".": {},
+   1.8   5 |                                         "f:preferredDuringSchedulingIgnoredDuringExecution": {}
+   1.8   5 |                                     }
+   1.8   5 |                                 },
+   1.8   5 |                                 "f:containers": {
+   1.8   5 |                                     "k:{\"name\":\"ks-apiserver\"}": {
+   1.8   5 |                                         ".": {},
+   1.8   5 |                                         "f:command": {},
+   1.8   5 |                                         "f:image": {},
+   1.8   5 |                                         "f:imagePullPolicy": {},
+   1.8   5 |                                         "f:livenessProbe": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "f:failureThreshold": {},
+   1.8   5 |                                             "f:httpGet": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:path": {},
+   1.8   5 |                                                 "f:port": {},
+   1.8   5 |                                                 "f:scheme": {}
+   1.8   5 |                                             },
+   1.8   5 |                                             "f:initialDelaySeconds": {},
+   1.8   5 |                                             "f:periodSeconds": {},
+   1.8   5 |                                             "f:successThreshold": {},
+   1.8   5 |                                             "f:timeoutSeconds": {}
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:name": {},
+   1.8   5 |                                         "f:ports": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "k:{\"containerPort\":9090,\"protocol\":\"TCP\"}": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:containerPort": {},
+   1.8   5 |                                                 "f:protocol": {}
+   1.8   5 |                                             }
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:resources": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "f:limits": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:cpu": {},
+   1.8   5 |                                                 "f:memory": {}
+   1.8   5 |                                             },
+   1.8   5 |                                             "f:requests": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:cpu": {},
+   1.8   5 |                                                 "f:memory": {}
+   1.8   5 |                                             }
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:terminationMessagePath": {},
+   1.8   5 |                                         "f:terminationMessagePolicy": {},
+   1.8   5 |                                         "f:volumeMounts": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "k:{\"mountPath\":\"/etc/kubesphere/\"}": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:mountPath": {},
+   1.8   5 |                                                 "f:name": {}
+   1.8   5 |                                             },
+   1.8   5 |                                             "k:{\"mountPath\":\"/etc/kubesphere/ingress-controller\"}": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:mountPath": {},
+   1.8   5 |                                                 "f:name": {}
+   1.8   5 |                                             },
+   1.8   5 |                                             "k:{\"mountPath\":\"/etc/localtime\"}": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:mountPath": {},
+   1.8   5 |                                                 "f:name": {}
+   1.8   5 |                                             },
+   1.8   5 |                                             "k:{\"mountPath\":\"/var/run/docker.sock\"}": {
+   1.8   5 |                                                 ".": {},
+   1.8   5 |                                                 "f:mountPath": {},
+   1.8   5 |                                                 "f:name": {}
+   1.8   5 |                                             }
+   1.8   5 |                                         }
+   1.8   5 |                                     }
+   1.8   5 |                                 },
+   1.8   5 |                                 "f:dnsPolicy": {},
+   1.8   5 |                                 "f:restartPolicy": {},
+   1.8   5 |                                 "f:schedulerName": {},
+   1.8   5 |                                 "f:securityContext": {},
+   1.8   5 |                                 "f:serviceAccount": {},
+   1.8   5 |                                 "f:serviceAccountName": {},
+   1.8   5 |                                 "f:terminationGracePeriodSeconds": {},
+   1.8   5 |                                 "f:tolerations": {},
+   1.8   5 |                                 "f:volumes": {
+   1.8   5 |                                     ".": {},
+   1.8   5 |                                     "k:{\"name\":\"docker-sock\"}": {
+   1.8   5 |                                         ".": {},
+   1.8   5 |                                         "f:hostPath": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "f:path": {},
+   1.8   5 |                                             "f:type": {}
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:name": {}
+   1.8   5 |                                     },
+   1.8   5 |                                     "k:{\"name\":\"host-time\"}": {
+   1.8   5 |                                         ".": {},
+   1.8   5 |                                         "f:hostPath": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "f:path": {},
+   1.8   5 |                                             "f:type": {}
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:name": {}
+   1.8   5 |                                     },
+   1.8   5 |                                     "k:{\"name\":\"ks-router-config\"}": {
+   1.8   5 |                                         ".": {},
+   1.8   5 |                                         "f:configMap": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "f:defaultMode": {},
+   1.8   5 |                                             "f:name": {}
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:name": {}
+   1.8   5 |                                     },
+   1.8   5 |                                     "k:{\"name\":\"kubesphere-config\"}": {
+   1.8   5 |                                         ".": {},
+   1.8   5 |                                         "f:configMap": {
+   1.8   5 |                                             ".": {},
+   1.8   5 |                                             "f:defaultMode": {},
+   1.8   5 |                                             "f:name": {}
+   1.8   5 |                                         },
+   1.8   5 |                                         "f:name": {}
+   1.8   5 |                                     }
+   1.8   5 |                                 }
+   1.8   5 |                             }
+   1.8   5 |                         }
+   1.8   5 |                     }
+   1.8   5 |                 },
+   1.8   5 |                 "manager": "kubectl",
+   1.8   5 |                 "operation": "Update",
+   1.8   5 |                 "time": "2021-08-16T07:14:28Z"
+   1.8   5 |             },
+   1.8   5 |             {
+   1.8   5 |                 "apiVersion": "apps/v1",
+   1.8   5 |                 "fieldsType": "FieldsV1",
+   1.8   5 |                 "fieldsV1": {
+   1.8   5 |                     "f:spec": {
+   1.8   5 |                         "f:replicas": {}
+   1.8   5 |                     }
+   1.8   5 |                 },
+   1.8   5 |                 "manager": "kubectl-edit",
+   1.8   5 |                 "operation": "Update",
+   1.8   5 |                 "time": "2021-08-25T06:30:57Z"
+   1.8   5 |             },
+   1.8   5 |             {
+   1.8   5 |                 "apiVersion": "apps/v1",
+   1.8   5 |                 "fieldsType": "FieldsV1",
+   1.8   5 |                 "fieldsV1": {
+   1.8   5 |                     "f:metadata": {
+   1.8   5 |                         "f:annotations": {
+   1.8   5 |                             "f:deployment.kubernetes.io/revision": {}
+   1.8   5 |                         }
+   1.8   5 |                     },
+   1.8   5 |                     "f:status": {
+   1.8   5 |                         "f:availableReplicas": {},
+   1.8   5 |                         "f:conditions": {
+   1.8   5 |                             ".": {},
+   1.8   5 |                             "k:{\"type\":\"Available\"}": {
+   1.8   5 |                                 ".": {},
+   1.8   5 |                                 "f:lastTransitionTime": {},
+   1.8   5 |                                 "f:lastUpdateTime": {},
+   1.8   5 |                                 "f:message": {},
+   1.8   5 |                                 "f:reason": {},
+   1.8   5 |                                 "f:status": {},
+   1.8   5 |                                 "f:type": {}
+   1.8   5 |                             },
+   1.8   5 |                             "k:{\"type\":\"Progressing\"}": {
+   1.8   5 |                                 ".": {},
+   1.8   5 |                                 "f:lastTransitionTime": {},
+   1.8   5 |                                 "f:lastUpdateTime": {},
+   1.8   5 |                                 "f:message": {},
+   1.8   5 |                                 "f:reason": {},
+   1.8   5 |                                 "f:status": {},
+   1.8   5 |                                 "f:type": {}
+   1.8   5 |                             }
+   1.8   5 |                         },
+   1.8   5 |                         "f:observedGeneration": {},
+   1.8   5 |                         "f:readyReplicas": {},
+   1.8   5 |                         "f:replicas": {},
+   1.8   5 |                         "f:updatedReplicas": {}
+   1.8   5 |                     }
+   1.8   5 |                 },
+   1.8   5 |                 "manager": "kube-controller-manager",
+   1.8   5 |                 "operation": "Update",
+   1.8   5 |                 "time": "2021-09-07T09:16:39Z"
+   1.8   5 |             }
+   1.8   5 |         ],
+   1.8   5 |         "name": "ks-apiserver",
+   1.8   5 |         "namespace": "kubesphere-system",
+   1.8   5 |         "resourceVersion": "3298259",
+   1.8   5 |         "uid": "288f6ab0-3664-4315-91cb-f39ae63d4ada"
+   1.8   5 |     },
+   1.8   5 |     "spec": {
+   1.8   5 |         "progressDeadlineSeconds": 600,
+   1.8   5 |         "replicas": 1,
+   1.8   5 |         "revisionHistoryLimit": 10,
+   1.8   5 |         "selector": {
+   1.8   5 |             "matchLabels": {
+   1.8   5 |                 "app": "ks-apiserver",
+   1.8   5 |                 "tier": "backend",
+   1.8   5 |                 "version": "v3.1.1"
+   1.8   5 |             }
+   1.8   5 |         },
+   1.8   5 |         "strategy": {
+   1.8   5 |             "rollingUpdate": {
+   1.8   5 |                 "maxSurge": 0,
+   1.8   5 |                 "maxUnavailable": "25%"
+   1.8   5 |             },
+   1.8   5 |             "type": "RollingUpdate"
+   1.8   5 |         },
+   1.8   5 |         "template": {
+   1.8   5 |             "metadata": {
+   1.8   5 |                 "annotations": {
+   1.8   5 |                     "kubectl.kubernetes.io/restartedAt": "2021-08-26T09:43:51+08:00"
+   1.8   5 |                 },
+   1.8   5 |                 "creationTimestamp": null,
+   1.8   5 |                 "labels": {
+   1.8   5 |                     "app": "ks-apiserver",
+   1.8   5 |                     "tier": "backend",
+   1.8   5 |                     "version": "v3.1.1"
+   1.8   5 |                 }
+   1.8   5 |             },
+   1.8   5 |             "spec": {
+   1.8   5 |                 "affinity": {
+   1.8   5 |                     "nodeAffinity": {
+   1.8   5 |                         "preferredDuringSchedulingIgnoredDuringExecution": [
+   1.8   5 |                             {
+   1.8   5 |                                 "preference": {
+   1.8   5 |                                     "matchExpressions": [
+   1.8   5 |                                         {
+   1.8   5 |                                             "key": "node-role.kubernetes.io/master",
+   1.8   5 |                                             "operator": "In",
+   1.8   5 |                                             "values": [
+   1.8   5 |                                                 ""
+   1.8   5 |                                             ]
+   1.8   5 |                                         }
+   1.8   5 |                                     ]
+   1.8   5 |                                 },
+   1.8   5 |                                 "weight": 100
+   1.8   5 |                             }
+   1.8   5 |                         ]
+   1.8   5 |                     }
+   1.8   5 |                 },
+   1.8   5 |                 "containers": [
+   1.8   5 |                     {
+   1.8   5 |                         "command": [
+   1.8   5 |                             "ks-apiserver",
+   1.8   5 |                             "--logtostderr=true"
+   1.8   5 |                         ],
+   1.8   5 |                         "image": "registry.cn-beijing.aliyuncs.com/kubesphereio/ks-apiserver:v3.1.1",
+   1.8   5 |                         "imagePullPolicy": "IfNotPresent",
+   1.8   5 |                         "livenessProbe": {
+   1.8   5 |                             "failureThreshold": 8,
+   1.8   5 |                             "httpGet": {
+   1.8   5 |                                 "path": "/kapis/version",
+   1.8   5 |                                 "port": 9090,
+   1.8   5 |                                 "scheme": "HTTP"
+   1.8   5 |                             },
+   1.8   5 |                             "initialDelaySeconds": 15,
+   1.8   5 |                             "periodSeconds": 10,
+   1.8   5 |                             "successThreshold": 1,
+   1.8   5 |                             "timeoutSeconds": 15
+   1.8   5 |                         },
+   1.8   5 |                         "name": "ks-apiserver",
+   1.8   5 |                         "ports": [
+   1.8   5 |                             {
+   1.8   5 |                                 "containerPort": 9090,
+   1.8   5 |                                 "protocol": "TCP"
+   1.8   5 |                             }
+   1.8   5 |                         ],
+   1.8   5 |                         "resources": {
+   1.8   5 |                             "limits": {
+   1.8   5 |                                 "cpu": "1",
+   1.8   5 |                                 "memory": "1Gi"
+   1.8   5 |                             },
+   1.8   5 |                             "requests": {
+   1.8   5 |                                 "cpu": "20m",
+   1.8   5 |                                 "memory": "100Mi"
+   1.8   5 |                             }
+   1.8   5 |                         },
+   1.8   5 |                         "terminationMessagePath": "/dev/termination-log",
+   1.8   5 |                         "terminationMessagePolicy": "File",
+   1.8   5 |                         "volumeMounts": [
+   1.8   5 |                             {
+   1.8   5 |                                 "mountPath": "/var/run/docker.sock",
+   1.8   5 |                                 "name": "docker-sock"
+   1.8   5 |                             },
+   1.8   5 |                             {
+   1.8   5 |                                 "mountPath": "/etc/kubesphere/ingress-controller",
+   1.8   5 |                                 "name": "ks-router-config"
+   1.8   5 |                             },
+   1.8   5 |                             {
+   1.8   5 |                                 "mountPath": "/etc/kubesphere/",
+   1.8   5 |                                 "name": "kubesphere-config"
+   1.8   5 |                             },
+   1.8   5 |                             {
+   1.8   5 |                                 "mountPath": "/etc/localtime",
+   1.8   5 |                                 "name": "host-time"
+   1.8   5 |                             }
+   1.8   5 |                         ]
+   1.8   5 |                     }
+   1.8   5 |                 ],
+   1.8   5 |                 "dnsPolicy": "ClusterFirst",
+   1.8   5 |                 "restartPolicy": "Always",
+   1.8   5 |                 "schedulerName": "default-scheduler",
+   1.8   5 |                 "securityContext": {},
+   1.8   5 |                 "serviceAccount": "kubesphere",
+   1.8   5 |                 "serviceAccountName": "kubesphere",
+   1.8   5 |                 "terminationGracePeriodSeconds": 30,
+   1.8   5 |                 "tolerations": [
+   1.8   5 |                     {
+   1.8   5 |                         "effect": "NoSchedule",
+   1.8   5 |                         "key": "node-role.kubernetes.io/master"
+   1.8   5 |                     },
+   1.8   5 |                     {
+   1.8   5 |                         "key": "CriticalAddonsOnly",
+   1.8   5 |                         "operator": "Exists"
+   1.8   5 |                     },
+   1.8   5 |                     {
+   1.8   5 |                         "effect": "NoExecute",
+   1.8   5 |                         "key": "node.kubernetes.io/not-ready",
+   1.8   5 |                         "operator": "Exists",
+   1.8   5 |                         "tolerationSeconds": 60
+   1.8   5 |                     },
+   1.8   5 |                     {
+   1.8   5 |                         "effect": "NoExecute",
+   1.8   5 |                         "key": "node.kubernetes.io/unreachable",
+   1.8   5 |                         "operator": "Exists",
+   1.8   5 |                         "tolerationSeconds": 60
+   1.8   5 |                     }
+   1.8   5 |                 ],
+   1.8   5 |                 "volumes": [
+   1.8   5 |                     {
+   1.8   5 |                         "hostPath": {
+   1.8   5 |                             "path": "/var/run/docker.sock",
+   1.8   5 |                             "type": ""
+   1.8   5 |                         },
+   1.8   5 |                         "name": "docker-sock"
+   1.8   5 |                     },
+   1.8   5 |                     {
+   1.8   5 |                         "configMap": {
+   1.8   5 |                             "defaultMode": 420,
+   1.8   5 |                             "name": "ks-router-config"
+   1.8   5 |                         },
+   1.8   5 |                         "name": "ks-router-config"
+   1.8   5 |                     },
+   1.8   5 |                     {
+   1.8   5 |                         "configMap": {
+   1.8   5 |                             "defaultMode": 420,
+   1.8   5 |                             "name": "kubesphere-config"
+   1.8   5 |                         },
+   1.8   5 |                         "name": "kubesphere-config"
+   1.8   5 |                     },
+   1.8   5 |                     {
+   1.8   5 |                         "hostPath": {
+   1.8   5 |                             "path": "/etc/localtime",
+   1.8   5 |                             "type": ""
+   1.8   5 |                         },
+   1.8   5 |                         "name": "host-time"
+   1.8   5 |                     }
+   1.8   5 |                 ]
+   1.8   5 |             }
+   1.8   5 |         }
+   1.8   5 |     },
+   1.8   5 |     "status": {
+   1.8   5 |         "availableReplicas": 1,
+   1.8   5 |         "conditions": [
+   1.8   5 |             {
+   1.8   5 |                 "lastTransitionTime": "2021-08-16T07:10:41Z",
+   1.8   5 |                 "lastUpdateTime": "2021-08-16T07:10:41Z",
+   1.8   5 |                 "message": "Deployment has minimum availability.",
+   1.8   5 |                 "reason": "MinimumReplicasAvailable",
+   1.8   5 |                 "status": "True",
+   1.8   5 |                 "type": "Available"
+   1.8   5 |             },
+   1.8   5 |             {
+   1.8   5 |                 "lastTransitionTime": "2021-08-16T07:10:41Z",
+   1.8   5 |                 "lastUpdateTime": "2021-08-26T01:44:11Z",
+   1.8   5 |                 "message": "ReplicaSet \"ks-apiserver-bfd5b5687\" has successfully progressed.",
+   1.8   5 |                 "reason": "NewReplicaSetAvailable",
+   1.8   5 |                 "status": "True",
+   1.8   5 |                 "type": "Progressing"
+   1.8   5 |             }
+   1.8   5 |         ],
+   1.8   5 |         "observedGeneration": 25,
+   1.8   5 |         "readyReplicas": 1,
+   1.8   5 |         "replicas": 1,
+   1.8   5 |         "updatedReplicas": 1
+   1.8   5 |     }
+   1.8   5 | }
+   1.8 TEL | [5] captured in 0.29 secs.
+   1.8 TEL | Found ssh -> /usr/bin/ssh
+   1.8 TEL | [6] Capturing: ssh -V
+   1.9 TEL | [6] captured in 0.01 secs.
+   1.9 TEL | Found bash -> /bin/bash
+   1.9 TEL | Found sshuttle-telepresence -> /usr/libexec/sshuttle-telepresence
+   1.9 TEL | Found conntrack -> /usr/sbin/conntrack
+   1.9 TEL | Found iptables -> /sbin/iptables
+   1.9 TEL | Found sudo -> /usr/bin/sudo
+   1.9 TEL | [7] Running: sudo -n echo -n
+   1.9 TEL | [7] ran in 0.02 secs.
+   1.9 TEL | [8] Capturing: sudo iptables --list --numeric
+   1.9 TEL | [8] captured in 0.02 secs.
+   1.9 >>> | Starting proxy with method 'vpn-tcp', which has the following limitations: All processes are affected, only one telepresence can run per machine, and you can't use other VPNs. You may need to add cloud hosts and headless services with --also-proxy. For a full list of method limitations see https://telepresence.io/reference/methods.html
+   1.9 TEL | Found sshfs -> /usr/bin/sshfs
+   1.9 TEL | Found fusermount -> /bin/fusermount
+   1.9 >>> | Volumes are rooted at $TELEPRESENCE_ROOT. See https://telepresence.io/howto/volumes.html for details.
+   1.9 TEL | [9] Running: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system get pods telepresence-connectivity-check --ignore-not-found
+   2.2 TEL | [9] ran in 0.29 secs.
+   3.8 TEL | Scout info: {'latest_version': '0.109', 'application': 'telepresence', 'notices': []}
+   3.8 >>> | Starting network proxy to cluster by swapping out Deployment ks-apiserver with a proxy Pod
+   3.8 TEL | [10] Running: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system create -f -
+   5.8  10 | pod/ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 created
+   5.8 TEL | [10] ran in 1.94 secs.
+   5.8 TEL | [11] Running: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system scale Deployment ks-apiserver --replicas=0
+   6.1  11 | deployment.apps/ks-apiserver scaled
+   6.1 TEL | [11] ran in 0.32 secs.
+   6.1 TEL | BEGIN SPAN remote.py:109(wait_for_pod)
+   6.1 TEL | [12] Running: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system wait --for=condition=ready --timeout=60s pod/ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280
+  17.9  12 | pod/ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 condition met
+  17.9 TEL | [12] ran in 11.82 secs.
+  17.9 TEL | [13] Capturing: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system get pod ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 -o json
+  18.2 TEL | [13] captured in 0.26 secs.
+  18.2 TEL | END SPAN remote.py:109(wait_for_pod)   12.1s
+  18.2 TEL | BEGIN SPAN connect.py:37(connect)
+  18.2 TEL | [14] Launching kubectl logs: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system logs -f ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 --container ks-apiserver --tail=10
+  18.2 TEL | [15] Launching kubectl port-forward: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system port-forward ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 43409:8022
+  18.2 TEL | [16] Running: ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5 -q -p 43409 telepresence@127.0.0.1 /bin/true
+  18.2 TEL | [16] exit 255 in 0.03 secs.
+  18.5 TEL | [17] Running: ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5 -q -p 43409 telepresence@127.0.0.1 /bin/true
+  18.5 TEL | [17] exit 255 in 0.03 secs.
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] Loading ./forwarder.py...
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] /etc/resolv.conf changed, reparsing
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] Resolver added ('169.254.25.10', 53) to server list
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] SOCKSv5Factory starting on 9050
+  18.6  14 | 2021-09-07T17:17:42+0800 [socks.SOCKSv5Factory#info] Starting factory <socks.SOCKSv5Factory object at 0x7f0ddfa93b38>
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] DNSDatagramProtocol starting on 9053
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] Starting protocol <twisted.names.dns.DNSDatagramProtocol object at 0x7f0ddfa93dd8>
+  18.6  14 | 2021-09-07T17:17:42+0800 [-] Loaded.
+  18.6  14 | 2021-09-07T17:17:42+0800 [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 20.3.0 (/usr/bin/python3.6 3.6.8) starting up.
+  18.6  14 | 2021-09-07T17:17:42+0800 [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+  18.8  15 | Forwarding from 127.0.0.1:43409 -> 8022
+  18.8  15 | Forwarding from [::1]:43409 -> 8022
+  18.8 TEL | [18] Running: ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5 -q -p 43409 telepresence@127.0.0.1 /bin/true
+  18.8  15 | Handling connection for 43409
+  19.0 TEL | [18] ran in 0.24 secs.
+  19.0 >>> | Forwarding remote port 9090 to local port 9090.
+  19.0 TEL | [19] Launching SSH port forward (exposed ports): ssh -N -oServerAliveInterval=1 -oServerAliveCountMax=10 -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5 -q -p 43409 telepresence@127.0.0.1 -R '*:9090:127.0.0.1:9090'
+  19.0 >>> | 
+  19.0  15 | Handling connection for 43409
+  19.0 TEL | Launching Web server for proxy poll
+  19.0 TEL | [20] Launching SSH port forward (socks and proxy poll): ssh -N -oServerAliveInterval=1 -oServerAliveCountMax=10 -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5 -q -p 43409 telepresence@127.0.0.1 -L127.0.0.1:44957:127.0.0.1:9050 -R9055:127.0.0.1:40293
+  19.0 TEL | END SPAN connect.py:37(connect)    0.8s
+  19.0 TEL | BEGIN SPAN remote_env.py:29(get_remote_env)
+  19.0 TEL | [21] Capturing: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system exec ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 --container ks-apiserver -- python3 podinfo.py
+  19.0  15 | Handling connection for 43409
+  19.7 TEL | [21] captured in 0.70 secs.
+  19.7 TEL | END SPAN remote_env.py:29(get_remote_env)    0.7s
+  19.7 TEL | BEGIN SPAN mount.py:30(mount_remote_volumes)
+  19.7 TEL | [22] Running: sshfs -p 43409 -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5 telepresence@127.0.0.1:/ /tmp/tel-he1uauku/fs
+  19.8  15 | Handling connection for 43409
+  20.0 TEL | [22] ran in 0.25 secs.
+  20.0 TEL | END SPAN mount.py:30(mount_remote_volumes)    0.3s
+  20.0 TEL | BEGIN SPAN vpn.py:62(connect_sshuttle)
+  20.0 TEL | BEGIN SPAN cidr.py:113(get_proxy_cidrs)
+  20.0 TEL | END SPAN cidr.py:113(get_proxy_cidrs)    0.0s
+  20.0 TEL | [23] Launching sshuttle: sshuttle-telepresence -v --dns --method nat -e 'ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=5' -r telepresence@127.0.0.1:43409 --to-ns 127.0.0.1:9053 10.233.0.0/18 10.233.64.0/24
+  20.0 TEL | BEGIN SPAN vpn.py:85(connect_sshuttle,sshuttle-wait)
+  20.0 TEL | Wait for vpn-tcp connection: hellotelepresence-0
+  20.0 TEL | [24] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-0")'
+  20.3 TEL | [24] exit 1 in 0.32 secs.
+  20.3 TEL | [25] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-0.a.sanity.check.telepresence.io")'
+  20.6 TEL | [25] exit 1 in 0.27 secs.
+  20.7 TEL | Wait for vpn-tcp connection: hellotelepresence-1
+  20.7 TEL | [26] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-1")'
+  20.9 TEL | [26] exit 1 in 0.26 secs.
+  20.9 TEL | [27] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-1.a.sanity.check.telepresence.io")'
+  21.0  23 | Starting sshuttle proxy.
+  21.9  23 | firewall manager: Starting firewall with Python version 3.7.5
+  21.9  23 | firewall manager: ready method name nat.
+  21.9  23 | IPv6 enabled: False
+  21.9  23 | UDP enabled: False
+  21.9  23 | DNS enabled: True
+  21.9  23 | TCP redirector listening on ('127.0.0.1', 12300).
+  21.9  23 | DNS listening on ('127.0.0.1', 12300).
+  21.9  23 | Starting client with Python version 3.7.5
+  21.9  23 | c : connecting to server...
+  21.9  15 | Handling connection for 43409
+  22.0  23 | Warning: Permanently added '[127.0.0.1]:43409' (ECDSA) to the list of known hosts.
+  22.0 TEL | [27] timed out after 1.02 secs.
+  22.1 TEL | Wait for vpn-tcp connection: hellotelepresence-2
+  22.1 TEL | [28] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-2")'
+  22.3 TEL | [28] exit 1 in 0.23 secs.
+  22.3 TEL | [29] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-2.a.sanity.check.telepresence.io")'
+  22.3  23 | Starting server with Python version 3.6.8
+  22.3  23 |  s: latency control setting = True
+  22.3  23 |  s: available routes:
+  22.3  23 | c : Connected.
+  22.3  23 | firewall manager: setting up.
+  22.4  23 | >> iptables -t nat -N sshuttle-12300
+  22.4  23 | >> iptables -t nat -F sshuttle-12300
+  22.4  23 | >> iptables -t nat -I OUTPUT 1 -j sshuttle-12300
+  22.4  23 | >> iptables -t nat -I PREROUTING 1 -j sshuttle-12300
+  22.4  23 | >> iptables -t nat -A sshuttle-12300 -j RETURN --dest 127.0.0.1/32 -p tcp
+  22.4  23 | >> iptables -t nat -A sshuttle-12300 -j REDIRECT --dest 10.233.64.0/24 -p tcp --to-ports 12300 -m ttl ! --ttl 42
+  22.4  23 | >> iptables -t nat -A sshuttle-12300 -j REDIRECT --dest 10.233.0.0/18 -p tcp --to-ports 12300 -m ttl ! --ttl 42
+  22.4  23 | >> iptables -t nat -A sshuttle-12300 -j REDIRECT --dest 127.0.0.53/32 -p udp --dport 53 --to-ports 12300 -m ttl ! --ttl 42
+  22.4  23 | >> iptables -t nat -A sshuttle-12300 -j REDIRECT --dest 224.0.0.252/32 -p udp --dport 5355 --to-ports 12300 -m ttl ! --ttl 42
+  22.4  23 | conntrack v1.4.4 (conntrack-tools): 0 flow entries have been deleted.
+  22.7 TEL | [29] exit 1 in 0.43 secs.
+  22.8 TEL | Wait for vpn-tcp connection: hellotelepresence-3
+  22.8 TEL | [30] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-3")'
+  22.9  23 | c : DNS request from ('127.0.0.1', 54412) to None: 48 bytes
+  22.9  14 | 2021-09-07T17:17:47+0800 [stdout#info] Set DNS suffix we filter out to: [()]
+  22.9  14 | 2021-09-07T17:17:47+0800 [stdout#info] Result for b'hellotelepresence-3' is ['127.0.0.1']
+  22.9 TEL | [30] captured in 0.12 secs.
+  22.9 TEL | Resolved hellotelepresence-3. 2 more...
+  22.9 TEL | [31] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-3.a.sanity.check.telepresence.io")'
+  23.0  23 | c : DNS request from ('127.0.0.1', 37563) to None: 79 bytes
+  23.0  14 | 2021-09-07T17:17:47+0800 [stdout#info] Sanity check: b'hellotelepresence-3.a.sanity.check.telepresence.io'
+  23.2 TEL | [31] exit 1 in 0.27 secs.
+  23.3 TEL | Wait for vpn-tcp connection: hellotelepresence-4
+  23.3 TEL | [32] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-4")'
+  23.4  23 | c : DNS request from ('127.0.0.1', 38924) to None: 48 bytes
+  23.4  14 | 2021-09-07T17:17:47+0800 [stdout#info] Result for b'hellotelepresence-4' is ['127.0.0.1']
+  23.4 TEL | [32] captured in 0.12 secs.
+  23.4 TEL | Resolved hellotelepresence-4. 1 more...
+  23.4 TEL | [33] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-4.a.sanity.check.telepresence.io")'
+  23.5  23 | c : DNS request from ('127.0.0.1', 39127) to None: 79 bytes
+  23.5  14 | 2021-09-07T17:17:48+0800 [stdout#info] Sanity check: b'hellotelepresence-4.a.sanity.check.telepresence.io'
+  23.7 TEL | [33] exit 1 in 0.27 secs.
+  23.8 TEL | Wait for vpn-tcp connection: hellotelepresence-5
+  23.8 TEL | [34] Capturing: python3 -c 'import socket; socket.gethostbyname("hellotelepresence-5")'
+  23.9  23 | c : DNS request from ('127.0.0.1', 41322) to None: 48 bytes
+  23.9  14 | 2021-09-07T17:17:48+0800 [stdout#info] Result for b'hellotelepresence-5' is ['127.0.0.1']
+  23.9 TEL | [34] captured in 0.13 secs.
+  23.9 TEL | Resolved hellotelepresence-5. 0 more...
+  23.9 TEL | END SPAN vpn.py:85(connect_sshuttle,sshuttle-wait)    3.9s
+  23.9 TEL | END SPAN vpn.py:62(connect_sshuttle)    4.0s
+  23.9 >>> | Setup complete. Launching your command.
+  23.9 TEL | Everything launched. Waiting to exit...
+  24.0 TEL | BEGIN SPAN runner.py:754(wait_for_exit)
+  31.9 TEL | [35] Running: sudo -n echo -n
+  31.9 TEL | [35] ran in 0.03 secs.
+  47.7 TEL | (proxy checking local liveness)
+  47.7  14 | 2021-09-07T17:18:12+0800 [Poll#info] Checkpoint
+  62.0 TEL | [36] Running: sudo -n echo -n
+  62.0 TEL | [36] ran in 0.02 secs.
+  66.6  23 | c : Accept TCP: 10.233.56.161:45036 -> 10.233.56.161:443.
+  77.7 TEL | (proxy checking local liveness)
+  77.7  14 | 2021-09-07T17:18:42+0800 [Poll#info] Checkpoint
+  79.8  23 | c : DNS request from ('127.0.0.1', 38666) to None: 81 bytes
+  79.8  23 | c : DNS request from ('127.0.0.1', 38666) to None: 81 bytes
+  79.8  23 | c : Accept TCP: 10.233.0.3:50374 -> 10.233.0.3:53.
+  79.8  23 | c : Accept TCP: 10.233.0.3:50378 -> 10.233.0.3:53.
+  79.8  14 | 2021-09-07T17:18:44+0800 [stdout#info] A query: b'prometheus-operated.kubesphere-monitoring-system.svc'
+  79.8  14 | 2021-09-07T17:18:44+0800 [stdout#info] AAAA query, sending back A instead: b'prometheus-operated.kubesphere-monitoring-system.svc'
+  79.8  14 | 2021-09-07T17:18:44+0800 [stdout#info] A query: b'prometheus-operated.kubesphere-monitoring-system.svc'
+  79.9  14 | 2021-09-07T17:18:44+0800 [stdout#info] Result for b'prometheus-operated.kubesphere-monitoring-system.svc' is ['10.233.127.94']
+  79.9  14 | 2021-09-07T17:18:44+0800 [stdout#info] Result for b'prometheus-operated.kubesphere-monitoring-system.svc' is ['10.233.127.94']
+  79.9  23 | c : DNS request from ('127.0.0.1', 36229) to None: 81 bytes
+  79.9  23 | c : DNS request from ('127.0.0.1', 36229) to None: 81 bytes
+  79.9  14 | 2021-09-07T17:18:44+0800 [stdout#info] A query: b'prometheus-operated.kubesphere-monitoring-system.svc'
+  80.0  14 | 2021-09-07T17:18:44+0800 [stdout#info] Result for b'prometheus-operated.kubesphere-monitoring-system.svc' is ['10.233.127.94']
+  80.0  14 | 2021-09-07T17:18:44+0800 [stdout#info] AAAA query, sending back A instead: b'prometheus-operated.kubesphere-monitoring-system.svc'
+  80.0  14 | 2021-09-07T17:18:44+0800 [stdout#info] A query: b'prometheus-operated.kubesphere-monitoring-system.svc'
+  80.0  14 | 2021-09-07T17:18:44+0800 [stdout#info] Result for b'prometheus-operated.kubesphere-monitoring-system.svc' is ['10.233.127.94']
+  92.0 TEL | [37] Running: sudo -n echo -n
+  92.0 TEL | [37] ran in 0.04 secs.
+ 107.7 TEL | (proxy checking local liveness)
+ 107.7  14 | 2021-09-07T17:19:12+0800 [Poll#info] Checkpoint
+ 120.4  23 | c : Accept TCP: 10.233.0.1:36634 -> 10.233.0.1:443.
+ 120.4  23 | c : SW#11:10.233.0.3:50378: deleting (7 remain)
+ 120.4  23 | c : SW'unknown':Mux#10: deleting (6 remain)
+ 120.4  23 | c : SW#10:10.233.0.3:50374: deleting (5 remain)
+ 120.4  23 | c : SW'unknown':Mux#9: deleting (4 remain)
+ 122.1 TEL | [38] Running: sudo -n echo -n
+ 122.1 TEL | [38] ran in 0.02 secs.
+ 137.7 TEL | (proxy checking local liveness)
+ 137.7  14 | 2021-09-07T17:19:42+0800 [Poll#info] Checkpoint
+ 152.1 TEL | [39] Running: sudo -n echo -n
+ 152.2 TEL | [39] ran in 0.03 secs.
+ 167.7 TEL | (proxy checking local liveness)
+ 167.7  14 | 2021-09-07T17:20:12+0800 [Poll#info] Checkpoint
+ 182.2 TEL | [40] Running: sudo -n echo -n
+ 182.2 TEL | [40] ran in 0.03 secs.
+ 197.7 TEL | (proxy checking local liveness)
+ 197.7  14 | 2021-09-07T17:20:42+0800 [Poll#info] Checkpoint
+ 212.2 TEL | [41] Running: sudo -n echo -n
+ 212.3 TEL | [41] ran in 0.02 secs.
+ 227.7 TEL | (proxy checking local liveness)
+ 227.7  14 | 2021-09-07T17:21:12+0800 [Poll#info] Checkpoint
+ 242.3 TEL | [42] Running: sudo -n echo -n
+ 242.3 TEL | [42] ran in 0.02 secs.
+ 257.7 TEL | (proxy checking local liveness)
+ 257.7  14 | 2021-09-07T17:21:42+0800 [Poll#info] Checkpoint
+ 272.3 TEL | [43] Running: sudo -n echo -n
+ 272.4 TEL | [43] ran in 0.02 secs.
+ 285.5  23 | c : Accept TCP: 10.233.56.161:48016 -> 10.233.56.161:443.
+ 287.7 TEL | (proxy checking local liveness)
+ 287.7  14 | 2021-09-07T17:22:12+0800 [Poll#info] Checkpoint
+ 300.4  23 | c : Accept TCP: 10.233.0.1:39048 -> 10.233.0.1:443.
+ 300.4  23 |  s: SW#-1:10.233.0.1:443: deleting (11 remain)
+ 300.4  23 |  s: SW'unknown':Mux#13: deleting (10 remain)
+ 300.4  23 |  s: SW'unknown':Mux#6: deleting (9 remain)
+ 300.4  23 |  s: SW#7:10.233.56.161:443: deleting (8 remain)
+ 302.4 TEL | [44] Running: sudo -n echo -n
+ 302.4 TEL | [44] ran in 0.02 secs.
+ 317.7 TEL | (proxy checking local liveness)
+ 317.7  14 | 2021-09-07T17:22:42+0800 [Poll#info] Checkpoint
+ 332.5 TEL | [45] Running: sudo -n echo -n
+ 332.5 TEL | [45] ran in 0.02 secs.
+ 347.7 TEL | (proxy checking local liveness)
+ 347.7  14 | 2021-09-07T17:23:12+0800 [Poll#info] Checkpoint
+ 362.5 TEL | [46] Running: sudo -n echo -n
+ 362.6 TEL | [46] ran in 0.07 secs.
+ 377.7 TEL | (proxy checking local liveness)
+ 377.7  14 | 2021-09-07T17:23:42+0800 [Poll#info] Checkpoint
+ 390.5  23 | c : SW'unknown':Mux#14: deleting (7 remain)
+ 390.5  23 | c : SW#-1:10.233.56.161:48016: deleting (6 remain)
+ 390.5  23 | c : SW#-1:10.233.56.161:48016: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 390.5  23 | c : SW#8:10.233.56.161:45036: deleting (5 remain)
+ 390.5  23 | c : SW#8:10.233.56.161:45036: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 390.5  23 | c : SW'unknown':Mux#6: deleting (4 remain)
+ 390.5  23 | c : SW#12:10.233.0.1:36634: deleting (3 remain)
+ 390.5  23 | c : SW#12:10.233.0.1:36634: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 390.5  23 | c : SW'unknown':Mux#13: deleting (2 remain)
+ 392.6 TEL | [47] Running: sudo -n echo -n
+ 392.6 TEL | [47] ran in 0.02 secs.
+ 407.7 TEL | (proxy checking local liveness)
+ 407.7  14 | 2021-09-07T17:24:12+0800 [Poll#info] Checkpoint
+ 422.6 TEL | [48] Running: sudo -n echo -n
+ 422.7 TEL | [48] ran in 0.03 secs.
+ 437.7 TEL | (proxy checking local liveness)
+ 437.7  14 | 2021-09-07T17:24:42+0800 [Poll#info] Checkpoint
+ 452.7 TEL | [49] Running: sudo -n echo -n
+ 452.7 TEL | [49] ran in 0.01 secs.
+ 467.7 TEL | (proxy checking local liveness)
+ 467.7  14 | 2021-09-07T17:25:12+0800 [Poll#info] Checkpoint
+ 480.4  23 | c : Accept TCP: 10.233.0.1:41370 -> 10.233.0.1:443.
+ 480.4  23 | c : SW#11:10.233.0.1:39048: deleting (3 remain)
+ 480.4  23 | c : SW#11:10.233.0.1:39048: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 480.4  23 | c : SW'unknown':Mux#15: deleting (2 remain)
+ 482.7 TEL | [50] Running: sudo -n echo -n
+ 482.8 TEL | [50] ran in 0.03 secs.
+ 497.7 TEL | (proxy checking local liveness)
+ 497.7  14 | 2021-09-07T17:25:42+0800 [Poll#info] Checkpoint
+ 512.8 TEL | [51] Running: sudo -n echo -n
+ 512.8 TEL | [51] ran in 0.02 secs.
+ 527.7 TEL | (proxy checking local liveness)
+ 527.7  14 | 2021-09-07T17:26:12+0800 [Poll#info] Checkpoint
+ 542.8 TEL | [52] Running: sudo -n echo -n
+ 542.9 TEL | [52] ran in 0.02 secs.
+ 557.7 TEL | (proxy checking local liveness)
+ 557.7  14 | 2021-09-07T17:26:42+0800 [Poll#info] Checkpoint
+ 572.9 TEL | [53] Running: sudo -n echo -n
+ 572.9 TEL | [53] ran in 0.02 secs.
+ 587.7 TEL | (proxy checking local liveness)
+ 587.7  14 | 2021-09-07T17:27:12+0800 [Poll#info] Checkpoint
+ 602.9 TEL | [54] Running: sudo -n echo -n
+ 603.0 TEL | [54] ran in 0.02 secs.
+ 617.7 TEL | (proxy checking local liveness)
+ 617.7  14 | 2021-09-07T17:27:42+0800 [Poll#info] Checkpoint
+ 633.0 TEL | [55] Running: sudo -n echo -n
+ 633.0 TEL | [55] ran in 0.02 secs.
+ 647.7 TEL | (proxy checking local liveness)
+ 647.7  14 | 2021-09-07T17:28:12+0800 [Poll#info] Checkpoint
+ 660.4  23 | c : Accept TCP: 10.233.0.1:43702 -> 10.233.0.1:443.
+ 663.0 TEL | [56] Running: sudo -n echo -n
+ 663.1 TEL | [56] ran in 0.02 secs.
+ 677.7 TEL | (proxy checking local liveness)
+ 677.7  14 | 2021-09-07T17:28:42+0800 [Poll#info] Checkpoint
+ 693.1 TEL | [57] Running: sudo -n echo -n
+ 693.1 TEL | [57] ran in 0.04 secs.
+ 707.7 TEL | (proxy checking local liveness)
+ 707.7  14 | 2021-09-07T17:29:12+0800 [Poll#info] Checkpoint
+ 723.2 TEL | [58] Running: sudo -n echo -n
+ 723.2 TEL | [58] ran in 0.02 secs.
+ 737.7 TEL | (proxy checking local liveness)
+ 737.7  14 | 2021-09-07T17:29:42+0800 [Poll#info] Checkpoint
+ 753.2 TEL | [59] Running: sudo -n echo -n
+ 753.2 TEL | [59] ran in 0.04 secs.
+ 767.7 TEL | (proxy checking local liveness)
+ 767.7  14 | 2021-09-07T17:30:12+0800 [Poll#info] Checkpoint
+ 783.3 TEL | [60] Running: sudo -n echo -n
+ 783.5 TEL | [60] ran in 0.20 secs.
+ 797.9 TEL | (proxy checking local liveness)
+ 797.9  14 | 2021-09-07T17:30:42+0800 [Poll#info] Checkpoint
+ 813.5 TEL | [61] Running: sudo -n echo -n
+ 827.7 TEL | (proxy checking local liveness)
+ 827.7  14 | 2021-09-07T17:31:12+0800 [Poll#info] Checkpoint
+ 834.9 TEL | [61] ran in 21.39 secs.
+ 840.4  23 | c : Accept TCP: 10.233.0.1:46036 -> 10.233.0.1:443.
+ 849.3  23 | c : DNS request from ('127.0.0.1', 51698) to None: 61 bytes
+ 849.3  23 | c : DNS request from ('127.0.0.1', 51698) to None: 61 bytes
+ 849.4  23 | c : Accept TCP: 10.233.0.3:60488 -> 10.233.0.3:53.
+ 849.4  23 | c : Accept TCP: 10.233.0.3:60490 -> 10.233.0.3:53.
+ 849.4  14 | 2021-09-07T17:31:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.4  23 | c : SW'unknown':Mux#16: deleting (9 remain)
+ 849.4  14 | 2021-09-07T17:31:33+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 849.4  23 | c : SW#-1:10.233.0.1:41370: deleting (8 remain)
+ 849.4  14 | 2021-09-07T17:31:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.4  23 | c : SW#-1:10.233.0.1:41370: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 849.4  23 | c : SW'unknown':Mux#17: deleting (7 remain)
+ 849.4  23 | c : SW#-1:10.233.0.1:43702: deleting (6 remain)
+ 849.4  23 | c : SW#-1:10.233.0.1:43702: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 849.4  23 |  s: SW#-1:10.233.0.1:443: deleting (17 remain)
+ 849.4  23 |  s: SW'unknown':Mux#16: deleting (16 remain)
+ 849.4  23 |  s: SW#-1:10.233.0.1:443: deleting (15 remain)
+ 849.4  23 |  s: SW'unknown':Mux#17: deleting (14 remain)
+ 849.4  23 |  s: SW'unknown':Mux#14: deleting (13 remain)
+ 849.4  23 |  s: SW#14:10.233.56.161:443: deleting (12 remain)
+ 849.4  23 |  s: SW'unknown':Mux#15: deleting (11 remain)
+ 849.4  23 |  s: SW#15:10.233.0.1:443: deleting (10 remain)
+ 849.6  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.6  23 | c : DNS request from ('127.0.0.1', 53315) to None: 61 bytes
+ 849.6  23 | c : DNS request from ('127.0.0.1', 53315) to None: 61 bytes
+ 849.6  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.7  23 | c : DNS request from ('127.0.0.1', 60491) to None: 61 bytes
+ 849.7  23 | c : DNS request from ('127.0.0.1', 60491) to None: 61 bytes
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.7  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.7  23 | c : DNS request from ('127.0.0.1', 39517) to None: 61 bytes
+ 849.7  23 | c : DNS request from ('127.0.0.1', 39517) to None: 61 bytes
+ 849.8  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.8  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 849.8  14 | 2021-09-07T17:31:34+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 849.8  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 849.8  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 850.0  23 | c : DNS request from ('127.0.0.1', 55888) to None: 64 bytes
+ 850.0  23 | c : DNS request from ('127.0.0.1', 55888) to None: 64 bytes
+ 850.0  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 850.0  14 | 2021-09-07T17:31:34+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 850.0  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 850.2  23 | c : DNS request from ('127.0.0.1', 59158) to None: 64 bytes
+ 850.2  23 | c : DNS request from ('127.0.0.1', 59158) to None: 64 bytes
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 850.2  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 850.3  23 | c : DNS request from ('127.0.0.1', 54418) to None: 61 bytes
+ 850.3  23 | c : DNS request from ('127.0.0.1', 54418) to None: 61 bytes
+ 850.3  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 850.3  14 | 2021-09-07T17:31:34+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 850.3  14 | 2021-09-07T17:31:34+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 850.3  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 850.3  14 | 2021-09-07T17:31:34+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 857.7 TEL | (proxy checking local liveness)
+ 857.7  14 | 2021-09-07T17:31:42+0800 [Poll#info] Checkpoint
+ 864.9 TEL | [62] Running: sudo -n echo -n
+ 864.9 TEL | [62] ran in 0.02 secs.
+ 887.7 TEL | (proxy checking local liveness)
+ 887.7  14 | 2021-09-07T17:32:12+0800 [Poll#info] Checkpoint
+ 894.9 TEL | [63] Running: sudo -n echo -n
+ 895.0 TEL | [63] ran in 0.04 secs.
+ 908.3  23 | c : DNS request from ('127.0.0.1', 59124) to None: 61 bytes
+ 908.3  23 | c : DNS request from ('127.0.0.1', 59124) to None: 61 bytes
+ 908.3  14 | 2021-09-07T17:32:32+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.3  23 | c : Accept TCP: 10.233.0.3:33056 -> 10.233.0.3:53.
+ 908.3  23 | c : Accept TCP: 10.233.0.3:33058 -> 10.233.0.3:53.
+ 908.3  14 | 2021-09-07T17:32:32+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 908.3  14 | 2021-09-07T17:32:32+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.3  14 | 2021-09-07T17:32:32+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.4  14 | 2021-09-07T17:32:32+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.4  23 | c : DNS request from ('127.0.0.1', 37709) to None: 61 bytes
+ 908.4  23 | c : DNS request from ('127.0.0.1', 37709) to None: 61 bytes
+ 908.4  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.4  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.4  14 | 2021-09-07T17:32:33+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 908.4  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.4  23 | c : DNS request from ('127.0.0.1', 48471) to None: 61 bytes
+ 908.4  23 | c : DNS request from ('127.0.0.1', 48471) to None: 61 bytes
+ 908.4  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.5  23 | c : SW#13:10.233.0.3:60490: deleting (9 remain)
+ 908.5  23 | c : SW'unknown':Mux#22: deleting (8 remain)
+ 908.5  23 | c : SW#12:10.233.0.3:60488: deleting (7 remain)
+ 908.5  23 | c : SW'unknown':Mux#21: deleting (6 remain)
+ 908.5  23 | c : DNS request from ('127.0.0.1', 48615) to None: 61 bytes
+ 908.5  23 | c : DNS request from ('127.0.0.1', 48615) to None: 61 bytes
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 908.5  23 |  s: SW'unknown':Mux#22: deleting (13 remain)
+ 908.5  23 |  s: SW#16:10.233.0.3:53: deleting (12 remain)
+ 908.5  23 |  s: SW'unknown':Mux#21: deleting (11 remain)
+ 908.5  23 |  s: SW#12:10.233.0.3:53: deleting (10 remain)
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.5  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 908.7  23 | c : DNS request from ('127.0.0.1', 46114) to None: 64 bytes
+ 908.7  23 | c : DNS request from ('127.0.0.1', 46114) to None: 64 bytes
+ 908.7  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 908.7  14 | 2021-09-07T17:32:33+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 908.7  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 908.9  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 909.0  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 909.0  23 | c : DNS request from ('127.0.0.1', 55020) to None: 64 bytes
+ 909.0  23 | c : DNS request from ('127.0.0.1', 55020) to None: 64 bytes
+ 909.0  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 909.0  14 | 2021-09-07T17:32:33+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 909.0  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 909.0  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 909.0  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 909.2  23 | c : DNS request from ('127.0.0.1', 49892) to None: 61 bytes
+ 909.2  23 | c : DNS request from ('127.0.0.1', 49892) to None: 61 bytes
+ 909.2  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 909.2  14 | 2021-09-07T17:32:33+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 909.2  14 | 2021-09-07T17:32:33+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 909.2  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 909.2  14 | 2021-09-07T17:32:33+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 917.7 TEL | (proxy checking local liveness)
+ 917.7  14 | 2021-09-07T17:32:42+0800 [Poll#info] Checkpoint
+ 925.0 TEL | [64] Running: sudo -n echo -n
+ 925.0 TEL | [64] ran in 0.02 secs.
+ 947.7 TEL | (proxy checking local liveness)
+ 947.7  14 | 2021-09-07T17:33:12+0800 [Poll#info] Checkpoint
+ 955.1 TEL | [65] Running: sudo -n echo -n
+ 955.1 TEL | [65] ran in 0.02 secs.
+ 974.2  23 | c : DNS request from ('127.0.0.1', 33771) to None: 61 bytes
+ 974.2  23 | c : DNS request from ('127.0.0.1', 33771) to None: 61 bytes
+ 974.2  23 | c : Accept TCP: 10.233.0.3:33922 -> 10.233.0.3:53.
+ 974.2  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.2  23 | c : Accept TCP: 10.233.0.3:33924 -> 10.233.0.3:53.
+ 974.2  14 | 2021-09-07T17:33:38+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 974.2  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.2  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.3  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.3  23 | c : DNS request from ('127.0.0.1', 36982) to None: 61 bytes
+ 974.3  23 | c : DNS request from ('127.0.0.1', 36982) to None: 61 bytes
+ 974.3  23 |  s: SW'unknown':Mux#18: deleting (13 remain)
+ 974.3  23 |  s: SW#9:10.233.0.1:443: deleting (12 remain)
+ 974.3  23 | c : DNS request from ('127.0.0.1', 40713) to None: 61 bytes
+ 974.3  23 | c : DNS request from ('127.0.0.1', 40713) to None: 61 bytes
+ 974.3  23 | c : DNS request from ('127.0.0.1', 54282) to None: 61 bytes
+ 974.3  23 | c : DNS request from ('127.0.0.1', 54282) to None: 61 bytes
+ 974.3  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.4  23 | c : SW#8:10.233.0.3:33056: deleting (9 remain)
+ 974.4  23 | c : SW'unknown':Mux#37: deleting (8 remain)
+ 974.4  23 | c : SW#11:10.233.0.1:46036: deleting (7 remain)
+ 974.4  23 | c : SW#11:10.233.0.1:46036: error was: nowrite: [Errno 107] Transport endpoint is not connected
+ 974.4  23 | c : SW'unknown':Mux#18: deleting (6 remain)
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.4  14 | 2021-09-07T17:33:38+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.5  23 | c : DNS request from ('127.0.0.1', 45527) to None: 64 bytes
+ 974.5  23 | c : DNS request from ('127.0.0.1', 45527) to None: 64 bytes
+ 974.5  14 | 2021-09-07T17:33:39+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 974.5  14 | 2021-09-07T17:33:39+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 974.5  14 | 2021-09-07T17:33:39+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 974.7  23 | c : DNS request from ('127.0.0.1', 44133) to None: 64 bytes
+ 974.7  23 | c : DNS request from ('127.0.0.1', 44133) to None: 64 bytes
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 974.7  14 | 2021-09-07T17:33:39+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+ 974.9  23 | c : DNS request from ('127.0.0.1', 56924) to None: 61 bytes
+ 974.9  23 | c : DNS request from ('127.0.0.1', 56924) to None: 61 bytes
+ 974.9  14 | 2021-09-07T17:33:39+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.9  14 | 2021-09-07T17:33:39+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 974.9  14 | 2021-09-07T17:33:39+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+ 974.9  14 | 2021-09-07T17:33:39+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+ 974.9  14 | 2021-09-07T17:33:39+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+ 977.7 TEL | (proxy checking local liveness)
+ 977.7  14 | 2021-09-07T17:33:42+0800 [Poll#info] Checkpoint
+ 985.1 TEL | [66] Running: sudo -n echo -n
+ 985.1 TEL | [66] ran in 0.03 secs.
+1007.7 TEL | (proxy checking local liveness)
+1008.1  14 | 2021-09-07T17:34:12+0800 [Poll#info] Checkpoint
+1015.2 TEL | [67] Running: sudo -n echo -n
+1015.2 TEL | [67] ran in 0.02 secs.
+1020.4  23 | c : Accept TCP: 10.233.0.1:48444 -> 10.233.0.1:443.
+1037.7 TEL | (proxy checking local liveness)
+1037.7  14 | 2021-09-07T17:34:42+0800 [Poll#info] Checkpoint
+1045.2 TEL | [68] Running: sudo -n echo -n
+1045.2 TEL | [68] ran in 0.03 secs.
+1050.0  23 | c : DNS request from ('127.0.0.1', 35979) to None: 61 bytes
+1050.0  23 | c : SW#12:10.233.0.3:33922: deleting (7 remain)
+1050.0  23 | c : SW'unknown':Mux#53: deleting (6 remain)
+1050.0  23 | c : SW#13:10.233.0.3:33924: deleting (5 remain)
+1050.0  23 | c : SW'unknown':Mux#54: deleting (4 remain)
+1050.0  23 | c : DNS request from ('127.0.0.1', 35979) to None: 61 bytes
+1050.0  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.0  14 | 2021-09-07T17:34:54+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1050.0  23 | c : Accept TCP: 10.233.0.3:34944 -> 10.233.0.3:53.
+1050.0  23 | c : Accept TCP: 10.233.0.3:34942 -> 10.233.0.3:53.
+1050.0  23 |  s: SW'unknown':Mux#53: deleting (17 remain)
+1050.0  23 |  s: SW#19:10.233.0.3:53: deleting (16 remain)
+1050.0  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.1  23 | c : DNS request from ('127.0.0.1', 37589) to None: 61 bytes
+1050.1  23 | c : DNS request from ('127.0.0.1', 37589) to None: 61 bytes
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.1  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.1  23 | c : DNS request from ('127.0.0.1', 51070) to None: 61 bytes
+1050.1  23 | c : DNS request from ('127.0.0.1', 51070) to None: 61 bytes
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.2  23 | c : SW'unknown':Mux#38: deleting (7 remain)
+1050.2  23 | c : SW#10:10.233.0.3:33058: deleting (6 remain)
+1050.2  23 | c : DNS request from ('127.0.0.1', 58401) to None: 61 bytes
+1050.2  23 | c : DNS request from ('127.0.0.1', 58401) to None: 61 bytes
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.2  14 | 2021-09-07T17:34:54+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.4  23 | c : DNS request from ('127.0.0.1', 41241) to None: 64 bytes
+1050.4  23 | c : DNS request from ('127.0.0.1', 41241) to None: 64 bytes
+1050.4  14 | 2021-09-07T17:34:54+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1050.4  14 | 2021-09-07T17:34:55+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1050.4  14 | 2021-09-07T17:34:55+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1050.6  23 | c : DNS request from ('127.0.0.1', 54778) to None: 64 bytes
+1050.6  23 | c : DNS request from ('127.0.0.1', 54778) to None: 64 bytes
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1050.6  14 | 2021-09-07T17:34:55+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1050.7  23 | c : DNS request from ('127.0.0.1', 56697) to None: 61 bytes
+1050.7  23 | c : DNS request from ('127.0.0.1', 56697) to None: 61 bytes
+1050.8  14 | 2021-09-07T17:34:55+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.8  14 | 2021-09-07T17:34:55+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1050.8  14 | 2021-09-07T17:34:55+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1050.8  14 | 2021-09-07T17:34:55+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1050.8  14 | 2021-09-07T17:34:55+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1067.7 TEL | (proxy checking local liveness)
+1067.7  14 | 2021-09-07T17:35:12+0800 [Poll#info] Checkpoint
+1075.3 TEL | [69] Running: sudo -n echo -n
+1075.3 TEL | [69] ran in 0.04 secs.
+1097.7 TEL | (proxy checking local liveness)
+1097.7  14 | 2021-09-07T17:35:42+0800 [Poll#info] Checkpoint
+1105.3 TEL | [70] Running: sudo -n echo -n
+1105.4 TEL | [70] ran in 0.02 secs.
+1127.7 TEL | (proxy checking local liveness)
+1127.7  14 | 2021-09-07T17:36:12+0800 [Poll#info] Checkpoint
+1135.4 TEL | [71] Running: sudo -n echo -n
+1135.4 TEL | [71] ran in 0.01 secs.
+1157.7 TEL | (proxy checking local liveness)
+1157.7  14 | 2021-09-07T17:36:42+0800 [Poll#info] Checkpoint
+1165.4 TEL | [72] Running: sudo -n echo -n
+1165.4 TEL | [72] ran in 0.02 secs.
+1173.0  23 | c : DNS request from ('127.0.0.1', 50613) to None: 61 bytes
+1173.0  23 | c : DNS request from ('127.0.0.1', 50613) to None: 61 bytes
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.0  23 | c : Accept TCP: 10.233.0.3:36626 -> 10.233.0.3:53.
+1173.0  23 | c : Accept TCP: 10.233.0.3:36628 -> 10.233.0.3:53.
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.0  23 | c : DNS request from ('127.0.0.1', 34996) to None: 61 bytes
+1173.0  23 | c : DNS request from ('127.0.0.1', 34996) to None: 61 bytes
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.0  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.0  23 | c : DNS request from ('127.0.0.1', 33005) to None: 61 bytes
+1173.0  23 | c : DNS request from ('127.0.0.1', 33005) to None: 61 bytes
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.1  23 | c : DNS request from ('127.0.0.1', 39168) to None: 61 bytes
+1173.1  23 | c : DNS request from ('127.0.0.1', 39168) to None: 61 bytes
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.1  23 | c : SW#11:10.233.0.3:34944: deleting (9 remain)
+1173.1  23 | c : SW'unknown':Mux#70: deleting (8 remain)
+1173.1  23 | c : SW#8:10.233.0.1:48444: deleting (7 remain)
+1173.1  23 | c : SW#8:10.233.0.1:48444: error was: nowrite: [Errno 107] Transport endpoint is not connected
+1173.1  23 | c : SW'unknown':Mux#67: deleting (6 remain)
+1173.1  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.2  23 | c : DNS request from ('127.0.0.1', 43197) to None: 64 bytes
+1173.3  23 | c : DNS request from ('127.0.0.1', 43197) to None: 64 bytes
+1173.3  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1173.3  14 | 2021-09-07T17:36:57+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1173.3  14 | 2021-09-07T17:36:57+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1173.3  23 |  s: SW'unknown':Mux#71: deleting (19 remain)
+1173.3  23 |  s: SW#29:10.233.0.3:53: deleting (18 remain)
+1173.3  23 |  s: SW'unknown':Mux#70: deleting (17 remain)
+1173.3  23 |  s: SW#28:10.233.0.3:53: deleting (16 remain)
+1173.3  23 |  s: SW'unknown':Mux#67: deleting (15 remain)
+1173.3  23 |  s: SW#24:10.233.0.1:443: deleting (14 remain)
+1173.4  14 | 2021-09-07T17:36:57+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1173.5  14 | 2021-09-07T17:36:58+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1173.5  23 | c : DNS request from ('127.0.0.1', 38109) to None: 64 bytes
+1173.5  23 | c : DNS request from ('127.0.0.1', 38109) to None: 64 bytes
+1173.5  14 | 2021-09-07T17:36:58+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1173.5  14 | 2021-09-07T17:36:58+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1173.5  14 | 2021-09-07T17:36:58+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1173.5  14 | 2021-09-07T17:36:58+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1173.5  14 | 2021-09-07T17:36:58+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1173.6  23 | c : DNS request from ('127.0.0.1', 36683) to None: 61 bytes
+1173.6  23 | c : DNS request from ('127.0.0.1', 36683) to None: 61 bytes
+1173.6  14 | 2021-09-07T17:36:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.6  14 | 2021-09-07T17:36:58+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1173.6  14 | 2021-09-07T17:36:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1173.6  14 | 2021-09-07T17:36:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1173.6  14 | 2021-09-07T17:36:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1187.7 TEL | (proxy checking local liveness)
+1187.7  14 | 2021-09-07T17:37:12+0800 [Poll#info] Checkpoint
+1195.5 TEL | [73] Running: sudo -n echo -n
+1195.5 TEL | [73] ran in 0.03 secs.
+1200.4  23 | c : Accept TCP: 10.233.0.1:50896 -> 10.233.0.1:443.
+1200.4  23 | c : SW#10:10.233.0.3:36626: deleting (7 remain)
+1200.4  23 | c : SW'unknown':Mux#86: deleting (6 remain)
+1200.4  23 | c : SW#13:10.233.0.3:36628: deleting (5 remain)
+1200.4  23 | c : SW'unknown':Mux#87: deleting (4 remain)
+1217.7 TEL | (proxy checking local liveness)
+1217.7  14 | 2021-09-07T17:37:42+0800 [Poll#info] Checkpoint
+1225.5 TEL | [74] Running: sudo -n echo -n
+1225.6 TEL | [74] ran in 0.02 secs.
+1247.7 TEL | (proxy checking local liveness)
+1247.7  14 | 2021-09-07T17:38:12+0800 [Poll#info] Checkpoint
+1255.6 TEL | [75] Running: sudo -n echo -n
+1255.6 TEL | [75] ran in 0.03 secs.
+1277.7 TEL | (proxy checking local liveness)
+1277.7  14 | 2021-09-07T17:38:42+0800 [Poll#info] Checkpoint
+1285.6 TEL | [76] Running: sudo -n echo -n
+1285.7 TEL | [76] ran in 0.04 secs.
+1307.7 TEL | (proxy checking local liveness)
+1307.7  14 | 2021-09-07T17:39:12+0800 [Poll#info] Checkpoint
+1315.7 TEL | [77] Running: sudo -n echo -n
+1316.5 TEL | [77] ran in 0.76 secs.
+1337.7 TEL | (proxy checking local liveness)
+1337.7  14 | 2021-09-07T17:39:42+0800 [Poll#info] Checkpoint
+1346.5 TEL | [78] Running: sudo -n echo -n
+1346.5 TEL | [78] ran in 0.03 secs.
+1367.7 TEL | (proxy checking local liveness)
+1367.7  14 | 2021-09-07T17:40:12+0800 [Poll#info] Checkpoint
+1373.0  23 | c : DNS request from ('127.0.0.1', 52036) to None: 61 bytes
+1373.0  23 | c : DNS request from ('127.0.0.1', 52036) to None: 61 bytes
+1373.0  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.0  23 | c : Accept TCP: 10.233.0.3:39266 -> 10.233.0.3:53.
+1373.0  23 | c : Accept TCP: 10.233.0.3:39268 -> 10.233.0.3:53.
+1373.0  14 | 2021-09-07T17:40:17+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1373.0  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.2  23 | c : DNS request from ('127.0.0.1', 37456) to None: 61 bytes
+1373.2  23 | c : DNS request from ('127.0.0.1', 37456) to None: 61 bytes
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.2  23 | c : DNS request from ('127.0.0.1', 36523) to None: 61 bytes
+1373.2  23 | c : DNS request from ('127.0.0.1', 36523) to None: 61 bytes
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.2  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.2  23 | c : DNS request from ('127.0.0.1', 60648) to None: 61 bytes
+1373.2  23 | c : DNS request from ('127.0.0.1', 60648) to None: 61 bytes
+1373.3  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.3  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.3  14 | 2021-09-07T17:40:17+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1373.3  14 | 2021-09-07T17:40:17+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.3  14 | 2021-09-07T17:40:17+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.3  23 |  s: SW#-1:10.233.0.1:443: deleting (19 remain)
+1373.3  23 |  s: SW'unknown':Mux#100: deleting (18 remain)
+1373.3  23 |  s: SW'unknown':Mux#87: deleting (17 remain)
+1373.3  23 |  s: SW#14:10.233.0.3:53: deleting (16 remain)
+1373.3  23 |  s: SW'unknown':Mux#86: deleting (15 remain)
+1373.3  23 |  s: SW#13:10.233.0.3:53: deleting (14 remain)
+1373.4  23 | c : DNS request from ('127.0.0.1', 41261) to None: 64 bytes
+1373.4  23 | c : DNS request from ('127.0.0.1', 41261) to None: 64 bytes
+1373.4  23 | c : SW#8:10.233.0.1:50896: deleting (7 remain)
+1373.4  23 | c : SW#8:10.233.0.1:50896: error was: nowrite: [Errno 107] Transport endpoint is not connected
+1373.4  23 | c : SW'unknown':Mux#100: deleting (6 remain)
+1373.4  14 | 2021-09-07T17:40:18+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1373.4  14 | 2021-09-07T17:40:18+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1373.4  14 | 2021-09-07T17:40:18+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1373.5  14 | 2021-09-07T17:40:18+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1373.6  14 | 2021-09-07T17:40:18+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1373.6  23 | c : DNS request from ('127.0.0.1', 50916) to None: 64 bytes
+1373.6  23 | c : DNS request from ('127.0.0.1', 50916) to None: 64 bytes
+1373.6  14 | 2021-09-07T17:40:18+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1373.6  14 | 2021-09-07T17:40:18+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1373.6  14 | 2021-09-07T17:40:18+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1373.6  14 | 2021-09-07T17:40:18+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1373.6  14 | 2021-09-07T17:40:18+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1373.7  23 | c : DNS request from ('127.0.0.1', 49081) to None: 61 bytes
+1373.7  23 | c : DNS request from ('127.0.0.1', 49081) to None: 61 bytes
+1373.8  14 | 2021-09-07T17:40:18+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.8  14 | 2021-09-07T17:40:18+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1373.8  14 | 2021-09-07T17:40:18+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1373.8  14 | 2021-09-07T17:40:18+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1373.8  14 | 2021-09-07T17:40:18+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1376.6 TEL | [79] Running: sudo -n echo -n
+1376.6 TEL | [79] ran in 0.04 secs.
+1380.4  23 | c : Accept TCP: 10.233.0.1:53286 -> 10.233.0.1:443.
+1397.7 TEL | (proxy checking local liveness)
+1397.7  14 | 2021-09-07T17:40:42+0800 [Poll#info] Checkpoint
+1406.6 TEL | [80] Running: sudo -n echo -n
+1406.7 TEL | [80] ran in 0.02 secs.
+1427.7 TEL | (proxy checking local liveness)
+1427.7  14 | 2021-09-07T17:41:12+0800 [Poll#info] Checkpoint
+1436.7 TEL | [81] Running: sudo -n echo -n
+1436.7 TEL | [81] ran in 0.03 secs.
+1457.7 TEL | (proxy checking local liveness)
+1457.7  14 | 2021-09-07T17:41:42+0800 [Poll#info] Checkpoint
+1466.7 TEL | [82] Running: sudo -n echo -n
+1466.8 TEL | [82] ran in 0.04 secs.
+1487.7 TEL | (proxy checking local liveness)
+1487.7  14 | 2021-09-07T17:42:12+0800 [Poll#info] Checkpoint
+1496.8 TEL | [83] Running: sudo -n echo -n
+1496.8 TEL | [83] ran in 0.02 secs.
+1517.7 TEL | (proxy checking local liveness)
+1517.7  14 | 2021-09-07T17:42:42+0800 [Poll#info] Checkpoint
+1526.9 TEL | [84] Running: sudo -n echo -n
+1526.9 TEL | [84] ran in 0.02 secs.
+1547.7 TEL | (proxy checking local liveness)
+1547.7  14 | 2021-09-07T17:43:12+0800 [Poll#info] Checkpoint
+1556.9 TEL | [85] Running: sudo -n echo -n
+1556.9 TEL | [85] ran in 0.02 secs.
+1560.4  23 | c : Accept TCP: 10.233.0.1:55606 -> 10.233.0.1:443.
+1560.5  23 |  s: SW#6:10.233.0.3:53: deleting (17 remain)
+1560.5  23 |  s: SW'unknown':Mux#9: deleting (16 remain)
+1560.5  23 |  s: SW'unknown':Mux#10: deleting (15 remain)
+1560.5  23 |  s: SW#10:10.233.0.3:53: deleting (14 remain)
+1560.5  23 |  s: SW#17:10.233.0.3:53: deleting (13 remain)
+1560.5  23 |  s: SW'unknown':Mux#37: deleting (12 remain)
+1560.5  23 |  s: SW'unknown':Mux#38: deleting (11 remain)
+1560.5  23 |  s: SW#18:10.233.0.3:53: deleting (10 remain)
+1560.5  23 |  s: SW#20:10.233.0.3:53: deleting (9 remain)
+1560.5  23 |  s: SW'unknown':Mux#54: deleting (8 remain)
+1560.5  23 |  s: SW'unknown':Mux#103: deleting (7 remain)
+1560.5  23 |  s: SW#19:10.233.0.3:53: deleting (6 remain)
+1560.5  23 |  s: SW'unknown':Mux#104: deleting (5 remain)
+1560.5  23 |  s: SW#21:10.233.0.3:53: deleting (4 remain)
+1560.5  23 |  s: SW#-1:10.233.0.1:443: deleting (3 remain)
+1560.5  23 |  s: SW'unknown':Mux#117: deleting (2 remain)
+1577.7 TEL | (proxy checking local liveness)
+1577.7  14 | 2021-09-07T17:43:42+0800 [Poll#info] Checkpoint
+1586.9 TEL | [86] Running: sudo -n echo -n
+1587.0 TEL | [86] ran in 0.02 secs.
+1607.7 TEL | (proxy checking local liveness)
+1607.7  14 | 2021-09-07T17:44:12+0800 [Poll#info] Checkpoint
+1617.0 TEL | [87] Running: sudo -n echo -n
+1617.1 TEL | [87] ran in 0.03 secs.
+1637.7 TEL | (proxy checking local liveness)
+1637.7  14 | 2021-09-07T17:44:42+0800 [Poll#info] Checkpoint
+1647.1 TEL | [88] Running: sudo -n echo -n
+1648.5 TEL | [88] ran in 1.37 secs.
+1667.7 TEL | (proxy checking local liveness)
+1667.7  14 | 2021-09-07T17:45:12+0800 [Poll#info] Checkpoint
+1678.5 TEL | [89] Running: sudo -n echo -n
+1678.5 TEL | [89] ran in 0.02 secs.
+1697.7 TEL | (proxy checking local liveness)
+1697.7  14 | 2021-09-07T17:45:42+0800 [Poll#info] Checkpoint
+1708.5 TEL | [90] Running: sudo -n echo -n
+1708.5 TEL | [90] ran in 0.02 secs.
+1713.0  23 | c : DNS request from ('127.0.0.1', 50664) to None: 61 bytes
+1713.0  23 | c : DNS request from ('127.0.0.1', 50664) to None: 61 bytes
+1713.0  23 | c : Accept TCP: 10.233.0.3:43672 -> 10.233.0.3:53.
+1713.0  23 | c : Accept TCP: 10.233.0.3:43674 -> 10.233.0.3:53.
+1713.0  14 | 2021-09-07T17:45:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1713.0  14 | 2021-09-07T17:45:57+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1713.0  14 | 2021-09-07T17:45:57+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1713.1  14 | 2021-09-07T17:45:57+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  23 | c : DNS request from ('127.0.0.1', 53371) to None: 61 bytes
+1714.2  23 | c : DNS request from ('127.0.0.1', 53371) to None: 61 bytes
+1714.2  23 | c : SW'unknown':Mux#118: deleting (13 remain)
+1714.2  23 | c : SW#-1:10.233.0.1:55606: deleting (12 remain)
+1714.2  23 | c : SW#-1:10.233.0.1:55606: error was: nowrite: [Errno 107] Transport endpoint is not connected
+1714.2  23 | c : SW#11:10.233.0.3:39268: deleting (11 remain)
+1714.2  23 | c : SW'unknown':Mux#104: deleting (10 remain)
+1714.2  23 | c : SW#10:10.233.0.3:39266: deleting (9 remain)
+1714.2  23 | c : SW'unknown':Mux#103: deleting (8 remain)
+1714.2  23 | c : SW#8:10.233.0.1:53286: deleting (7 remain)
+1714.2  23 | c : SW#8:10.233.0.1:53286: error was: nowrite: [Errno 107] Transport endpoint is not connected
+1714.2  23 | c : SW'unknown':Mux#117: deleting (6 remain)
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  23 | c : DNS request from ('127.0.0.1', 56968) to None: 61 bytes
+1714.2  23 | c : DNS request from ('127.0.0.1', 56968) to None: 61 bytes
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.2  23 | c : DNS request from ('127.0.0.1', 33499) to None: 61 bytes
+1714.2  23 | c : DNS request from ('127.0.0.1', 33499) to None: 61 bytes
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.2  14 | 2021-09-07T17:45:58+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.4  23 | c : DNS request from ('127.0.0.1', 51563) to None: 64 bytes
+1714.4  23 | c : DNS request from ('127.0.0.1', 51563) to None: 64 bytes
+1714.4  14 | 2021-09-07T17:45:58+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1714.4  14 | 2021-09-07T17:45:59+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1714.4  14 | 2021-09-07T17:45:59+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1714.4  23 |  s: SW'unknown':Mux#118: deleting (5 remain)
+1714.4  23 |  s: SW#15:10.233.0.1:443: deleting (4 remain)
+1714.5  14 | 2021-09-07T17:45:59+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1714.6  23 | c : DNS request from ('127.0.0.1', 46568) to None: 64 bytes
+1714.6  23 | c : DNS request from ('127.0.0.1', 46568) to None: 64 bytes
+1714.6  14 | 2021-09-07T17:45:59+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1714.6  14 | 2021-09-07T17:45:59+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1714.6  14 | 2021-09-07T17:45:59+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1714.6  14 | 2021-09-07T17:45:59+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+1714.6  14 | 2021-09-07T17:45:59+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1714.6  14 | 2021-09-07T17:45:59+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+1714.7  23 | c : DNS request from ('127.0.0.1', 48347) to None: 61 bytes
+1714.7  23 | c : DNS request from ('127.0.0.1', 48347) to None: 61 bytes
+1714.7  14 | 2021-09-07T17:45:59+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.8  14 | 2021-09-07T17:45:59+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1714.8  14 | 2021-09-07T17:45:59+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+1714.8  14 | 2021-09-07T17:45:59+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+1714.8  14 | 2021-09-07T17:45:59+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+1727.7 TEL | (proxy checking local liveness)
+1727.7  14 | 2021-09-07T17:46:12+0800 [Poll#info] Checkpoint
+1738.6 TEL | [91] Running: sudo -n echo -n
+1738.6 TEL | [91] ran in 0.02 secs.
+1740.4  23 | c : Accept TCP: 10.233.0.1:57942 -> 10.233.0.1:443.
+1757.7 TEL | (proxy checking local liveness)
+1757.7  14 | 2021-09-07T17:46:42+0800 [Poll#info] Checkpoint
+1768.6 TEL | [92] Running: sudo -n echo -n
+1768.7 TEL | [92] ran in 0.05 secs.
+1787.7 TEL | (proxy checking local liveness)
+1787.7  14 | 2021-09-07T17:47:12+0800 [Poll#info] Checkpoint
+1798.7 TEL | [93] Running: sudo -n echo -n
+1798.7 TEL | [93] ran in 0.01 secs.
+1817.7 TEL | (proxy checking local liveness)
+1817.7  14 | 2021-09-07T17:47:42+0800 [Poll#info] Checkpoint
+1828.7 TEL | [94] Running: sudo -n echo -n
+1828.8 TEL | [94] ran in 0.11 secs.
+1847.7 TEL | (proxy checking local liveness)
+1847.7  14 | 2021-09-07T17:48:12+0800 [Poll#info] Checkpoint
+1858.9 TEL | [95] Running: sudo -n echo -n
+1858.9 TEL | [95] ran in 0.02 secs.
+1877.7 TEL | (proxy checking local liveness)
+1877.7  14 | 2021-09-07T17:48:42+0800 [Poll#info] Checkpoint
+1888.9 TEL | [96] Running: sudo -n echo -n
+1889.0 TEL | [96] ran in 0.02 secs.
+1907.7 TEL | (proxy checking local liveness)
+1907.7  14 | 2021-09-07T17:49:12+0800 [Poll#info] Checkpoint
+1919.0 TEL | [97] Running: sudo -n echo -n
+1919.0 TEL | [97] ran in 0.04 secs.
+1920.4  23 | c : Accept TCP: 10.233.0.1:60250 -> 10.233.0.1:443.
+1937.7 TEL | (proxy checking local liveness)
+1937.7  14 | 2021-09-07T17:49:42+0800 [Poll#info] Checkpoint
+1949.1 TEL | [98] Running: sudo -n echo -n
+1949.1 TEL | [98] ran in 0.02 secs.
+1967.7 TEL | (proxy checking local liveness)
+1967.7  14 | 2021-09-07T17:50:12+0800 [Poll#info] Checkpoint
+1979.1 TEL | [99] Running: sudo -n echo -n
+1979.1 TEL | [99] ran in 0.02 secs.
+1997.7 TEL | (proxy checking local liveness)
+1997.7  14 | 2021-09-07T17:50:42+0800 [Poll#info] Checkpoint
+2009.2 TEL | [100] Running: sudo -n echo -n
+2009.2 TEL | [100] ran in 0.06 secs.
+2027.7 TEL | (proxy checking local liveness)
+2027.7  14 | 2021-09-07T17:51:12+0800 [Poll#info] Checkpoint
+2039.2 TEL | [101] Running: sudo -n echo -n
+2041.8 TEL | [101] ran in 2.57 secs.
+2056.2  23 | c : DNS request from ('127.0.0.1', 43215) to None: 61 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 43215) to None: 61 bytes
+2056.6  23 | c : Accept TCP: 10.233.0.3:48046 -> 10.233.0.3:53.
+2056.6  23 | c : Accept TCP: 10.233.0.3:48048 -> 10.233.0.3:53.
+2056.6  23 | c : SW'unknown':Mux#135: deleting (13 remain)
+2056.6  23 | c : SW#-1:10.233.0.1:57942: deleting (12 remain)
+2056.6  23 | c : SW#-1:10.233.0.1:57942: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2056.6  23 | c : SW'unknown':Mux#136: deleting (11 remain)
+2056.6  23 | c : SW#-1:10.233.0.1:60250: deleting (10 remain)
+2056.6  23 | c : SW#-1:10.233.0.1:60250: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2056.6  23 | c : SW#14:10.233.0.3:43672: deleting (9 remain)
+2056.6  23 | c : SW'unknown':Mux#121: deleting (8 remain)
+2056.6  23 | c : SW#15:10.233.0.3:43674: deleting (7 remain)
+2056.6  14 | 2021-09-07T17:51:40+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:40+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2056.6  23 | c : SW'unknown':Mux#122: deleting (6 remain)
+2056.6  23 | c : DNS request from ('127.0.0.1', 34224) to None: 61 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 34224) to None: 61 bytes
+2056.6  23 |  s: SW#-1:10.233.0.1:443: deleting (11 remain)
+2056.6  23 |  s: SW'unknown':Mux#135: deleting (10 remain)
+2056.6  23 |  s: SW#-1:10.233.0.1:443: deleting (9 remain)
+2056.6  23 |  s: SW'unknown':Mux#136: deleting (8 remain)
+2056.6  23 |  s: SW'unknown':Mux#122: deleting (7 remain)
+2056.6  23 |  s: SW#9:10.233.0.3:53: deleting (6 remain)
+2056.6  23 |  s: SW'unknown':Mux#121: deleting (5 remain)
+2056.6  23 |  s: SW#8:10.233.0.3:53: deleting (4 remain)
+2056.6  23 | c : DNS request from ('127.0.0.1', 38332) to None: 61 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 38332) to None: 61 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 45023) to None: 61 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 45023) to None: 61 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 36277) to None: 64 bytes
+2056.6  23 | c : DNS request from ('127.0.0.1', 36277) to None: 64 bytes
+2056.6  14 | 2021-09-07T17:51:40+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:40+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2056.6  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2056.8  23 | c : DNS request from ('127.0.0.1', 34611) to None: 64 bytes
+2056.8  23 | c : DNS request from ('127.0.0.1', 34611) to None: 64 bytes
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2056.8  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2056.9  23 | c : DNS request from ('127.0.0.1', 37283) to None: 61 bytes
+2056.9  23 | c : DNS request from ('127.0.0.1', 37283) to None: 61 bytes
+2056.9  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.9  14 | 2021-09-07T17:51:41+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2056.9  14 | 2021-09-07T17:51:41+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2056.9  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2056.9  14 | 2021-09-07T17:51:41+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2057.7 TEL | (proxy checking local liveness)
+2057.7  14 | 2021-09-07T17:51:42+0800 [Poll#info] Checkpoint
+2071.8 TEL | [102] Running: sudo -n echo -n
+2071.8 TEL | [102] ran in 0.01 secs.
+2087.7 TEL | (proxy checking local liveness)
+2087.7  14 | 2021-09-07T17:52:12+0800 [Poll#info] Checkpoint
+2090.2  23 | c : Accept TCP: 10.233.0.1:34178 -> 10.233.0.1:443.
+2090.8  23 |  s: SW'unknown':Mux#140: deleting (5 remain)
+2090.8  23 |  s: SW#19:10.233.0.3:53: deleting (4 remain)
+2090.8  23 |  s: SW'unknown':Mux#139: deleting (3 remain)
+2090.8  23 |  s: SW#16:10.233.0.3:53: deleting (2 remain)
+2091.3  23 | c : Accept TCP: 10.233.0.1:34202 -> 10.233.0.1:443.
+2091.7  23 | c : SW#8:10.233.0.1:34178: deleting (9 remain)
+2091.7  23 | c : SW#8:10.233.0.1:34178: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2091.7  23 | c : SW'unknown':Mux#153: deleting (8 remain)
+2093.8  23 | c : Accept TCP: 10.233.0.1:34230 -> 10.233.0.1:443.
+2093.8  23 | c : SW'unknown':Mux#139: deleting (9 remain)
+2093.8  23 | c : SW#11:10.233.0.3:48046: deleting (8 remain)
+2093.8  23 | c : SW'unknown':Mux#140: deleting (7 remain)
+2093.8  23 | c : SW#13:10.233.0.3:48048: deleting (6 remain)
+2093.8  23 | c : SW'unknown':Mux#154: deleting (5 remain)
+2093.8  23 | c : SW#10:10.233.0.1:34202: deleting (4 remain)
+2093.8  23 | c : SW#10:10.233.0.1:34202: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2093.8  23 | c : SW#12:10.233.0.3:34942: deleting (3 remain)
+2093.8  23 | c : SW'unknown':Mux#71: deleting (2 remain)
+2093.8  23 | c : Accept TCP: 10.233.0.1:34234 -> 10.233.0.1:443.
+2093.8  23 | c : Accept TCP: 10.233.0.1:34236 -> 10.233.0.1:443.
+2093.9  23 | c : Accept TCP: 10.233.0.1:34238 -> 10.233.0.1:443.
+2093.9  23 |  s: SW'unknown':Mux#154: deleting (11 remain)
+2093.9  23 |  s: SW#6:10.233.0.1:443: deleting (10 remain)
+2094.0  23 | c : Accept TCP: 10.233.0.1:34248 -> 10.233.0.1:443.
+2094.0  23 |  s: SW'unknown':Mux#158: deleting (11 remain)
+2094.0  23 |  s: SW#10:10.233.0.1:443: deleting (10 remain)
+2095.6  23 |  s: SW#-1:10.233.0.1:443: deleting (9 remain)
+2095.6  23 |  s: SW'unknown':Mux#153: deleting (8 remain)
+2095.8  23 | c : SW'unknown':Mux#158: deleting (9 remain)
+2095.8  23 | c : SW#12:10.233.0.1:34238: deleting (8 remain)
+2095.8  23 | c : SW#12:10.233.0.1:34238: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2100.4  23 | c : Accept TCP: 10.233.0.1:34328 -> 10.233.0.1:443.
+2101.9 TEL | [103] Running: sudo -n echo -n
+2101.9 TEL | [103] ran in 0.02 secs.
+2117.7 TEL | (proxy checking local liveness)
+2117.7  14 | 2021-09-07T17:52:42+0800 [Poll#info] Checkpoint
+2131.9 TEL | [104] Running: sudo -n echo -n
+2131.9 TEL | [104] ran in 0.02 secs.
+2147.7 TEL | (proxy checking local liveness)
+2147.7  14 | 2021-09-07T17:53:12+0800 [Poll#info] Checkpoint
+2162.0 TEL | [105] Running: sudo -n echo -n
+2162.0 TEL | [105] ran in 0.01 secs.
+2177.7 TEL | (proxy checking local liveness)
+2177.7  14 | 2021-09-07T17:53:42+0800 [Poll#info] Checkpoint
+2192.0 TEL | [106] Running: sudo -n echo -n
+2192.0 TEL | [106] ran in 0.02 secs.
+2207.7 TEL | (proxy checking local liveness)
+2207.7  14 | 2021-09-07T17:54:12+0800 [Poll#info] Checkpoint
+2222.1 TEL | [107] Running: sudo -n echo -n
+2222.1 TEL | [107] ran in 0.01 secs.
+2237.7 TEL | (proxy checking local liveness)
+2237.7  14 | 2021-09-07T17:54:42+0800 [Poll#info] Checkpoint
+2252.1 TEL | [108] Running: sudo -n echo -n
+2252.1 TEL | [108] ran in 0.02 secs.
+2267.7 TEL | (proxy checking local liveness)
+2267.7  14 | 2021-09-07T17:55:12+0800 [Poll#info] Checkpoint
+2280.4  23 | c : Accept TCP: 10.233.0.1:36652 -> 10.233.0.1:443.
+2280.4  23 | c : SW#10:10.233.0.1:34234: deleting (11 remain)
+2280.4  23 | c : SW#10:10.233.0.1:34234: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2280.4  23 | c : SW'unknown':Mux#156: deleting (10 remain)
+2282.2 TEL | [109] Running: sudo -n echo -n
+2282.2 TEL | [109] ran in 0.02 secs.
+2297.7 TEL | (proxy checking local liveness)
+2297.7  14 | 2021-09-07T17:55:42+0800 [Poll#info] Checkpoint
+2312.2 TEL | [110] Running: sudo -n echo -n
+2312.2 TEL | [110] ran in 0.02 secs.
+2327.7 TEL | (proxy checking local liveness)
+2327.7  14 | 2021-09-07T17:56:12+0800 [Poll#info] Checkpoint
+2342.3 TEL | [111] Running: sudo -n echo -n
+2342.3 TEL | [111] ran in 0.02 secs.
+2357.7 TEL | (proxy checking local liveness)
+2357.7  14 | 2021-09-07T17:56:42+0800 [Poll#info] Checkpoint
+2372.3 TEL | [112] Running: sudo -n echo -n
+2372.3 TEL | [112] ran in 0.02 secs.
+2387.7 TEL | (proxy checking local liveness)
+2387.7  14 | 2021-09-07T17:57:12+0800 [Poll#info] Checkpoint
+2402.4 TEL | [113] Running: sudo -n echo -n
+2402.4 TEL | [113] ran in 0.02 secs.
+2417.7 TEL | (proxy checking local liveness)
+2417.7  14 | 2021-09-07T17:57:42+0800 [Poll#info] Checkpoint
+2422.0  23 | c : DNS request from ('127.0.0.1', 39699) to None: 61 bytes
+2422.0  23 | c : DNS request from ('127.0.0.1', 39699) to None: 61 bytes
+2422.0  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.0  23 | c : Accept TCP: 10.233.0.3:52810 -> 10.233.0.3:53.
+2422.0  23 | c : Accept TCP: 10.233.0.3:52812 -> 10.233.0.3:53.
+2422.0  14 | 2021-09-07T17:57:46+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2422.0  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.0  23 | c : SW#14:10.233.0.1:36652: deleting (13 remain)
+2422.0  23 | c : SW#14:10.233.0.1:36652: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2422.0  23 | c : SW'unknown':Mux#161: deleting (12 remain)
+2422.1  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.1  23 | c : DNS request from ('127.0.0.1', 48668) to None: 61 bytes
+2422.1  23 | c : DNS request from ('127.0.0.1', 48668) to None: 61 bytes
+2422.1  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.1  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.2  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.2  14 | 2021-09-07T17:57:46+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2422.2  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.2  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.2  23 | c : DNS request from ('127.0.0.1', 50299) to None: 61 bytes
+2422.2  23 | c : DNS request from ('127.0.0.1', 50299) to None: 61 bytes
+2422.2  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.2  23 | c : DNS request from ('127.0.0.1', 42821) to None: 61 bytes
+2422.4  23 | c : DNS request from ('127.0.0.1', 42821) to None: 61 bytes
+2422.4  23 | c : DNS request from ('127.0.0.1', 51724) to None: 64 bytes
+2422.4  23 | c : DNS request from ('127.0.0.1', 51724) to None: 64 bytes
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2422.4  14 | 2021-09-07T17:57:46+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:47+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2422.4  14 | 2021-09-07T17:57:47+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2422.6  14 | 2021-09-07T17:57:47+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2422.7  23 | c : DNS request from ('127.0.0.1', 59834) to None: 64 bytes
+2422.7  23 | c : DNS request from ('127.0.0.1', 59834) to None: 64 bytes
+2422.7  14 | 2021-09-07T17:57:47+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2422.7  14 | 2021-09-07T17:57:47+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2422.7  14 | 2021-09-07T17:57:47+0800 [stdout#info] AAAA query, sending back A instead: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2422.7  14 | 2021-09-07T17:57:47+0800 [stdout#info] A query: b'dockerauth.cn-hangzhou.aliyuncs.com'
+2422.7  14 | 2021-09-07T17:57:47+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2422.7  14 | 2021-09-07T17:57:47+0800 [stdout#info] Result for b'dockerauth.cn-hangzhou.aliyuncs.com' is ['120.55.35.41', '120.55.35.40', '120.55.35.39', '120.55.35.38', '120.55.35.37', '120.55.35.34', '120.55.35.2', '120.27.176.229', '120.27.176.228', '116.62.99.1', '47.97.242.19', '47.97.242.18', '47.97.242.17', '47.97.242.16', '47.97.242.15', '47.97.242.14', '47.97.242.13', '47.97.242.12', '47.97.242.11', '47.97.242.10']
+2422.9  23 | c : DNS request from ('127.0.0.1', 32784) to None: 61 bytes
+2423.1  14 | 2021-09-07T17:57:47+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2423.1  23 | c : DNS request from ('127.0.0.1', 32784) to None: 61 bytes
+2423.1  14 | 2021-09-07T17:57:47+0800 [stdout#info] AAAA query, sending back A instead: b'registry.cn-beijing.aliyuncs.com'
+2423.1  14 | 2021-09-07T17:57:47+0800 [stdout#info] A query: b'registry.cn-beijing.aliyuncs.com'
+2423.1  14 | 2021-09-07T17:57:47+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2423.1  14 | 2021-09-07T17:57:47+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2432.4 TEL | [114] Running: sudo -n echo -n
+2432.4 TEL | [114] ran in 0.02 secs.
+2447.7 TEL | (proxy checking local liveness)
+2447.7  14 | 2021-09-07T17:58:12+0800 [Poll#info] Checkpoint
+2460.4  23 | c : Accept TCP: 10.233.0.1:38986 -> 10.233.0.1:443.
+2460.4  23 | c : SW#10:10.233.0.3:52810: deleting (13 remain)
+2460.4  23 | c : SW'unknown':Mux#164: deleting (12 remain)
+2460.5  23 |  s: SW'unknown':Mux#164: deleting (17 remain)
+2460.5  23 |  s: SW#14:10.233.0.3:53: deleting (16 remain)
+2460.5  23 |  s: SW'unknown':Mux#165: deleting (15 remain)
+2460.5  23 |  s: SW#15:10.233.0.3:53: deleting (14 remain)
+2462.5 TEL | [115] Running: sudo -n echo -n
+2462.5 TEL | [115] ran in 0.02 secs.
+2477.7 TEL | (proxy checking local liveness)
+2477.7  14 | 2021-09-07T17:58:42+0800 [Poll#info] Checkpoint
+2492.5 TEL | [116] Running: sudo -n echo -n
+2492.5 TEL | [116] ran in 0.01 secs.
+2507.7 TEL | (proxy checking local liveness)
+2507.7  14 | 2021-09-07T17:59:12+0800 [Poll#info] Checkpoint
+2522.6 TEL | [117] Running: sudo -n echo -n
+2522.6 TEL | [117] ran in 0.02 secs.
+2537.7 TEL | (proxy checking local liveness)
+2537.7  14 | 2021-09-07T17:59:42+0800 [Poll#info] Checkpoint
+2552.6 TEL | [118] Running: sudo -n echo -n
+2567.5 TEL | [118] ran in 14.87 secs.
+2567.7 TEL | (proxy checking local liveness)
+2567.7  14 | 2021-09-07T18:00:12+0800 [Poll#info] Checkpoint
+2577.9  23 | c : SW'unknown':Mux#160: deleting (11 remain)
+2577.9  23 | c : SW#12:10.233.0.1:34328: deleting (10 remain)
+2577.9  23 | c : SW#12:10.233.0.1:34328: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2577.9  23 | c : SW'unknown':Mux#165: deleting (9 remain)
+2577.9  23 | c : SW#15:10.233.0.3:52812: deleting (8 remain)
+2577.9  23 | c : SW'unknown':Mux#178: deleting (7 remain)
+2577.9  23 | c : SW#14:10.233.0.1:38986: deleting (6 remain)
+2577.9  23 | c : SW#14:10.233.0.1:38986: error was: nowrite: [Errno 107] Transport endpoint is not connected
+2579.3  23 |  s: SW'unknown':Mux#178: deleting (13 remain)
+2579.3  23 |  s: SW#12:10.233.0.1:443: deleting (12 remain)
+2597.5 TEL | [119] Running: sudo -n echo -n
+2597.6 TEL | [119] ran in 0.09 secs.
+2597.7 TEL | (proxy checking local liveness)
+2597.7  14 | 2021-09-07T18:00:42+0800 [Poll#info] Checkpoint
+2627.6 TEL | [120] Running: sudo -n echo -n
+2627.7 TEL | [120] ran in 0.02 secs.
+2627.7 TEL | (proxy checking local liveness)
+2627.7  14 | 2021-09-07T18:01:12+0800 [Poll#info] Checkpoint
+2640.4  23 | c : Accept TCP: 10.233.0.1:41286 -> 10.233.0.1:443.
+2640.4  23 |  s: SW'unknown':Mux#160: deleting (13 remain)
+2640.4  23 |  s: SW#10:10.233.0.1:443: deleting (12 remain)
+2640.4  23 |  s: SW#-1:10.233.0.1:443: deleting (11 remain)
+2640.4  23 |  s: SW'unknown':Mux#161: deleting (10 remain)
+2640.4  23 |  s: SW'unknown':Mux#156: deleting (9 remain)
+2640.4  23 |  s: SW#8:10.233.0.1:443: deleting (8 remain)
+2657.7 TEL | (proxy checking local liveness)
+2657.7  14 | 2021-09-07T18:01:42+0800 [Poll#info] Checkpoint
+2657.7 TEL | [121] Running: sudo -n echo -n
+2657.7 TEL | [121] ran in 0.01 secs.
+2658.7 TEL | Main process (bash --norc)
+2658.7 TEL |  exited with code 130.
+2658.7 TEL | END SPAN runner.py:754(wait_for_exit) 2634.8s
+2658.7 >>> | Your process exited with return code 130.
+2658.7 TEL | EXITING successful session.
+2658.7 >>> | Exit cleanup in progress
+2658.7 TEL | (Cleanup) Terminate local process
+2658.7 TEL | Local process is already dead (ret=130)
+2658.7 TEL | (Cleanup) Kill BG process [23] sshuttle
+2658.7 TEL | (Cleanup) Unmount remote filesystem
+2658.7 TEL | [122] Running: fusermount -z -u /tmp/tel-he1uauku/fs
+2658.8  23 |  s: SW'unknown':Mux#155: deleting (7 remain)
+2658.8  23 |  s: SW#7:10.233.0.1:443: deleting (6 remain)
+2658.8  23 |  s: SW'unknown':Mux#157: deleting (5 remain)
+2658.8  23 |  s: SW#9:10.233.0.1:443: deleting (4 remain)
+2658.8  23 |  s: SW'unknown':Mux#159: deleting (3 remain)
+2658.8  23 |  s: SW#6:10.233.0.1:443: deleting (2 remain)
+2658.8  23 |  s: SW'unknown':Mux#179: deleting (1 remain)
+2658.8  23 |  s: SW#12:10.233.0.1:443: deleting (0 remain)
+2658.9 TEL | [122] ran in 0.10 secs.
+2658.9 TEL | (Cleanup) Kill BG process [20] SSH port forward (socks and proxy poll)
+2658.9 TEL | (Cleanup) Kill Web server for proxy poll
+2658.9 TEL | [20] SSH port forward (socks and proxy poll): exit 0
+2659.0  23 | >> iptables -t nat -D OUTPUT -j sshuttle-12300
+2659.0  23 | >> iptables -t nat -D PREROUTING -j sshuttle-12300
+2659.0  23 | >> iptables -t nat -F sshuttle-12300
+2659.1  23 | >> iptables -t nat -X sshuttle-12300
+2659.2 TEL | (Cleanup) Kill BG process [19] SSH port forward (exposed ports)
+2659.2 TEL | (Cleanup) Kill BG process [15] kubectl port-forward
+2659.2 TEL | [19] SSH port forward (exposed ports): exit 0
+2659.2  23 | Connection to 127.0.0.1 closed by remote host.
+2659.2 TEL | [15] kubectl port-forward: exit -15
+2659.2 TEL | (Cleanup) Kill BG process [14] kubectl logs
+2659.2 TEL | [14] kubectl logs: exit -15
+2659.2 TEL | Background process (kubectl logs) exited with return code -15. Command was:
+2659.2 TEL |   kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system logs -f ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280 --container ks-apiserver --tail=10
+2659.2 TEL | 
+2659.2 TEL | Recent output was:
+2659.2 TEL |   2021-09-07T17:57:47+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2659.2 TEL |   2021-09-07T17:57:47+0800 [stdout#info] Result for b'registry.cn-beijing.aliyuncs.com' is ['47.95.181.38']
+2659.2 TEL |   2021-09-07T17:58:12+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T17:58:42+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T17:59:12+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T17:59:42+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T18:00:12+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T18:00:42+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T18:01:12+0800 [Poll#info] Checkpoint
+2659.2 TEL |   2021-09-07T18:01:42+0800 [Poll#info] Checkpoint
+2659.2 TEL | (Cleanup) Re-scale original deployment
+2659.2 TEL | [123] Running: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system scale Deployment ks-apiserver --replicas=1
+2659.3 TEL | [23] sshuttle: exit -15
+2667.5 123 | deployment.apps/ks-apiserver scaled
+2667.5 TEL | [123] ran in 8.29 secs.
+2667.5 TEL | (Cleanup) Delete proxy Pod
+2667.5 >>> | Cleaning up Pod
+2667.5 TEL | [124] Running: kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system delete --ignore-not-found --wait=false --selector=telepresence=a6eb9a6b9ceb4ff18441329405b08280 Pod
+2667.9 124 | pod "ks-apiserver-a6eb9a6b9ceb4ff18441329405b08280" deleted
+2667.9 TEL | [124] ran in 0.45 secs.
+2667.9 TEL | (Cleanup) Kill sudo privileges holder
+2667.9 TEL | (Cleanup) Stop time tracking
+2667.9 TEL | END SPAN main.py:40(main) 2667.9s
+2667.9 TEL | SPAN SUMMARY:
+2667.9 TEL | 2667.9s main.py:40(main)
+2667.9 TEL |    1.5s   startup.py:83(set_kube_command)
+2667.9 TEL |    0.3s     1 kubectl config current-context
+2667.9 TEL |    0.5s     2 kubectl --context kubernetes-admin@cluster.local version --short
+2667.9 TEL |    0.2s     3 kubectl --context kubernetes-admin@cluster.local config view -o json
+2667.9 TEL |    0.5s     4 kubectl --context kubernetes-admin@cluster.local api-versions
+2667.9 TEL |    0.3s   5 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system
+2667.9 TEL |    0.0s   6 ssh -V
+2667.9 TEL |    0.0s   7 sudo -n echo -n
+2667.9 TEL |    0.0s   8 sudo iptables --list --numeric
+2667.9 TEL |    0.3s   9 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-system
+2667.9 TEL |    1.9s   10 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syste
+2667.9 TEL |    0.3s   11 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syste
+2667.9 TEL |   12.1s   remote.py:109(wait_for_pod)
+2667.9 TEL |   11.8s     12 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syste
+2667.9 TEL |    0.3s     13 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syste
+2667.9 TEL |    0.8s   connect.py:37(connect)
+2667.9 TEL |    0.0s     16 ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -o
+2667.9 TEL |    0.0s     17 ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -o
+2667.9 TEL |    0.2s     18 ssh -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -o
+2667.9 TEL |    0.7s   remote_env.py:29(get_remote_env)
+2667.9 TEL |    0.7s     21 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syste
+2667.9 TEL |    0.3s   mount.py:30(mount_remote_volumes)
+2667.9 TEL |    0.3s     22 sshfs -p 43409 -F /dev/null -oStrictHostKeyChecking=no -oUserKnownHostsFile=/
+2667.9 TEL |    4.0s   vpn.py:62(connect_sshuttle)
+2667.9 TEL |    0.0s     cidr.py:113(get_proxy_cidrs)
+2667.9 TEL |    3.9s     vpn.py:85(connect_sshuttle,sshuttle-wait)
+2667.9 TEL |    0.3s       24 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-0")'
+2667.9 TEL |    0.3s       25 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-0.a.sanity
+2667.9 TEL |    0.3s       26 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-1")'
+2667.9 TEL |    1.0s       27 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-1.a.sanity
+2667.9 TEL |    0.2s       28 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-2")'
+2667.9 TEL |    0.4s       29 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-2.a.sanity
+2667.9 TEL |    0.1s       30 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-3")'
+2667.9 TEL |    0.3s       31 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-3.a.sanity
+2667.9 TEL |    0.1s       32 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-4")'
+2667.9 TEL |    0.3s       33 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-4.a.sanity
+2667.9 TEL |    0.1s       34 python3 -c 'import socket; socket.gethostbyname("hellotelepresence-5")'
+2667.9 TEL | 2634.8s   runner.py:754(wait_for_exit)
+2667.9 TEL |    0.0s     35 sudo -n echo -n
+2667.9 TEL |    0.0s     36 sudo -n echo -n
+2667.9 TEL |    0.0s     37 sudo -n echo -n
+2667.9 TEL |    0.0s     38 sudo -n echo -n
+2667.9 TEL |    0.0s     39 sudo -n echo -n
+2667.9 TEL |    0.0s     40 sudo -n echo -n
+2667.9 TEL |    0.0s     41 sudo -n echo -n
+2667.9 TEL |    0.0s     42 sudo -n echo -n
+2667.9 TEL |    0.0s     43 sudo -n echo -n
+2667.9 TEL |    0.0s     44 sudo -n echo -n
+2667.9 TEL |    0.0s     45 sudo -n echo -n
+2667.9 TEL |    0.1s     46 sudo -n echo -n
+2667.9 TEL |    0.0s     47 sudo -n echo -n
+2667.9 TEL |    0.0s     48 sudo -n echo -n
+2667.9 TEL |    0.0s     49 sudo -n echo -n
+2667.9 TEL |    0.0s     50 sudo -n echo -n
+2667.9 TEL |    0.0s     51 sudo -n echo -n
+2667.9 TEL |    0.0s     52 sudo -n echo -n
+2667.9 TEL |    0.0s     53 sudo -n echo -n
+2667.9 TEL |    0.0s     54 sudo -n echo -n
+2667.9 TEL |    0.0s     55 sudo -n echo -n
+2667.9 TEL |    0.0s     56 sudo -n echo -n
+2667.9 TEL |    0.0s     57 sudo -n echo -n
+2667.9 TEL |    0.0s     58 sudo -n echo -n
+2667.9 TEL |    0.0s     59 sudo -n echo -n
+2667.9 TEL |    0.2s     60 sudo -n echo -n
+2667.9 TEL |   21.4s     61 sudo -n echo -n
+2667.9 TEL |    0.0s     62 sudo -n echo -n
+2667.9 TEL |    0.0s     63 sudo -n echo -n
+2667.9 TEL |    0.0s     64 sudo -n echo -n
+2667.9 TEL |    0.0s     65 sudo -n echo -n
+2667.9 TEL |    0.0s     66 sudo -n echo -n
+2667.9 TEL |    0.0s     67 sudo -n echo -n
+2667.9 TEL |    0.0s     68 sudo -n echo -n
+2667.9 TEL |    0.0s     69 sudo -n echo -n
+2667.9 TEL |    0.0s     70 sudo -n echo -n
+2667.9 TEL |    0.0s     71 sudo -n echo -n
+2667.9 TEL |    0.0s     72 sudo -n echo -n
+2667.9 TEL |    0.0s     73 sudo -n echo -n
+2667.9 TEL |    0.0s     74 sudo -n echo -n
+2667.9 TEL |    0.0s     75 sudo -n echo -n
+2667.9 TEL |    0.0s     76 sudo -n echo -n
+2667.9 TEL |    0.8s     77 sudo -n echo -n
+2667.9 TEL |    0.0s     78 sudo -n echo -n
+2667.9 TEL |    0.0s     79 sudo -n echo -n
+2667.9 TEL |    0.0s     80 sudo -n echo -n
+2667.9 TEL |    0.0s     81 sudo -n echo -n
+2667.9 TEL |    0.0s     82 sudo -n echo -n
+2667.9 TEL |    0.0s     83 sudo -n echo -n
+2667.9 TEL |    0.0s     84 sudo -n echo -n
+2667.9 TEL |    0.0s     85 sudo -n echo -n
+2667.9 TEL |    0.0s     86 sudo -n echo -n
+2667.9 TEL |    0.0s     87 sudo -n echo -n
+2667.9 TEL |    1.4s     88 sudo -n echo -n
+2667.9 TEL |    0.0s     89 sudo -n echo -n
+2667.9 TEL |    0.0s     90 sudo -n echo -n
+2667.9 TEL |    0.0s     91 sudo -n echo -n
+2667.9 TEL |    0.0s     92 sudo -n echo -n
+2667.9 TEL |    0.0s     93 sudo -n echo -n
+2667.9 TEL |    0.1s     94 sudo -n echo -n
+2667.9 TEL |    0.0s     95 sudo -n echo -n
+2667.9 TEL |    0.0s     96 sudo -n echo -n
+2667.9 TEL |    0.0s     97 sudo -n echo -n
+2667.9 TEL |    0.0s     98 sudo -n echo -n
+2667.9 TEL |    0.0s     99 sudo -n echo -n
+2667.9 TEL |    0.1s     100 sudo -n echo -n
+2667.9 TEL |    2.6s     101 sudo -n echo -n
+2667.9 TEL |    0.0s     102 sudo -n echo -n
+2667.9 TEL |    0.0s     103 sudo -n echo -n
+2667.9 TEL |    0.0s     104 sudo -n echo -n
+2667.9 TEL |    0.0s     105 sudo -n echo -n
+2667.9 TEL |    0.0s     106 sudo -n echo -n
+2667.9 TEL |    0.0s     107 sudo -n echo -n
+2667.9 TEL |    0.0s     108 sudo -n echo -n
+2667.9 TEL |    0.0s     109 sudo -n echo -n
+2667.9 TEL |    0.0s     110 sudo -n echo -n
+2667.9 TEL |    0.0s     111 sudo -n echo -n
+2667.9 TEL |    0.0s     112 sudo -n echo -n
+2667.9 TEL |    0.0s     113 sudo -n echo -n
+2667.9 TEL |    0.0s     114 sudo -n echo -n
+2667.9 TEL |    0.0s     115 sudo -n echo -n
+2667.9 TEL |    0.0s     116 sudo -n echo -n
+2667.9 TEL |    0.0s     117 sudo -n echo -n
+2667.9 TEL |   14.9s     118 sudo -n echo -n
+2667.9 TEL |    0.1s     119 sudo -n echo -n
+2667.9 TEL |    0.0s     120 sudo -n echo -n
+2667.9 TEL |    0.0s     121 sudo -n echo -n
+2667.9 TEL |    0.1s   122 fusermount -z -u /tmp/tel-he1uauku/fs
+2667.9 TEL |    8.3s   123 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syst
+2667.9 TEL |    0.5s   124 kubectl --context kubernetes-admin@cluster.local --namespace kubesphere-syst
+2667.9 TEL | (Cleanup) Remove temporary directory
+2667.9 TEL | (Cleanup) Save caches
+2668.7 TEL | (sudo privileges holder thread exiting)

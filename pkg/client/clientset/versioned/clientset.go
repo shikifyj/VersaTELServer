@@ -24,6 +24,7 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
+	alertingv2beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/alerting/v2beta1"
 	applicationv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/application/v1alpha1"
 	auditingv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/auditing/v1alpha1"
 	clusterv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/cluster/v1alpha1"
@@ -32,16 +33,19 @@ import (
 	iamv1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/iam/v1alpha2"
 	networkv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/network/v1alpha1"
 	notificationv2beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/notification/v2beta1"
+	notificationv2beta2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/notification/v2beta2"
 	quotav1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/quota/v1alpha2"
 	servicemeshv1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/servicemesh/v1alpha2"
 	storagev1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/storage/v1alpha1"
 	tenantv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/tenant/v1alpha1"
 	tenantv1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/tenant/v1alpha2"
 	typesv1beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/types/v1beta1"
+	typesv1beta2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/types/v1beta2"
 )
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	AlertingV2beta1() alertingv2beta1.AlertingV2beta1Interface
 	ApplicationV1alpha1() applicationv1alpha1.ApplicationV1alpha1Interface
 	AuditingV1alpha1() auditingv1alpha1.AuditingV1alpha1Interface
 	ClusterV1alpha1() clusterv1alpha1.ClusterV1alpha1Interface
@@ -50,18 +54,21 @@ type Interface interface {
 	IamV1alpha2() iamv1alpha2.IamV1alpha2Interface
 	NetworkV1alpha1() networkv1alpha1.NetworkV1alpha1Interface
 	NotificationV2beta1() notificationv2beta1.NotificationV2beta1Interface
+	NotificationV2beta2() notificationv2beta2.NotificationV2beta2Interface
 	QuotaV1alpha2() quotav1alpha2.QuotaV1alpha2Interface
 	ServicemeshV1alpha2() servicemeshv1alpha2.ServicemeshV1alpha2Interface
 	StorageV1alpha1() storagev1alpha1.StorageV1alpha1Interface
 	TenantV1alpha1() tenantv1alpha1.TenantV1alpha1Interface
 	TenantV1alpha2() tenantv1alpha2.TenantV1alpha2Interface
 	TypesV1beta1() typesv1beta1.TypesV1beta1Interface
+	TypesV1beta2() typesv1beta2.TypesV1beta2Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	alertingV2beta1     *alertingv2beta1.AlertingV2beta1Client
 	applicationV1alpha1 *applicationv1alpha1.ApplicationV1alpha1Client
 	auditingV1alpha1    *auditingv1alpha1.AuditingV1alpha1Client
 	clusterV1alpha1     *clusterv1alpha1.ClusterV1alpha1Client
@@ -70,12 +77,19 @@ type Clientset struct {
 	iamV1alpha2         *iamv1alpha2.IamV1alpha2Client
 	networkV1alpha1     *networkv1alpha1.NetworkV1alpha1Client
 	notificationV2beta1 *notificationv2beta1.NotificationV2beta1Client
+	notificationV2beta2 *notificationv2beta2.NotificationV2beta2Client
 	quotaV1alpha2       *quotav1alpha2.QuotaV1alpha2Client
 	servicemeshV1alpha2 *servicemeshv1alpha2.ServicemeshV1alpha2Client
 	storageV1alpha1     *storagev1alpha1.StorageV1alpha1Client
 	tenantV1alpha1      *tenantv1alpha1.TenantV1alpha1Client
 	tenantV1alpha2      *tenantv1alpha2.TenantV1alpha2Client
 	typesV1beta1        *typesv1beta1.TypesV1beta1Client
+	typesV1beta2        *typesv1beta2.TypesV1beta2Client
+}
+
+// AlertingV2beta1 retrieves the AlertingV2beta1Client
+func (c *Clientset) AlertingV2beta1() alertingv2beta1.AlertingV2beta1Interface {
+	return c.alertingV2beta1
 }
 
 // ApplicationV1alpha1 retrieves the ApplicationV1alpha1Client
@@ -118,6 +132,11 @@ func (c *Clientset) NotificationV2beta1() notificationv2beta1.NotificationV2beta
 	return c.notificationV2beta1
 }
 
+// NotificationV2beta2 retrieves the NotificationV2beta2Client
+func (c *Clientset) NotificationV2beta2() notificationv2beta2.NotificationV2beta2Interface {
+	return c.notificationV2beta2
+}
+
 // QuotaV1alpha2 retrieves the QuotaV1alpha2Client
 func (c *Clientset) QuotaV1alpha2() quotav1alpha2.QuotaV1alpha2Interface {
 	return c.quotaV1alpha2
@@ -148,6 +167,11 @@ func (c *Clientset) TypesV1beta1() typesv1beta1.TypesV1beta1Interface {
 	return c.typesV1beta1
 }
 
+// TypesV1beta2 retrieves the TypesV1beta2Client
+func (c *Clientset) TypesV1beta2() typesv1beta2.TypesV1beta2Interface {
+	return c.typesV1beta2
+}
+
 // Discovery retrieves the DiscoveryClient
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	if c == nil {
@@ -169,6 +193,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
+	cs.alertingV2beta1, err = alertingv2beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.applicationV1alpha1, err = applicationv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -201,6 +229,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.notificationV2beta2, err = notificationv2beta2.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.quotaV1alpha2, err = quotav1alpha2.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -225,6 +257,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.typesV1beta2, err = typesv1beta2.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -237,6 +273,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.alertingV2beta1 = alertingv2beta1.NewForConfigOrDie(c)
 	cs.applicationV1alpha1 = applicationv1alpha1.NewForConfigOrDie(c)
 	cs.auditingV1alpha1 = auditingv1alpha1.NewForConfigOrDie(c)
 	cs.clusterV1alpha1 = clusterv1alpha1.NewForConfigOrDie(c)
@@ -245,12 +282,14 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.iamV1alpha2 = iamv1alpha2.NewForConfigOrDie(c)
 	cs.networkV1alpha1 = networkv1alpha1.NewForConfigOrDie(c)
 	cs.notificationV2beta1 = notificationv2beta1.NewForConfigOrDie(c)
+	cs.notificationV2beta2 = notificationv2beta2.NewForConfigOrDie(c)
 	cs.quotaV1alpha2 = quotav1alpha2.NewForConfigOrDie(c)
 	cs.servicemeshV1alpha2 = servicemeshv1alpha2.NewForConfigOrDie(c)
 	cs.storageV1alpha1 = storagev1alpha1.NewForConfigOrDie(c)
 	cs.tenantV1alpha1 = tenantv1alpha1.NewForConfigOrDie(c)
 	cs.tenantV1alpha2 = tenantv1alpha2.NewForConfigOrDie(c)
 	cs.typesV1beta1 = typesv1beta1.NewForConfigOrDie(c)
+	cs.typesV1beta2 = typesv1beta2.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -259,6 +298,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.alertingV2beta1 = alertingv2beta1.New(c)
 	cs.applicationV1alpha1 = applicationv1alpha1.New(c)
 	cs.auditingV1alpha1 = auditingv1alpha1.New(c)
 	cs.clusterV1alpha1 = clusterv1alpha1.New(c)
@@ -267,12 +307,14 @@ func New(c rest.Interface) *Clientset {
 	cs.iamV1alpha2 = iamv1alpha2.New(c)
 	cs.networkV1alpha1 = networkv1alpha1.New(c)
 	cs.notificationV2beta1 = notificationv2beta1.New(c)
+	cs.notificationV2beta2 = notificationv2beta2.New(c)
 	cs.quotaV1alpha2 = quotav1alpha2.New(c)
 	cs.servicemeshV1alpha2 = servicemeshv1alpha2.New(c)
 	cs.storageV1alpha1 = storagev1alpha1.New(c)
 	cs.tenantV1alpha1 = tenantv1alpha1.New(c)
 	cs.tenantV1alpha2 = tenantv1alpha2.New(c)
 	cs.typesV1beta1 = typesv1beta1.New(c)
+	cs.typesV1beta2 = typesv1beta2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

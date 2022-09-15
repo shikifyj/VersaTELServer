@@ -24,6 +24,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	alertingv2beta1 "kubesphere.io/api/alerting/v2beta1"
 	applicationv1alpha1 "kubesphere.io/api/application/v1alpha1"
 	auditingv1alpha1 "kubesphere.io/api/auditing/v1alpha1"
 	clusterv1alpha1 "kubesphere.io/api/cluster/v1alpha1"
@@ -32,18 +33,21 @@ import (
 	iamv1alpha2 "kubesphere.io/api/iam/v1alpha2"
 	networkv1alpha1 "kubesphere.io/api/network/v1alpha1"
 	notificationv2beta1 "kubesphere.io/api/notification/v2beta1"
+	notificationv2beta2 "kubesphere.io/api/notification/v2beta2"
 	quotav1alpha2 "kubesphere.io/api/quota/v1alpha2"
 	servicemeshv1alpha2 "kubesphere.io/api/servicemesh/v1alpha2"
 	storagev1alpha1 "kubesphere.io/api/storage/v1alpha1"
 	tenantv1alpha1 "kubesphere.io/api/tenant/v1alpha1"
 	tenantv1alpha2 "kubesphere.io/api/tenant/v1alpha2"
 	typesv1beta1 "kubesphere.io/api/types/v1beta1"
+	typesv1beta2 "kubesphere.io/api/types/v1beta2"
 )
 
 var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
-var parameterCodec = runtime.NewParameterCodec(scheme)
+
 var localSchemeBuilder = runtime.SchemeBuilder{
+	alertingv2beta1.AddToScheme,
 	applicationv1alpha1.AddToScheme,
 	auditingv1alpha1.AddToScheme,
 	clusterv1alpha1.AddToScheme,
@@ -52,12 +56,14 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	iamv1alpha2.AddToScheme,
 	networkv1alpha1.AddToScheme,
 	notificationv2beta1.AddToScheme,
+	notificationv2beta2.AddToScheme,
 	quotav1alpha2.AddToScheme,
 	servicemeshv1alpha2.AddToScheme,
 	storagev1alpha1.AddToScheme,
 	tenantv1alpha1.AddToScheme,
 	tenantv1alpha2.AddToScheme,
 	typesv1beta1.AddToScheme,
+	typesv1beta2.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

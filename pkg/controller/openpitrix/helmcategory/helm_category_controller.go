@@ -20,12 +20,11 @@ import (
 	"context"
 	"time"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,15 +44,6 @@ import (
 const (
 	HelmCategoryFinalizer = "helmcategories.application.kubesphere.io"
 )
-
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
-}
-
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileHelmCategory{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
-}
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -185,9 +175,12 @@ var _ reconcile.Reconciler = &ReconcileHelmCategory{}
 // ReconcileWorkspace reconciles a Workspace object
 type ReconcileHelmCategory struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
-	config   *rest.Config
+	//Scheme   *runtime.Scheme
+}
+
+func (r *ReconcileHelmCategory) SetupWithManager(mgr ctrl.Manager) error {
+	r.Client = mgr.GetClient()
+	return add(mgr, r)
 }
 
 // Reconcile reads that state of the cluster for a helmcategories object and makes changes based on the state read
@@ -198,7 +191,7 @@ func (r *ReconcileHelmCategory) Reconcile(ctx context.Context, request reconcile
 	start := time.Now()
 	klog.V(4).Infof("sync helm category: %s", request.String())
 	defer func() {
-		klog.V(4).Infof("sync helm category end: %s, elapsed: %v", request.String(), time.Now().Sub(start))
+		klog.V(4).Infof("sync helm category end: %s, elapsed: %v", request.String(), time.Since(start))
 	}()
 
 	instance := &v1alpha1.HelmCategory{}
@@ -240,10 +233,7 @@ func (r *ReconcileHelmCategory) Reconcile(ctx context.Context, request reconcile
 			}
 
 			instance.ObjectMeta.Finalizers = sliceutil.RemoveString(instance.ObjectMeta.Finalizers, func(item string) bool {
-				if item == HelmCategoryFinalizer {
-					return true
-				}
-				return false
+				return item == HelmCategoryFinalizer
 			})
 			if err := r.Update(context.Background(), instance); err != nil {
 				return reconcile.Result{}, err
@@ -300,8 +290,7 @@ func (r *ReconcileHelmCategory) updateCategoryCount(id string) error {
 
 func (r *ReconcileHelmCategory) countApplications(id string) (int, error) {
 	list := v1alpha1.HelmApplicationList{}
-	var err error
-	err = r.List(context.TODO(), &list, client.MatchingLabels{
+	err := r.List(context.TODO(), &list, client.MatchingLabels{
 		constants.CategoryIdLabelKey:  id,
 		constants.ChartRepoIdLabelKey: v1alpha1.AppStoreRepoId,
 	})

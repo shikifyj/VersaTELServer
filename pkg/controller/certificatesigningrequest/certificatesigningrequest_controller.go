@@ -86,7 +86,7 @@ func NewController(k8sClient kubernetes.Interface, csrInformer certificatesinfor
 		csrLister:          csrInformer.Lister(),
 		csrSynced:          csrInformer.Informer().HasSynced,
 		cmSynced:           configMapInformer.Informer().HasSynced,
-		kubeconfigOperator: kubeconfig.NewOperator(k8sClient, configMapInformer, config),
+		kubeconfigOperator: kubeconfig.NewOperator(k8sClient, configMapInformer.Lister(), config),
 		workqueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "CertificateSigningRequest"),
 		recorder:           recorder,
 	}
@@ -251,6 +251,7 @@ func (c *Controller) Approve(csr *certificatesv1.CertificateSigningRequest) erro
 	}
 	csr.Status = certificatesv1.CertificateSigningRequestStatus{
 		Conditions: []certificatesv1.CertificateSigningRequestCondition{{
+			Status:  corev1.ConditionTrue,
 			Type:    "Approved",
 			Reason:  "KubeSphereApprove",
 			Message: "This CSR was approved by KubeSphere",
@@ -261,7 +262,7 @@ func (c *Controller) Approve(csr *certificatesv1.CertificateSigningRequest) erro
 	}
 
 	// approve csr
-	csr, err := c.k8sclient.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.Background(), csr.Name, csr, metav1.UpdateOptions{})
+	_, err := c.k8sclient.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.Background(), csr.Name, csr, metav1.UpdateOptions{})
 	if err != nil {
 		klog.Errorln(err)
 		return err

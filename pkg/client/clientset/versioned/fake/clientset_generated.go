@@ -25,6 +25,8 @@ import (
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
 	clientset "kubesphere.io/kubesphere/pkg/client/clientset/versioned"
+	alertingv2beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/alerting/v2beta1"
+	fakealertingv2beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/alerting/v2beta1/fake"
 	applicationv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/application/v1alpha1"
 	fakeapplicationv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/application/v1alpha1/fake"
 	auditingv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/auditing/v1alpha1"
@@ -41,6 +43,8 @@ import (
 	fakenetworkv1alpha1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/network/v1alpha1/fake"
 	notificationv2beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/notification/v2beta1"
 	fakenotificationv2beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/notification/v2beta1/fake"
+	notificationv2beta2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/notification/v2beta2"
+	fakenotificationv2beta2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/notification/v2beta2/fake"
 	quotav1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/quota/v1alpha2"
 	fakequotav1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/quota/v1alpha2/fake"
 	servicemeshv1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/servicemesh/v1alpha2"
@@ -53,6 +57,8 @@ import (
 	faketenantv1alpha2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/tenant/v1alpha2/fake"
 	typesv1beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/types/v1beta1"
 	faketypesv1beta1 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/types/v1beta1/fake"
+	typesv1beta2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/types/v1beta2"
+	faketypesv1beta2 "kubesphere.io/kubesphere/pkg/client/clientset/versioned/typed/types/v1beta2/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.
@@ -102,6 +108,11 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
+// AlertingV2beta1 retrieves the AlertingV2beta1Client
+func (c *Clientset) AlertingV2beta1() alertingv2beta1.AlertingV2beta1Interface {
+	return &fakealertingv2beta1.FakeAlertingV2beta1{Fake: &c.Fake}
+}
+
 // ApplicationV1alpha1 retrieves the ApplicationV1alpha1Client
 func (c *Clientset) ApplicationV1alpha1() applicationv1alpha1.ApplicationV1alpha1Interface {
 	return &fakeapplicationv1alpha1.FakeApplicationV1alpha1{Fake: &c.Fake}
@@ -142,6 +153,11 @@ func (c *Clientset) NotificationV2beta1() notificationv2beta1.NotificationV2beta
 	return &fakenotificationv2beta1.FakeNotificationV2beta1{Fake: &c.Fake}
 }
 
+// NotificationV2beta2 retrieves the NotificationV2beta2Client
+func (c *Clientset) NotificationV2beta2() notificationv2beta2.NotificationV2beta2Interface {
+	return &fakenotificationv2beta2.FakeNotificationV2beta2{Fake: &c.Fake}
+}
+
 // QuotaV1alpha2 retrieves the QuotaV1alpha2Client
 func (c *Clientset) QuotaV1alpha2() quotav1alpha2.QuotaV1alpha2Interface {
 	return &fakequotav1alpha2.FakeQuotaV1alpha2{Fake: &c.Fake}
@@ -170,4 +186,9 @@ func (c *Clientset) TenantV1alpha2() tenantv1alpha2.TenantV1alpha2Interface {
 // TypesV1beta1 retrieves the TypesV1beta1Client
 func (c *Clientset) TypesV1beta1() typesv1beta1.TypesV1beta1Interface {
 	return &faketypesv1beta1.FakeTypesV1beta1{Fake: &c.Fake}
+}
+
+// TypesV1beta2 retrieves the TypesV1beta2Client
+func (c *Clientset) TypesV1beta2() typesv1beta2.TypesV1beta2Interface {
+	return &faketypesv1beta2.FakeTypesV1beta2{Fake: &c.Fake}
 }

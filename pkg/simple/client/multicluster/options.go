@@ -17,50 +17,77 @@ limitations under the License.
 package multicluster
 
 import (
+	"errors"
 	"time"
 
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-const DefaultResyncPeriod = 120 * time.Second
+const (
+	DefaultResyncPeriod    = 120 * time.Second
+	DefaultHostClusterName = "host"
+)
 
 type Options struct {
 	// Enable
-	Enable           bool `json:"enable"`
-	EnableFederation bool `json:"enableFederation,omitempty"`
+	// Deprecated: this field will be removed in the future version, use ClusterRole instead.
+	Enable bool `json:"enable" yaml:"enable"`
 
 	// ProxyPublishService is the service name of multicluster component tower.
 	//   If this field provided, apiserver going to use the ingress.ip of this service.
 	// This field will be used when generating agent deployment yaml for joining clusters.
-	ProxyPublishService string `json:"proxyPublishService,omitempty"`
+	ProxyPublishService string `json:"proxyPublishService,omitempty" yaml:"proxyPublishService,omitempty"`
 
 	// ProxyPublishAddress is the public address of tower for all cluster agents.
 	//   This field takes precedence over field ProxyPublishService.
 	// If both field ProxyPublishService and ProxyPublishAddress are empty, apiserver will
 	// return 404 Not Found for all cluster agent yaml requests.
-	ProxyPublishAddress string `json:"proxyPublishAddress,omitempty"`
+	ProxyPublishAddress string `json:"proxyPublishAddress,omitempty" yaml:"proxyPublishAddress,omitempty"`
 
 	// AgentImage is the image used when generating deployment for all cluster agents.
-	AgentImage string `json:"agentImage,omitempty"`
+	AgentImage string `json:"agentImage,omitempty" yaml:"agentImage,omitempty"`
 
-	// ClusterControllerResyncSecond is the resync period used by cluster controller.
-	ClusterControllerResyncSecond time.Duration `json:"clusterControllerResyncSecond,omitempty" yaml:"clusterControllerResyncSecond"`
+	// ClusterControllerResyncPeriod is the resync period used by cluster controller.
+	ClusterControllerResyncPeriod time.Duration `json:"clusterControllerResyncPeriod,omitempty" yaml:"clusterControllerResyncPeriod,omitempty"`
+
+	// HostClusterName is the name of the control plane cluster, default set to host.
+	HostClusterName string `json:"hostClusterName,omitempty" yaml:"hostClusterName,omitempty"`
+
+	// ClusterName is the name of the current cluster,
+	// this value will be set by the cluster-controller and stored in the kubesphere-config configmap.
+	ClusterName string `json:"clusterName,omitempty" yaml:"clusterName,omitempty"`
+
+	// ClusterRole is the role of the current cluster,
+	// available values: host, member.
+	ClusterRole string `json:"clusterRole,omitempty" yaml:"clusterRole,omitempty"`
 }
 
-// NewOptions() returns a default nil options
+// NewOptions returns a default nil options
 func NewOptions() *Options {
 	return &Options{
 		Enable:                        false,
-		EnableFederation:              false,
 		ProxyPublishAddress:           "",
 		ProxyPublishService:           "",
 		AgentImage:                    "kubesphere/tower:v1.0",
-		ClusterControllerResyncSecond: DefaultResyncPeriod,
+		ClusterControllerResyncPeriod: DefaultResyncPeriod,
+		HostClusterName:               DefaultHostClusterName,
 	}
 }
 
 func (o *Options) Validate() []error {
-	return nil
+	var err []error
+
+	res := validation.IsQualifiedName(o.HostClusterName)
+	if len(res) == 0 {
+		return err
+	}
+
+	err = append(err, errors.New("failed to create the host cluster because of invalid cluster name"))
+	for _, str := range res {
+		err = append(err, errors.New(str))
+	}
+	return err
 }
 
 func (o *Options) AddFlags(fs *pflag.FlagSet, s *Options) {
@@ -78,6 +105,9 @@ func (o *Options) AddFlags(fs *pflag.FlagSet, s *Options) {
 	fs.StringVar(&o.AgentImage, "agent-image", s.AgentImage, ""+
 		"This field is used when generating deployment yaml for agent.")
 
-	fs.DurationVar(&o.ClusterControllerResyncSecond, "cluster-controller-resync-second", s.ClusterControllerResyncSecond,
-		"Cluster controller resync second to sync cluster resource. e.g. 2m 5m 10m ... default set to 2m")
+	fs.DurationVar(&o.ClusterControllerResyncPeriod, "cluster-controller-resync-period", s.ClusterControllerResyncPeriod,
+		"Cluster controller resync period to sync cluster resource. e.g. 2m 5m 10m ... default set to 2m")
+
+	fs.StringVar(&o.HostClusterName, "host-cluster-name", s.HostClusterName, "the name of the control plane"+
+		" cluster, default set to host")
 }

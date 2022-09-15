@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
@@ -175,9 +174,14 @@ func (c *applicationOperator) ValidatePackage(request *ValidatePackageRequest) (
 
 func (c *applicationOperator) DoAppAction(appId string, request *ActionRequest) error {
 
-	app, err := c.appLister.Get(appId)
+	app, err := c.getHelmApplication(appId)
 	if err != nil {
 		return err
+	}
+
+	// All the app belonging to a built-in repo have a label `application.kubesphere.io/repo-id`, and the value should be `builtin-stable` or else.
+	if repoId, exist := app.Labels[constants.ChartRepoIdLabelKey]; exist && repoId != v1alpha1.AppStoreRepoId {
+		return apierrors.NewForbidden(v1alpha1.Resource(v1alpha1.ResourcePluralHelmApplication), app.Name, errors.New("application is immutable"))
 	}
 
 	var filterState string
@@ -393,10 +397,15 @@ func (c *applicationOperator) ModifyApp(appId string, request *ModifyAppRequest)
 		return invalidS3Config
 	}
 
-	app, err := c.appLister.Get(appId)
+	app, err := c.getHelmApplication(appId)
 	if err != nil {
 		klog.Error(err)
 		return err
+	}
+
+	// All the app belonging to a built-in repo have a label `application.kubesphere.io/repo-id`, and the value should be `builtin-stable` or else.
+	if repoId, exist := app.Labels[constants.ChartRepoIdLabelKey]; exist && repoId != v1alpha1.AppStoreRepoId {
+		return apierrors.NewForbidden(v1alpha1.Resource(v1alpha1.ResourcePluralHelmApplication), app.Name, errors.New("application is immutable"))
 	}
 
 	appCopy := app.DeepCopy()
@@ -529,47 +538,6 @@ func (c *applicationOperator) modifyAppAttachment(app *v1alpha1.HelmApplication,
 	return "", nil
 }
 
-// modify icon or attachment of the app
-// added: new attachments have been saved to store
-// deleted: attachments should be deleted
-func (c *applicationOperator) appAttachmentDiff(old, newApp *v1alpha1.HelmApplication) (added, deleted []string) {
-
-	added = make([]string, 0, 7)
-	deleted = make([]string, 0, 7)
-
-	if old.Spec.Icon != newApp.Spec.Icon {
-		if old.Spec.Icon != "" && !strings.HasPrefix(old.Spec.Icon, "http://") {
-			deleted = append(deleted, old.Spec.Icon)
-		}
-		added = append(added, newApp.Spec.Icon)
-	}
-
-	existsAtt := make(map[string]string, 6)
-	newAtt := make(map[string]string, 6)
-
-	for _, id := range newApp.Spec.Attachments {
-		newAtt[id] = ""
-	}
-
-	for _, id := range old.Spec.Attachments {
-		existsAtt[id] = ""
-	}
-
-	for _, id := range newApp.Spec.Attachments {
-		if _, exists := existsAtt[id]; !exists {
-			added = append(added, id)
-		}
-	}
-
-	for _, id := range old.Spec.Attachments {
-		if _, exists := newAtt[id]; !exists {
-			deleted = append(deleted, id)
-		}
-	}
-
-	return added, deleted
-}
-
 func (c *applicationOperator) DescribeApp(id string) (*App, error) {
 	var helmApp *v1alpha1.HelmApplication
 	var ctg *v1alpha1.HelmCategory
@@ -602,16 +570,32 @@ func (c *applicationOperator) listApps(conditions *params.Conditions) (ret []*v1
 	repoId := conditions.Match[RepoId]
 	if repoId != "" && repoId != v1alpha1.AppStoreRepoId {
 		// get helm application from helm repo
-		if ret, exists := c.cachedRepos.ListApplicationsByRepoId(repoId); !exists {
+		if ret, exists := c.cachedRepos.ListApplicationsInRepo(repoId); !exists {
 			klog.Warningf("load repo failed, repo id: %s", repoId)
 			return nil, loadRepoInfoFailed
 		} else {
 			return ret, nil
 		}
+	} else if repoId == v1alpha1.AppStoreRepoId {
+		// List apps in the app-store and built-in repo
+		if c.backingStoreClient == nil {
+			return []*v1alpha1.HelmApplication{}, nil
+		}
+
+		ls := map[string]string{}
+		// We just care about the category label when listing apps in built-in repo.
+		if conditions.Match[CategoryId] != "" {
+			ls[constants.CategoryIdLabelKey] = conditions.Match[CategoryId]
+		}
+		appInRepo, _ := c.cachedRepos.ListApplicationsInBuiltinRepo(labels.SelectorFromSet(ls))
+
+		ret, err = c.appLister.List(labels.SelectorFromSet(buildLabelSelector(conditions)))
+		ret = append(ret, appInRepo...)
 	} else {
 		if c.backingStoreClient == nil {
 			return []*v1alpha1.HelmApplication{}, nil
 		}
+
 		ret, err = c.appLister.List(labels.SelectorFromSet(buildLabelSelector(conditions)))
 	}
 

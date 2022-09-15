@@ -1,0 +1,142 @@
+{
+    "Host": {
+        "h1": "iqn.2021-01.com.test.iscsi:01",
+        "h2": "iqn.2021-01.com.test.iscsi:02",
+        "h3": "iqn.2021-01.com.test.iscsi:03",
+        "h4": "iqn.2021-01.com.test.iscsi:04",
+        "h5": "iqn.2021-01.com.test.iscsi:05",
+        "h6": "iqn.2323-23.com.06",
+        "h7": "iqn.2323-23.com.07",
+        "h8": "iqn.2021-01.com.test.iscsi:08",
+        "h9": "iqn.2323-23.com.test.iscsi:08"
+    },
+    "Disk": {
+        "res_a": "/dev/drbd1000",
+        "res_b": "/dev/drbd1001",
+        "res_c": "/dev/drbd1002",
+        "res_d": "/dev/drbd1003",
+        "res_e": "/dev/drbd1004"
+    },
+    "HostGroup": {
+        "hg1": [
+            "h1",
+            "h2"
+        ],
+        "hg2": [
+            "h3",
+            "h4"
+        ],
+        "hg3": [
+            "h1",
+            "h3"
+        ],
+        "hg4": [
+            "h6"
+        ],
+        "hg5": [
+            "h7"
+        ],
+        "hg6": [
+            "h6"
+        ],
+        "hg7": [
+            "h7"
+        ],
+        "hg8": [
+            "host1",
+            "h4"
+        ]
+    },
+    "DiskGroup": {
+        "dg1": [
+            "res_a",
+            "res_b"
+        ],
+        "dg2": [
+            "res_c",
+            "res_d"
+        ],
+        "dg3": [
+            "res_a",
+            "res_b"
+        ],
+        "dg4": [
+            "res_e"
+        ]
+    },
+    "Map": {
+        "map1": {
+            "HostGroup": [
+                "hg1"
+            ],
+            "DiskGroup": [
+                "dg1"
+            ]
+        },
+        "map2": {
+            "HostGroup": [
+                "hg2"
+            ],
+            "DiskGroup": [
+                "dg2"
+            ]
+        },
+        "map_test": {
+            "HostGroup": [
+                "hg4"
+            ],
+            "DiskGroup": [
+                "dg1"
+            ]
+        }
+    },
+    "Portal": {
+        "pt1": {
+            "ip": "10.203.1.151",
+            "port": "3260",
+            "netmask": "24",
+            "target": [
+                "tg_test"
+            ]
+        },
+        "pt2": {
+            "ip": "10.203.1.152",
+            "port": "3260",
+            "netmask": "24",
+            "target": [
+                "target_test1"
+            ]
+        },
+        "vip": {
+            "ip": "10.203.1.153",
+            "port": "3260",
+            "netmask": "24",
+            "target": [
+                "t_test"
+            ]
+        }
+    },
+    "Target": {
+        "t_test": {
+            "target_iqn": "iqn.2020-04.feixitek.com:versaplx00",
+            "portal": "vip",
+            "lun": [
+                "res_a",
+                "res_b",
+                "res_c",
+                "res_d"
+            ]
+        },
+        "target_test1": {
+            "target_iqn": "iqn.2020-04.feixitek.com:versaplx01",
+            "portal": "pt2",
+            "lun": []
+        },
+        "tg_test": {
+            "target_iqn": "iqn.2020-04.feixitek.com:versaplx02",
+            "portal": "pt1",
+            "lun": []
+        }
+    }
+
+}

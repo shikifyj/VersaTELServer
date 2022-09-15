@@ -19,8 +19,10 @@ package virtualservice
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
+	apinetworkingv1alpha3 "istio.io/api/networking/v1alpha3"
 	apiv1alpha3 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
@@ -28,12 +30,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-
 	"kubesphere.io/api/servicemesh/v1alpha2"
 
 	"kubesphere.io/kubesphere/pkg/client/clientset/versioned/fake"
@@ -187,43 +189,6 @@ func newDestinationRule(name string, host string, labels map[string]string, subs
 	return &dr
 }
 
-func newStrategy(name string, service *v1.Service, principalVersion string) *v1alpha2.Strategy {
-	st := v1alpha2.Strategy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   service.Namespace,
-			Labels:      NewLabels().WithApp(""),
-			Annotations: nil,
-		},
-		Spec: v1alpha2.StrategySpec{
-			Type:             v1alpha2.CanaryType,
-			PrincipalVersion: principalVersion,
-			GovernorVersion:  "",
-			Template: v1alpha2.VirtualServiceTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{},
-				Spec: apiv1alpha3.VirtualService{
-					Hosts: []string{service.Name},
-					Http: []*apiv1alpha3.HTTPRoute{
-						{
-							Route: []*apiv1alpha3.HTTPRouteDestination{
-								{
-									Destination: &apiv1alpha3.Destination{
-										Host:   service.Name,
-										Subset: "",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			StrategyPolicy: v1alpha2.PolicyImmediately,
-		},
-	}
-
-	return &st
-}
-
 func toHost(service *v1.Service) string {
 	return fmt.Sprintf("%s.%s.svc", service.Name, service.Namespace)
 }
@@ -306,10 +271,7 @@ func (f *fixture) run_(serviceKey string, expectedVS *v1alpha3.VirtualService, s
 		}
 
 		if unequals := reflectutils.Equal(got, expectedVS); len(unequals) != 0 {
-			f.t.Errorf("didn't get expected result, got %#v, unequal fields:", got)
-			for _, unequal := range unequals {
-				f.t.Errorf("%s", unequal)
-			}
+			f.t.Errorf("didn't get expected result, got %#v, unequal fields:%s", got, diff.ObjectGoPrintSideBySide(expectedVS, got))
 		}
 	}
 }
@@ -331,6 +293,7 @@ func TestInitialStrategyCreate(t *testing.T) {
 	for _, port := range svc.Spec.Ports {
 		if servicemesh.SupportHttpProtocol(port.Name) {
 			httpRoute := apiv1alpha3.HTTPRoute{
+				Name: port.Name,
 				Route: []*apiv1alpha3.HTTPRouteDestination{
 					{
 						Destination: &apiv1alpha3.Destination{
@@ -528,7 +491,9 @@ func TestStrategies(t *testing.T) {
 		expected.Spec.Http[0].Route[0].Weight = 100
 		expected.Spec.Http[0].Route[0].Destination.Subset = "v2"
 		expected.Spec.Http[0].Route = expected.Spec.Http[0].Route[:1]
-		expected.Spec.Http = expected.Spec.Http[:1]
+		expected.Spec.Http[1].Route[0].Weight = 100
+		expected.Spec.Http[1].Route[0].Destination.Subset = "v2"
+		expected.Spec.Http[1].Route = expected.Spec.Http[0].Route[:1]
 		runStrategy(t, svc, defaultDr, strategy, expected)
 	})
 
@@ -577,4 +542,127 @@ func TestStrategies(t *testing.T) {
 		runStrategy(t, svc, defaultDr, strategy, expected)
 	})
 
+}
+
+func TestVirtualServiceController_patchHTTPRoute(t *testing.T) {
+
+	target := []*apiv1alpha3.HTTPRoute{
+		{
+			Name: "http-1",
+			Match: []*apiv1alpha3.HTTPMatchRequest{
+				{
+					Port: uint32(80),
+				},
+			},
+			Route: []*apiv1alpha3.HTTPRouteDestination{
+				{
+					Destination: &apiv1alpha3.Destination{
+						Host:   "service1",
+						Subset: "v1",
+						Port: &apinetworkingv1alpha3.PortSelector{
+							Number: uint32(80),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	type args struct {
+		origin []*apiv1alpha3.HTTPRoute
+		target []*apiv1alpha3.HTTPRoute
+	}
+	tests := []struct {
+		name string
+
+		args args
+		want []*apiv1alpha3.HTTPRoute
+	}{
+		{
+			name: "empty",
+			args: args{
+				origin: []*apiv1alpha3.HTTPRoute{},
+				target: target,
+			},
+			want: []*apiv1alpha3.HTTPRoute{
+				{
+					Name: "http-1",
+					Match: []*apiv1alpha3.HTTPMatchRequest{
+						{
+							Port: uint32(80),
+						},
+					},
+					Route: []*apiv1alpha3.HTTPRouteDestination{
+						{
+							Destination: &apiv1alpha3.Destination{
+								Host:   "service1",
+								Subset: "v1",
+								Port: &apinetworkingv1alpha3.PortSelector{
+									Number: uint32(80),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "override",
+			args: args{
+				origin: []*apiv1alpha3.HTTPRoute{
+					{
+						Name: "http-1",
+						Match: []*apiv1alpha3.HTTPMatchRequest{
+							{
+								Port: uint32(80),
+							},
+							{
+								Port: uint32(81),
+							},
+						},
+						Fault: &apiv1alpha3.HTTPFaultInjection{
+							Delay: &apiv1alpha3.HTTPFaultInjection_Delay{
+								Percent: 10,
+							},
+						},
+					},
+				},
+				target: target,
+			},
+			want: []*apiv1alpha3.HTTPRoute{
+				{
+					Name: "http-1",
+					Match: []*apiv1alpha3.HTTPMatchRequest{
+						{
+							Port: uint32(80),
+						},
+					},
+					Route: []*apiv1alpha3.HTTPRouteDestination{
+						{
+							Destination: &apiv1alpha3.Destination{
+								Host:   "service1",
+								Subset: "v1",
+								Port: &apinetworkingv1alpha3.PortSelector{
+									Number: uint32(80),
+								},
+							},
+						},
+					},
+					Fault: &apiv1alpha3.HTTPFaultInjection{
+						Delay: &apiv1alpha3.HTTPFaultInjection_Delay{
+							Percent: 10,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &VirtualServiceController{}
+			if got := v.patchHTTPRoute(tt.args.origin, tt.args.target); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VirtualServiceController.patchHTTPRoute() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
