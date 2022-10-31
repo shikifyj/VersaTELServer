@@ -58,6 +58,32 @@ type LinstorRes struct {
 	Size        string     `json:"size"`
 }
 
+type LvmPV struct {
+	Name        string     `json:"name"`
+	Node        string     `json:"node"`
+}
+
+type LvmVG struct {
+	Name        string     `json:"name"`
+	Node        string     `json:"node"`
+	PV          string     `json:"pv"`
+}
+
+type LvmThinPool struct {
+	Name        string     `json:"name"`
+	Node        string     `json:"node"`
+	VG          string     `json:"vg"`
+	Size        string     `json:"size"`
+}
+
+type LvmLV struct {
+	Name        string     `json:"name"`
+	Node        string     `json:"node"`
+	VG          string     `json:"vg"`
+	Size        string     `json:"size"`
+	ThinPool    string     `json:"thinpool"`
+}
+
 type URLResponse struct {
 	URL string `json:"URL"`
 }
@@ -259,4 +285,117 @@ func (h *handler) DeleteResource(req *restful.Request, resp *restful.Response) {
 	if err != nil {
 		resp.WriteAsJson(err)
 	}
+}
+
+func (h *handler) handleListLvmDevices(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetLvmDevices(ctx, client)
+	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListLvmPVs(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetLvmPVs(ctx, client)
+	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListLvmVGs(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetLvmVGs(ctx, client)
+	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+
+func (h *handler) handleListLvmLVs(req *restful.Request, resp *restful.Response) {
+
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetLvmLVs(ctx, client)
+	linstorv1alpha1.CreatePV(ctx, client,"/dev/sdh","ben2")
+	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) CreateResourceLvmPV(req *restful.Request, resp *restful.Response) {
+	pv := new(LvmPV)
+	err := req.ReadEntity(&pv)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreatePV(ctx, client, pv.Name, pv.Node)
+
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+}
+
+
+func (h *handler) CreateResourceLvmVG(req *restful.Request, resp *restful.Response) {
+	vg := new(LvmVG)
+	err := req.ReadEntity(&vg)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreateVG(ctx, client, vg.PV, vg.Name, vg.Node)
+
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+}
+
+func (h *handler) CreateResourceLvmThinPool(req *restful.Request, resp *restful.Response) {
+	thinpool := new(LvmThinPool)
+	err := req.ReadEntity(&thinpool)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreateThinPool(ctx, client, thinpool.Size, thinpool.Name,thinpool.VG, thinpool.Node)
+
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+}
+
+
+func (h *handler) CreateResourceLvmLV(req *restful.Request, resp *restful.Response) {
+	lv := new(LvmLV)
+	err := req.ReadEntity(&lv)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreateLV(ctx, client, lv.Size, lv.Name,lv.ThinPool,lv.VG, lv.Node)
+
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
 }

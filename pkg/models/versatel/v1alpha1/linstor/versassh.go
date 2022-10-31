@@ -8,16 +8,19 @@ import (
     log "github.com/sirupsen/logrus"
     "regexp"
     "fmt"
+    "strings"
+    "errors"
     "golang.org/x/crypto/ssh"
     "time"
     //"os"
     "io/ioutil"
     //"path"
+    "github.com/dlclark/regexp2"
 )
 
 type SshConnect struct{
     Sshclient *ssh.Client
-    host string
+    Host string
 }
 
 
@@ -72,9 +75,9 @@ func SSHConnect(user, host string, port int) (*ssh.Client, error) {
 
 func GetSshList(ctx context.Context, c *client.Client) {
 
-	if sshlist.Connects == nil{
+        if sshlist.Connects == nil{
         DoSshs(ctx, c)
-	}
+        }
 }
 
 func DoSshs(ctx context.Context, c *client.Client) {
@@ -84,7 +87,6 @@ func DoSshs(ctx context.Context, c *client.Client) {
     for _, node := range data {
         reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
         result := reg.FindAllStringSubmatch(node["addr"], -1)
-	fmt.Println(result[0][0])
         if result[0][0] != "10.203.1.240" {
             sshclient, err := SSHConnect("root", result[0][0], 22)
             if err != nil{
@@ -97,26 +99,24 @@ func DoSshs(ctx context.Context, c *client.Client) {
     }
 }
 
-func GetDevices(ctx context.Context, c *client.Client) {
-    GetSshList(ctx, c)
-    for _, cli := range sshlist.Connects{
 
-        session, err := cli.Sshclient.NewSession()
-        if err != nil {
-            log.Fatal("创建ssh session 失败",err)
-        }
-        defer session.Close()
-        //执行远程命令
-        combo,err := session.CombinedOutput("whoami; cd /; ls -al")
-        if err != nil {
-            log.Fatal("远程执行cmd 失败",err)
-        }
-        log.Println("命令输出:",string(combo))
 
+func SshCmd(sshclient *ssh.Client, cmd string) (string,error){
+
+    session, err := sshclient.NewSession()
+    if err != nil {
+        sshlist.Connects = nil
+        fmt.Println("Error creating ssh session",err)
     }
-
+    defer session.Close()
+    //执行远程命令
+    combo,err := session.CombinedOutput(cmd)
+    if err != nil {
+        sshlist.Connects = nil
+        fmt.Println("Error cmd to linstor node: ",string(combo))
+    }
+    return string(combo),err
 }
-
 
 
 func GetNodesIP(ctx context.Context, c *client.Client) []map[string]string {
@@ -139,11 +139,315 @@ func GetNodesIP(ctx context.Context, c *client.Client) []map[string]string {
 }
 
 
+func CreatePV(ctx context.Context, c *client.Client, devName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "pvcreate " + devName)
+
+            break
+        }
+    }
+    return err
+
+}
+
+
+func CreateVG(ctx context.Context, c *client.Client, pvName string, vgName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "vgcreate " + vgName +" "+ pvName)
+
+            break
+        }
+    }
+    return err
+
+}
+
+
+func CreateThinPool(ctx context.Context, c *client.Client, size string, thinPoolName string, vgName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "lvcreate -L " + size + " --thinpool " + thinPoolName +" "+ vgName)
+
+            break
+        }
+    }
+    return err
+
+}
+
+func CreateLV(ctx context.Context, c *client.Client, size string, lvName string, thinPoolName string, vgName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "lvcreate -V " + size + " --thin -n " + lvName +" "+ vgName+"/"+thinPoolName)
+
+            break
+        }
+    }
+    return err
+
+}
+
+func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]string{
+    GetSshList(ctx, c)
+    clusterLvm := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        replay,_ := SshCmd(cli.Sshclient, "lvmdiskscan")
+        expr := `(?<=\[\D*)\d.+(?=\])`
+        regAll := regexp.MustCompile(`/dev/sd[^a].+`)
+        regDevice := regexp.MustCompile(`/dev/sd[^a][^\s]*`)
+        regSize, _ := regexp2.Compile(expr, 0)
+
+        resultAll := regAll.FindAllStringSubmatch(replay, -1)
+
+        for _,data := range resultAll{
+            if !strings.Contains(data[0], "LVM"){
+                resultDevice := regDevice.FindAllStringSubmatch(data[0], -1)
+                m, _ := regSize.FindStringMatch(data[0])
+                resultSize := m.String()
+                resSize,_ := ParseSizeForLvm(resultSize)
+                
+
+                lvmInfo := map[string]string{
+                    "node":           cli.Host,
+                    "name":       resultDevice[0][0],
+                    "size":       resSize,
+                }
+                clusterLvm = append(clusterLvm, lvmInfo)
+            }
+
+        }
+
+    }   
+    return clusterLvm
+
+}
+
+func GetLvmPVs(ctx context.Context, c *client.Client) []map[string]string{
+    GetSshList(ctx, c)
+    clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        replay,_ := SshCmd(cli.Sshclient, "pvs")
+        regAll := regexp.MustCompile(`/dev/sd[^a].+`)
+        regPV := regexp.MustCompile(`/dev/sd[^a][^\s]*`)
+        regVG, _ := regexp2.Compile(`(?<=\s\D*)[^\s]+`, 0)
+        regSize, _ := regexp2.Compile(`(?<=\s\D*)\d+\.\w+`, 0)
+
+
+        resultAll := regAll.FindAllStringSubmatch(replay, -1)
+
+        for _,data := range resultAll{
+            resultPV := regPV.FindAllStringSubmatch(data[0], -1)
+            m, _ := regVG.FindStringMatch(data[0])
+            resultVG := m.String()
+
+            n, _ := regSize.FindStringMatch(data[0])
+            resultSize := n.String()
+
+
+            lvmInfo := map[string]string{
+                "node":           cli.Host,
+                "name":       resultPV[0][0],
+                "vg":       resultVG,
+                "size":       resultSize,
+            }
+            clusterPV = append(clusterPV, lvmInfo)
+        
+
+        }
+
+    }   
+    return clusterPV
+
+}
+
+
+func GetLvmVGs(ctx context.Context, c *client.Client) []map[string]string{
+    GetSshList(ctx, c)
+    clusterVG := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        replay,_ := SshCmd(cli.Sshclient, "vgs")
+        regAll := regexp.MustCompile(`[^\n]+`)
+        regVG := regexp.MustCompile(`[^\s]+`)
+        regSize, _ := regexp2.Compile(`(?<=\s\D*)\d+\.\w+`, 0)
+
+
+        resultAll := regAll.FindAllStringSubmatch(replay, -1)
+        resultAll = resultAll[1:]
+
+        for _,data := range resultAll{
+
+            resultVG := regVG.FindString(data[0])
+
+            n, _ := regSize.FindStringMatch(data[0])
+            resultSize := n.String()
+            
+            
+
+
+            lvmInfo := map[string]string{
+                "node":           cli.Host,
+                "vg":       resultVG,
+                "size":       resultSize,
+            }
+            clusterVG = append(clusterVG, lvmInfo)
+            
+
+        }
+
+    }   
+    return clusterVG
+
+}
+
+
+
+func GetLvmLVs(ctx context.Context, c *client.Client) []map[string]string{
+    GetSshList(ctx, c)
+    clusterLV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        replay,_ := SshCmd(cli.Sshclient, "lvs")
+        regAll := regexp.MustCompile(`[^\n]+`)
+        regInfo := regexp.MustCompile(`[^\s]+`)
+
+
+        resultAll := regAll.FindAllStringSubmatch(replay, -1)
+        resultAll = resultAll[1:]
+
+        for _,data := range resultAll{
+
+            pool := ""
+            resultInfo := regInfo.FindAllStringSubmatch(data[0], -1)
+            fmt.Println("result:", resultInfo)
+            if len(resultInfo) < 5 {
+                continue
+            }
+            if !strings.Contains(resultInfo[2][0], "."){
+                pool = resultInfo[4][0]
+            }
+
+            
+            lvmInfo := map[string]string{
+                "node":           cli.Host,
+                "name":       resultInfo[0][0],
+                "vg":       resultInfo[1][0],
+                "size":     resultInfo[3][0],
+                "pool":     pool,
+            }
+            clusterLV = append(clusterLV, lvmInfo)
+            
+        }
+
+    }   
+    return clusterLV
+
+}
+
+
+func DeletePV(ctx context.Context, c *client.Client, devName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "pvremove -y" + devName)
+
+            break
+        }
+    }
+    return err
+
+}
 
 
 
 
+func DeleteVG(ctx context.Context, c *client.Client, vgName string, nodeName string) error{
 
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "vgremove -y" + vgName)
+
+            break
+        }
+    }
+    return err
+
+}
+
+
+func DeleteThinPool(ctx context.Context, c *client.Client,thinPoolName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "lvremove -y " + thinPoolName)
+
+            break
+        }
+    }
+    return err
+
+}
+
+func DeleteLV(ctx context.Context, c *client.Client, lvName string, nodeName string) error{
+
+    var err error = errors.New("Can not find the node: " + nodeName)
+    GetSshList(ctx, c)
+    //clusterPV := []map[string]string{}
+    for _, cli := range sshlist.Connects{
+
+        if nodeName == cli.Host{
+            err = nil
+            _,err = SshCmd(cli.Sshclient, "lvremove -y "+ lvName)
+
+            break
+        }
+    }
+    return err
+
+}
 
 
 

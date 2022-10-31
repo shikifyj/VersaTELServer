@@ -119,7 +119,10 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 )
 
-require github.com/DataDog/go-python3 v0.0.0-20211102160307-40adc605f1fe
+require (
+	github.com/DataDog/go-python3 v0.0.0-20211102160307-40adc605f1fe
+	github.com/dlclark/regexp2 v1.7.0
+)
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
