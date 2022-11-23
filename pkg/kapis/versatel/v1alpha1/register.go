@@ -22,12 +22,13 @@ func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
 	handler := newHandler(ip)
 
-	tagsLinstor := []string{"linstor"}
+	tagsLinstor := []string{"Clustered Resource"}
 
 	webservice.Route(webservice.GET("/linstor/node").
 		To(handler.handleListNodes).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
+		Param(webservice.PathParameter("versatel", "cluster level resource type, e.g. pods,jobs,configmaps,services.")).
 		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
 		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
 		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).

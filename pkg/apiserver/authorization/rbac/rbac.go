@@ -65,6 +65,7 @@ func (v *authorizingVisitor) visit(source fmt.Stringer, regoPolicy string, rule 
 		return false
 	}
 	if rule != nil && ruleAllows(v.requestAttributes, rule) {
+		fmt.Println("allowed == ture...")
 		v.allowed = true
 		v.reason = fmt.Sprintf("RBAC: allowed by %s", source.String())
 		return false
@@ -364,6 +365,7 @@ func (r *RBACAuthorizer) visitRulesFor(requestAttributes authorizer.Attributes, 
 			}
 		}
 	}
+	fmt.Println("end!!!!!!")
 }
 
 // appliesTo returns whether any of the bindingSubjects applies to the specified subject,
