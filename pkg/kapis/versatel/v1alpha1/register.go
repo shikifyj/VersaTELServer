@@ -22,12 +22,13 @@ func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
 	handler := newHandler(ip)
 
-	tagsLinstor := []string{"linstor"}
+	tagsLinstor := []string{"Clustered Resource"}
 
 	webservice.Route(webservice.GET("/linstor/node").
 		To(handler.handleListNodes).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
+		Param(webservice.PathParameter("versatel", "cluster level resource type, e.g. pods,jobs,configmaps,services.")).
 		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
 		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
 		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
@@ -151,6 +152,79 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
+
+	webservice.Route(webservice.GET("/lvm/device").
+		To(handler.handleListLvmDevices).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level lvm").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.GET("/lvm/pv").
+		To(handler.handleListLvmPVs).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level pv").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.GET("/lvm/vg").
+		To(handler.handleListLvmVGs).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level vg").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.GET("/lvm/lv").
+		To(handler.handleListLvmLVs).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Cluster level lv").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+
+	webservice.Route(webservice.POST("/lvm/pv").
+		To(handler.CreateResourceLvmPV).
+		Doc("Create pvs.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LvmPV{}))
+
+	webservice.Route(webservice.POST("/lvm/vg").
+		To(handler.CreateResourceLvmVG).
+		Doc("Create pvs.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LvmVG{}))
+
+	webservice.Route(webservice.POST("/lvm/thinpool").
+		To(handler.CreateResourceLvmThinPool).
+		Doc("Create pvs.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LvmThinPool{}))
+
+	webservice.Route(webservice.POST("/lvm/lv").
+		To(handler.CreateResourceLvmLV).
+		Doc("Create pvs.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(LvmLV{}))		
 	//webservice.Route(webservice.PUT("/linstornode/{node}").
 	//	To(handler.UpdateNode).
 	//	Doc("Update node").

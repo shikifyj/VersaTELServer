@@ -102,3 +102,27 @@ func ParseSize(size string) (uint64, error) {
 	}
 	return finalSize, err
 }
+
+func ParseSizeForLvm(size string) (string, error) {
+	reg := regexp.MustCompile(`[^\s]+`)
+
+	matchsResult := reg.FindAllStringSubmatch(size, -1)
+
+	floatSize, err := strconv.ParseFloat(matchsResult[0][0],64)
+	finalSize := uint64(floatSize)
+
+	fmt.Println("matchsResult0:",matchsResult[0])
+	fmt.Println("matchsResult1:",matchsResult[1])
+	switch matchsResult[1][0] {
+	case "K", "KB", "KiB":
+		finalSize = finalSize
+	case "M", "MB", "MiB":
+		finalSize = finalSize * 1024
+	case "G", "GB", "GiB":
+		finalSize = finalSize * 1024 * 1024
+	case "T", "TB", "TiB":
+		finalSize = finalSize * 1024 * 1024 * 1024
+	}
+	fmt.Println("finalSizeqqq:",finalSize)
+	return strconv.FormatUint(finalSize, 10), err
+}

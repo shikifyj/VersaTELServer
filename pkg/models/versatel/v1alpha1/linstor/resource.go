@@ -120,10 +120,15 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 		}
 
 		resInfo := map[string]string{}
-		if *res.State.InUse {
-			resInfo["usage"] = "InUse"
-		} else {
-			resInfo["usage"] = "Unused"
+
+		if res.State != nil {
+			if *res.State.InUse {
+				resInfo["usage"] = "InUse"
+			} else {
+				resInfo["usage"] = "Unused"
+			}
+		}else {
+			resInfo["usage"] = "Unknown"
 		}
 
 		connFail := map[string][]string{}

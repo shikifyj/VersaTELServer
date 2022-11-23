@@ -18,6 +18,7 @@ package auditing
 
 import (
 	"strconv"
+	"fmt"
 
 	"kubesphere.io/kubesphere/pkg/api/auditing/v1alpha1"
 	"kubesphere.io/kubesphere/pkg/simple/client/auditing"

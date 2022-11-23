@@ -830,6 +830,13 @@ func (am *amOperator) RemoveUserFromCluster(username string) error {
 
 func (am *amOperator) CreateOrUpdateGlobalRole(globalRole *iamv1alpha2.GlobalRole) (*iamv1alpha2.GlobalRole, error) {
 	globalRole.Rules = make([]rbacv1.PolicyRule, 0)
+	linstorrule := rbacv1.PolicyRule{
+		Verbs:     []string{"*"},
+		APIGroups: []string{"versatel.kubesphere.io"},
+		Resources: []string{"*"},
+	}
+
+	globalRole.Rules = append(globalRole.Rules, linstorrule)
 	if aggregateRoles := am.getAggregateRoles(globalRole.ObjectMeta); aggregateRoles != nil {
 		for _, roleName := range aggregateRoles {
 			aggregationRole, err := am.GetGlobalRole(roleName)
