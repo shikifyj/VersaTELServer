@@ -65,7 +65,6 @@ func (v *authorizingVisitor) visit(source fmt.Stringer, regoPolicy string, rule 
 		return false
 	}
 	if rule != nil && ruleAllows(v.requestAttributes, rule) {
-		fmt.Println("allowed == ture...")
 		v.allowed = true
 		v.reason = fmt.Sprintf("RBAC: allowed by %s", source.String())
 		return false

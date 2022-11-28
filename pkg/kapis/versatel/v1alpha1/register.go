@@ -3,6 +3,9 @@ package v1alpha1
 import (
 	"net/http"
 
+	"io/ioutil"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,9 +20,20 @@ const (
 )
 
 var GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
+func GetLinstorIP() (string) {
+
+    ip, err := ioutil.ReadFile("/etc/linstorip/linstorip")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("lintorip: ",string(ip))
+    return string(ip)
+}
 
 func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
+	linstorip := GetLinstorIP()
+	ip = linstorip
 	handler := newHandler(ip)
 
 	tagsLinstor := []string{"Clustered Resource"}
