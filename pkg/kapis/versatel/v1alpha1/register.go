@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"io/ioutil"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -26,14 +25,13 @@ func GetLinstorIP() (string) {
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Println("lintorip: ",string(ip))
     return string(ip)
 }
 
 func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
-	linstorip := GetLinstorIP()
-	ip = linstorip
+	//linstorip := GetLinstorIP()
+	//ip = linstorip
 	handler := newHandler(ip)
 
 	tagsLinstor := []string{"Clustered Resource"}

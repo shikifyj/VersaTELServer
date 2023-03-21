@@ -18,6 +18,7 @@ package auditing
 
 import (
 	"strconv"
+	"fmt"
 
 	"kubesphere.io/kubesphere/pkg/api/auditing/v1alpha1"
 	"kubesphere.io/kubesphere/pkg/simple/client/auditing"
@@ -38,6 +39,7 @@ func NewEventsOperator(client auditing.Client) Interface {
 
 func (eo *eventsOperator) Events(queryParam *v1alpha1.Query,
 	MutateFilterFunc func(*auditing.Filter)) (*v1alpha1.APIResponse, error) {
+	fmt.Println("search audit log..........")
 	filter := &auditing.Filter{
 		ObjectRefNamespaces:     stringutils.Split(queryParam.ObjectRefNamespaceFilter, ","),
 		ObjectRefNamespaceFuzzy: stringutils.Split(queryParam.ObjectRefNamespaceSearch, ","),

@@ -6,6 +6,8 @@ import (
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/kubesphere/pkg/api"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	servererr "kubesphere.io/kubesphere/pkg/server/errors"
+	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
 	linstorv1alpha1 "kubesphere.io/kubesphere/pkg/models/versatel/v1alpha1/linstor"
 )
 
@@ -259,6 +261,12 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 		resp.WriteAsJson(err)
 		return
 	}
+	fmt.Println("linstor audit run....")
+	lnau := auditing.GetLinstorAudit()
+	isenable := lnau.Enabled()
+	fmt.Println("isenable: ", isenable)
+
+	resp.WriteEntity(servererr.None)
 }
 
 func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {

@@ -30,6 +30,7 @@ type Event struct {
 	Cluster string
 	// Message send to user.
 	Message string
+	Factory string
 
 	audit.Event
 }

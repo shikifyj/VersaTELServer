@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"fmt"
 
 	"k8s.io/klog"
 
@@ -90,12 +91,14 @@ func NewBackend(opts *options.Options, cache chan *v1alpha1.Event, stopCh <-chan
 		Timeout: b.sendTimeout,
 	}
 
+	fmt.Println("ended NewBackend.......")
 	go b.worker()
 
 	return &b
 }
 
 func (b *Backend) worker() {
+	fmt.Println("start b worker.......")
 
 	for {
 		events := b.getEvents()
@@ -123,6 +126,8 @@ func (b *Backend) getEvents() *v1alpha1.EventList {
 			if event == nil {
 				break
 			}
+
+
 			events.Items = append(events.Items, *event)
 			if len(events.Items) >= b.eventBatchSize {
 				return events
