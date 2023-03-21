@@ -36,6 +36,7 @@ import (
 	"kubesphere.io/kubesphere/pkg/apiserver/authentication"
 
 	"k8s.io/apiserver/pkg/authentication/user"
+	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
 )
 
 const (
@@ -190,6 +191,7 @@ func (s *issuer) Verify(token string) (*VerifiedResponse, error) {
 
 	now := time.Now().Unix()
 	if !claims.VerifyExpiresAt(now, false) {
+		auditing.SendLogout()
 		delta := time.Unix(now, 0).Sub(time.Unix(claims.ExpiresAt, 0))
 		err = fmt.Errorf("jwt: token is expired by %v", delta)
 		klog.V(4).Info(err)

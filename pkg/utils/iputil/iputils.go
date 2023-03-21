@@ -29,6 +29,9 @@ const (
 
 func RemoteIp(req *http.Request) string {
 	remoteAddr := req.RemoteAddr
+
+
+
 	if ip := req.Header.Get(XClientIP); ip != "" {
 		remoteAddr = ip
 	} else if ip := req.Header.Get(XRealIP); ip != "" {
@@ -45,3 +48,18 @@ func RemoteIp(req *http.Request) string {
 
 	return remoteAddr
 }
+
+func RemoteLoginIp(req *http.Request) string {
+
+
+
+	remoteAddr := req.RemoteAddr
+	remoteAddr, _, _ = net.SplitHostPort(remoteAddr)
+
+
+
+
+
+	return remoteAddr
+}
+

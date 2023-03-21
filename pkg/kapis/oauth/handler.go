@@ -49,6 +49,7 @@ import (
 	"kubesphere.io/kubesphere/pkg/apiserver/request"
 	"kubesphere.io/kubesphere/pkg/models/auth"
 	"kubesphere.io/kubesphere/pkg/models/iam/im"
+	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
 )
 
 const (
@@ -363,6 +364,7 @@ func (h *handler) oauthCallback(req *restful.Request, response *restful.Response
 
 func (h *handler) login(request *restful.Request, response *restful.Response) {
 	var loginRequest LoginRequest
+	fmt.Println("is login!!!!!!!!!!!!!!!!!")
 	err := request.ReadEntity(&loginRequest)
 	if err != nil {
 		api.HandleBadRequest(response, request, err)
@@ -411,7 +413,10 @@ func (h *handler) token(req *restful.Request, response *restful.Response) {
 	switch grantType {
 	case grantTypePassword:
 		username, _ := req.BodyParameter("username")
+		fmt.Println("grantType username: ", username)
+
 		password, _ := req.BodyParameter("password")
+		fmt.Println("grantType password: ", password)
 		h.passwordGrant(username, password, req, response)
 		return
 	case grantTypeRefreshToken:
@@ -436,6 +441,7 @@ func (h *handler) token(req *restful.Request, response *restful.Response) {
 func (h *handler) passwordGrant(username string, password string, req *restful.Request, response *restful.Response) {
 	authenticated, provider, err := h.passwordAuthenticator.Authenticate(req.Request.Context(), username, password)
 	if err != nil {
+		auditing.SetLoginUserName(username, true)
 		switch err {
 		case auth.AccountIsNotActiveError:
 			response.WriteHeaderAndEntity(http.StatusBadRequest, oauth.NewInvalidGrant(err))
@@ -458,15 +464,18 @@ func (h *handler) passwordGrant(username string, password string, req *restful.R
 
 	result, err := h.issueTokenTo(authenticated)
 	if err != nil {
+		auditing.SetLoginUserName(username, true)
 		response.WriteHeaderAndEntity(http.StatusInternalServerError, oauth.NewServerError(err))
 		return
 	}
+
 
 	requestInfo, _ := request.RequestInfoFrom(req.Request.Context())
 	if err = h.loginRecorder.RecordLogin(authenticated.GetName(), iamv1alpha2.Token, provider, requestInfo.SourceIP, requestInfo.UserAgent, nil); err != nil {
 		klog.Errorf("Failed to record successful login for user %s, error: %v", authenticated.GetName(), err)
 	}
 
+	auditing.SetLoginUserName(username, false)
 	response.WriteEntity(result)
 }
 
@@ -633,6 +642,7 @@ func (h *handler) codeGrant(req *restful.Request, response *restful.Response) {
 }
 
 func (h *handler) logout(req *restful.Request, resp *restful.Response) {
+	fmt.Println("is logout!!!!!!!!!!!!!!!!!")
 	authenticated, ok := request.UserFrom(req.Request.Context())
 	if ok {
 		if err := h.tokenOperator.RevokeAllUserTokens(authenticated.GetName()); err != nil {
