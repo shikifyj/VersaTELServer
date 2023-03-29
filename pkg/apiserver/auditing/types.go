@@ -482,8 +482,7 @@ func (a *auditing) LogRequestObject(req *http.Request, info *request.RequestInfo
 			loginevent.User.UID = user.GetUID()
 			loginevent.User.Groups = user.GetGroups()
 		}
-
-		ips[0] = iputil.RemoteLoginIp(req)
+		ips[0] = getloginip()
 		loginevent.SourceIPs = ips
 
 		loginevent.ResponseStatus = &metav1.Status{Code: int32(0)}
@@ -683,3 +682,24 @@ func (c *ResponseCapture) CloseNotify() <-chan bool {
 	return c.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
+func getloginip() string{
+	ip := ""
+    resp, err := http.Get("http://getloginip.default.svc:80")
+    if err != nil {
+        // 处理错误
+        fmt.Println("getloginip request err: ", err)
+        return ip
+    }
+    defer resp.Body.Close()
+
+    // 读取响应内容
+    body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        // 处理错误
+        fmt.Println("read resp err: ", err)
+        return ip     
+    }
+    fmt.Println(string(body))
+    return string(body)
+    
+}

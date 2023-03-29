@@ -17,6 +17,7 @@ limitations under the License.
 package iputil
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 )
@@ -29,8 +30,6 @@ const (
 
 func RemoteIp(req *http.Request) string {
 	remoteAddr := req.RemoteAddr
-
-
 
 	if ip := req.Header.Get(XClientIP); ip != "" {
 		remoteAddr = ip
@@ -51,15 +50,15 @@ func RemoteIp(req *http.Request) string {
 
 func RemoteLoginIp(req *http.Request) string {
 
-
+	fmt.Println("is remote ip!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 	remoteAddr := req.RemoteAddr
+	fmt.Println("remoteAddr: ", remoteAddr)
 	remoteAddr, _, _ = net.SplitHostPort(remoteAddr)
 
+	fmt.Println("XClientIP: ", req.Header.Get(XClientIP))
+	fmt.Println("XRealIP: ", req.Header.Get(XRealIP))
+	fmt.Println("XForwardedFor: ", req.Header.Get(XForwardedFor))
 
-
-
-
-	return remoteAddr
+	return req.Header.Get(XRealIP)
 }
-
