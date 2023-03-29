@@ -21,9 +21,9 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
-	"fmt"
 
 	"k8s.io/klog"
 
@@ -113,6 +113,7 @@ func (b *Backend) worker() {
 		go b.sendEvents(events)
 	}
 }
+
 
 func (b *Backend) getEvents() *v1alpha1.EventList {
 
