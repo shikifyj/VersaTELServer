@@ -5,10 +5,10 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/kubesphere/pkg/api"
-	"kubesphere.io/kubesphere/pkg/apiserver/query"
-	servererr "kubesphere.io/kubesphere/pkg/server/errors"
 	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	linstorv1alpha1 "kubesphere.io/kubesphere/pkg/models/versatel/v1alpha1/linstor"
+	servererr "kubesphere.io/kubesphere/pkg/server/errors"
 )
 
 //var PyStr = python3.PyUnicode_FromString
@@ -61,29 +61,29 @@ type LinstorRes struct {
 }
 
 type LvmPV struct {
-	Name        string     `json:"name"`
-	Node        string     `json:"node"`
+	Name string `json:"name"`
+	Node string `json:"node"`
 }
 
 type LvmVG struct {
-	Name        string     `json:"name"`
-	Node        string     `json:"node"`
-	PV          string     `json:"pv"`
+	Name string `json:"name"`
+	Node string `json:"node"`
+	PV   string `json:"pv"`
 }
 
 type LvmThinPool struct {
-	Name        string     `json:"name"`
-	Node        string     `json:"node"`
-	VG          string     `json:"vg"`
-	Size        string     `json:"size"`
+	Name string `json:"name"`
+	Node string `json:"node"`
+	VG   string `json:"vg"`
+	Size string `json:"size"`
 }
 
 type LvmLV struct {
-	Name        string     `json:"name"`
-	Node        string     `json:"node"`
-	VG          string     `json:"vg"`
-	Size        string     `json:"size"`
-	ThinPool    string     `json:"thinpool"`
+	Name     string `json:"name"`
+	Node     string `json:"node"`
+	VG       string `json:"vg"`
+	Size     string `json:"size"`
+	ThinPool string `json:"thinpool"`
 }
 
 type URLResponse struct {
@@ -252,15 +252,15 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 		resp.WriteAsJson(err)
 		return
 	}
-	if res.Node != nil {
-		for _, node := range res.Node {
-			err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
-		}
-	}
-	if err != nil {
-		resp.WriteAsJson(err)
-		return
-	}
+	//if res.Node != nil {
+	//	for _, node := range res.Node {
+	//		err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
+	//	}
+	//}
+	//if err != nil {
+	//	resp.WriteAsJson(err)
+	//	return
+	//}
 	fmt.Println("linstor audit run....")
 	lnau := auditing.GetLinstorAudit()
 	isenable := lnau.Enabled()
@@ -322,13 +322,12 @@ func (h *handler) handleListLvmVGs(req *restful.Request, resp *restful.Response)
 	resp.WriteAsJson(message)
 }
 
-
 func (h *handler) handleListLvmLVs(req *restful.Request, resp *restful.Response) {
 
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmLVs(ctx, client)
-	linstorv1alpha1.CreatePV(ctx, client,"/dev/sdh","ben2")
+	linstorv1alpha1.CreatePV(ctx, client, "/dev/sdh", "ben2")
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
 	resp.WriteAsJson(message)
@@ -351,7 +350,6 @@ func (h *handler) CreateResourceLvmPV(req *restful.Request, resp *restful.Respon
 	}
 
 }
-
 
 func (h *handler) CreateResourceLvmVG(req *restful.Request, resp *restful.Response) {
 	vg := new(LvmVG)
@@ -380,7 +378,7 @@ func (h *handler) CreateResourceLvmThinPool(req *restful.Request, resp *restful.
 	}
 
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateThinPool(ctx, client, thinpool.Size, thinpool.Name,thinpool.VG, thinpool.Node)
+	err = linstorv1alpha1.CreateThinPool(ctx, client, thinpool.Size, thinpool.Name, thinpool.VG, thinpool.Node)
 
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -388,7 +386,6 @@ func (h *handler) CreateResourceLvmThinPool(req *restful.Request, resp *restful.
 	}
 
 }
-
 
 func (h *handler) CreateResourceLvmLV(req *restful.Request, resp *restful.Response) {
 	lv := new(LvmLV)
@@ -399,7 +396,7 @@ func (h *handler) CreateResourceLvmLV(req *restful.Request, resp *restful.Respon
 	}
 
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateLV(ctx, client, lv.Size, lv.Name,lv.ThinPool,lv.VG, lv.Node)
+	err = linstorv1alpha1.CreateLV(ctx, client, lv.Size, lv.Name, lv.ThinPool, lv.VG, lv.Node)
 
 	if err != nil {
 		resp.WriteAsJson(err)

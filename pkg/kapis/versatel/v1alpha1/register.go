@@ -3,10 +3,10 @@ package v1alpha1
 import (
 	"net/http"
 
-	"io/ioutil"
-	log "github.com/sirupsen/logrus"
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 
@@ -19,13 +19,14 @@ const (
 )
 
 var GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
-func GetLinstorIP() (string) {
 
-    ip, err := ioutil.ReadFile("/etc/linstorip/linstorip")
-    if err != nil {
-        log.Fatal(err)
-    }
-    return string(ip)
+func GetLinstorIP() string {
+
+	ip, err := ioutil.ReadFile("/etc/linstorip/linstorip")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(ip)
 }
 
 func AddToContainer(container *restful.Container, ip string) error {
@@ -36,7 +37,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 
 	tagsLinstor := []string{"Clustered Resource"}
 
-	webservice.Route(webservice.GET("/linstor/node").
+	webservice.Route(webservice.GET("/versasdsnode").
 		To(handler.handleListNodes).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
@@ -48,28 +49,28 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("/linstor/node/{node}").
+	webservice.Route(webservice.GET("/versasdsnode/{node}").
 		To(handler.DescribeNode).
 		Doc("Retrieve node details.").
 		Param(webservice.PathParameter("node", "nodename")).
 		Returns(http.StatusOK, api.StatusOK, MessageExist{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.POST("/linstor/node").
+	webservice.Route(webservice.POST("/versasdsnode").
 		To(handler.CreateNode).
 		Doc("Create a linstor node.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorNode{}))
 
-	webservice.Route(webservice.DELETE("/linstor/node/{node}").
+	webservice.Route(webservice.DELETE("/versasdsnode/{node}").
 		To(handler.DeleteNode).
 		Doc("Delete the specified node.").
 		Param(webservice.PathParameter("node", "nodename")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.GET("linstor/storagepool").
+	webservice.Route(webservice.GET("versasdsstoragepool").
 		To(handler.handleListStorgePools).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
@@ -80,21 +81,21 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("/linstor/storagepool/{storagepool}").
+	webservice.Route(webservice.GET("/versasdsstoragepool/{storagepool}").
 		To(handler.DescribeStoragePool).
 		Doc("Retrieve storagepool details.").
 		Param(webservice.PathParameter("storagepool", "storagepoolname")).
 		Returns(http.StatusOK, api.StatusOK, MessageExist{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.POST("/linstor/storagepool").
+	webservice.Route(webservice.POST("/versasdsstoragepool").
 		To(handler.CreateStoragePool).
 		Doc("Create a linstor storagepool.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorSP{}))
 
-	webservice.Route(webservice.DELETE("/linstor/storagepool/{storagepool}/{node}").
+	webservice.Route(webservice.DELETE("/versasdsstoragepool/{storagepool}/{node}").
 		To(handler.DeleteStoragePool).
 		Doc("Delete the specified storagepool.").
 		Param(webservice.PathParameter("node", "nodename")).
@@ -102,7 +103,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.GET("linstor/resource").
+	webservice.Route(webservice.GET("versasdsresource").
 		To(handler.handleListResources).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
@@ -113,7 +114,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("linstor/resource/diskful").
+	webservice.Route(webservice.GET("versasdsresource/diskful").
 		To(handler.handleListResourcesDiskful).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
@@ -124,7 +125,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("linstor/resource/diskless").
+	webservice.Route(webservice.GET("versasdsresource/diskless").
 		To(handler.handleListResourcesDiskless).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level resources").
@@ -135,35 +136,34 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("/linstor/resource/{resource}").
+	webservice.Route(webservice.GET("/versasdsresource/{resource}").
 		To(handler.DescribeResource).
 		Doc("Retrieve resource details.").
 		Param(webservice.PathParameter("resource", "resourcename")).
 		Returns(http.StatusOK, api.StatusOK, MessageExist{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.POST("/linstor/resource").
+	webservice.Route(webservice.POST("/versasdsresource").
 		To(handler.CreateResource).
 		Doc("Create a linstor resource.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorRes{}))
 
-	webservice.Route(webservice.POST("/linstor/resource/diskless").
+	webservice.Route(webservice.POST("/versasdsresource/diskless").
 		To(handler.CreateDiskless).
 		Doc("Create a linstor diskless resource.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorRes{}))
 
-	webservice.Route(webservice.DELETE("/linstor/resource/{resource}").
+	webservice.Route(webservice.DELETE("/versasdsresource/{resource}").
 		To(handler.DeleteResource).
 		Doc("Delete the specified storagepool.").
 		//Param(webservice.PathParameter("node", "nodename")).
 		Param(webservice.PathParameter("resource", "resourcename")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
-
 
 	webservice.Route(webservice.GET("/lvm/device").
 		To(handler.handleListLvmDevices).
@@ -209,7 +209,6 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-
 	webservice.Route(webservice.POST("/lvm/pv").
 		To(handler.CreateResourceLvmPV).
 		Doc("Create pvs.").
@@ -236,7 +235,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Doc("Create pvs.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(LvmLV{}))		
+		Reads(LvmLV{}))
 	//webservice.Route(webservice.PUT("/linstornode/{node}").
 	//	To(handler.UpdateNode).
 	//	Doc("Update node").

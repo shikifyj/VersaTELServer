@@ -57,22 +57,27 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // 可能Unused是false，InUse是ture
 		resInfo := map[string]string{}
 		resName := res.Resource.Name
-		_, exist := mirrorWay[res.Resource.Name]
+		_, exist := mirrorWay[resName]
 		if !exist {
-			mirrorWay[res.Resource.Name] = 1
+			mirrorWay[resName] = 1
 		} else {
-			mirrorWay[res.Resource.Name]++
+			mirrorWay[resName]++
 		}
 		for _, vol := range res.Volumes {
 			resInfo["name"] = resName
-			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
+			if vol.State.DiskState == "Diskless" {
+				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
+			}
 			resInfo["deviceName"] = vol.DevicePath
 			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
 			if res.CreateTimestamp != nil {
 				resInfo["createTime"] = res.CreateTimestamp.Time.String()
 			}
 			if vol.State.DiskState == "Diskless" {
-				mirrorWay[resName]--
+				resInfo["assignedNode"] = res.Resource.NodeName
+				resInfo["status"] = "Healthy"
+				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name] - 1)
+				resMap[resName] = resInfo
 				break
 			} else if strings.Contains(vol.State.DiskState, "SyncTarget") {
 				resInfo["status"] = "Synching"
@@ -127,7 +132,7 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 			} else {
 				resInfo["usage"] = "Unused"
 			}
-		}else {
+		} else {
 			resInfo["usage"] = "Unknown"
 		}
 
