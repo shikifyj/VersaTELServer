@@ -65,9 +65,7 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 		}
 		for _, vol := range res.Volumes {
 			resInfo["name"] = resName
-			if vol.State.DiskState == "Diskless" {
-				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-			}
+			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
 			resInfo["deviceName"] = vol.DevicePath
 			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
 			if res.CreateTimestamp != nil {
@@ -309,4 +307,36 @@ func CreateDisklessResource(ctx context.Context, c *client.Client, resName, node
 	res := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
 	resCreate := client.ResourceCreate{Resource: res}
 	return c.Resources.Create(ctx, resCreate)
+}
+
+func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName, nodeName, storagePoolName string,
+	targetReplicas int, currentReplicas int) error {
+	// 副本数量差
+	delta := targetReplicas - currentReplicas
+
+	if delta > 0 {
+		// 增加副本
+		for i := currentReplicas + 1; i <= targetReplicas; i++ {
+			resProps := map[string]string{"StorPoolName": storagePoolName}
+			newRes := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
+			resCreate := client.ResourceCreate{Resource: newRes}
+			err := c.Resources.Create(ctx, resCreate)
+			if err != nil {
+				return err
+			}
+		}
+	} else if delta < 0 {
+		// 减少副本
+		for i := currentReplicas; i > targetReplicas; i-- {
+			err := c.Resources.Delete(ctx, resName, nodeName)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		// 副本数量相等，无需执行任何操作
+		return nil
+	}
+
+	return nil
 }

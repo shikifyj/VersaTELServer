@@ -90,6 +90,18 @@ type URLResponse struct {
 	URL string `json:"URL"`
 }
 
+type DiskfulSP struct {
+	NodeName string `json:"nodename"`
+}
+
+type ReplicaRes struct {
+	ResName         string `json:"resname"`
+	NodeName        string `json:"nodename"`
+	PoolName        string `json:"poolname"`
+	TargetReplicas  int    `json:"originalnum"`
+	CurrentReplicas int    `json:"newnum"`
+}
+
 //func init(){
 //	gp.Initialize()
 //	gp.ImportSystemModule()
@@ -155,6 +167,35 @@ func (h *handler) DescribeStoragePool(req *restful.Request, resp *restful.Respon
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	exist := linstorv1alpha1.DescribeStoragePool(ctx, client, storagepoolName)
 	resp.WriteAsJson(MessageExist{exist})
+}
+
+func (h *handler) GetAvailableStoragePools(req *restful.Request, resp *restful.Response) {
+	reNodename := new(DiskfulSP)
+	err := req.ReadEntity(&reNodename)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	allSPs := linstorv1alpha1.GetSPData(ctx, client)
+	diskfulResources := linstorv1alpha1.GetResourcesDiskful(ctx, client)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	for _, sp := range allSPs {
+		if sp["node"] == reNodename.NodeName {
+			isDiskful := false
+			for _, res := range diskfulResources {
+				if res["storagepool"] == sp["name"] {
+					isDiskful = true
+					break
+				}
+			}
+			if !isDiskful {
+				data := sp
+				resp.WriteAsJson(data)
+			}
+		}
+	}
+
 }
 
 func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response) {
@@ -282,6 +323,22 @@ func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
 		if err != nil {
 			resp.WriteAsJson(err)
 		}
+	}
+}
+
+func (h *handler) IncreaseReplicas(req *restful.Request, resp *restful.Response) {
+	res := new(ReplicaRes)
+	err := req.ReadEntity(&res)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.UpdateDiskfulResource(ctx, client, res.ResName, res.NodeName, res.PoolName, res.TargetReplicas,
+		res.CurrentReplicas)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
 	}
 }
 

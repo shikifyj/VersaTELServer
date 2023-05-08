@@ -95,6 +95,13 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LinstorSP{}))
 
+	webservice.Route(webservice.POST("/versasdsstoragepool/nodiskful").
+		To(handler.GetAvailableStoragePools).
+		Doc("Retrieve no diskful resource storagepool details.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(DiskfulSP{}))
+
 	webservice.Route(webservice.DELETE("/versasdsstoragepool/{storagepool}/{node}").
 		To(handler.DeleteStoragePool).
 		Doc("Delete the specified storagepool.").
