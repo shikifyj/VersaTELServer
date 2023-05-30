@@ -102,9 +102,9 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(DiskfulSP{}))
 
-	webservice.Route(webservice.POST("/versasdsresource/diskful").
+	webservice.Route(webservice.POST("/versasdsresource/copy").
 		To(handler.IncreaseReplicas).
-		Doc("Retrieve no diskful resource storagepool details.").
+		Doc("Create a copy.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(ReplicaRes{}))

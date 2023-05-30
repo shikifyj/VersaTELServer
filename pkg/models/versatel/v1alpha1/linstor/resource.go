@@ -51,55 +51,52 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 	resMap := map[string]map[string]string{}
 	mirrorWay := map[string]int{}
 	resArray := []map[string]string{}
+
 	for _, res := range resources {
-		// fmt.Println(res.Resource.Flags)
-		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // Connection
-		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // 可能Unused是false，InUse是ture
 		resInfo := map[string]string{}
 		resName := res.Resource.Name
-		_, exist := mirrorWay[resName]
-		if !exist {
-			mirrorWay[resName] = 1
-		} else {
-			mirrorWay[resName]++
-		}
+
+		mirrorWay[resName]++
+
 		for _, vol := range res.Volumes {
 			resInfo["name"] = resName
 			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
 			resInfo["deviceName"] = vol.DevicePath
 			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+
 			if res.CreateTimestamp != nil {
 				resInfo["createTime"] = res.CreateTimestamp.Time.String()
 			}
 			if vol.State.DiskState == "Diskless" {
-				resInfo["assignedNode"] = res.Resource.NodeName
-				resInfo["status"] = "Healthy"
-				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name] - 1)
-				resMap[resName] = resInfo
+				resMap[resName]["assignedNode"] = res.Resource.NodeName
+				fmt.Println(res.Resource.NodeName)
+			}
+
+			switch {
+			case vol.State.DiskState == "Diskless":
+				mirrorWay[resName]--
 				break
-			} else if strings.Contains(vol.State.DiskState, "SyncTarget") {
+			case strings.Contains(vol.State.DiskState, "SyncTarget"):
 				resInfo["status"] = "Synching"
 				if _, exist := resMap[resName]; exist && resMap[resName]["State"] == "Unhealthy" {
 					resMap[resName]["MirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
 				} else {
 					resMap[resName] = resInfo
 				}
-			} else if vol.State.DiskState == "UpToDate" {
+			case vol.State.DiskState == "UpToDate":
 				resInfo["status"] = "Healthy"
-				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
 				if _, exist := resMap[resName]; !exist {
-					resInfo["status"] = "Healthy"
 					resMap[resName] = resInfo
 				} else {
 					resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
 				}
-			} else if vol.State.DiskState == "" {
+			default:
 				resInfo["status"] = "Unhealthy"
 				resMap[resName] = resInfo
 			}
-
 		}
 	}
+
 	for _, v := range resMap {
 		resArray = append(resArray, v)
 	}
@@ -309,32 +306,33 @@ func CreateDisklessResource(ctx context.Context, c *client.Client, resName, node
 	return c.Resources.Create(ctx, resCreate)
 }
 
-func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName, nodeName, storagePoolName string,
+func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string, nodeName []string, storagePoolName []string,
 	targetReplicas int, currentReplicas int) error {
 	// 副本数量差
-	delta := targetReplicas - currentReplicas
+	delta := currentReplicas - targetReplicas
+	fmt.Println(delta)
 
 	if delta > 0 {
-		// 增加副本
-		for i := currentReplicas + 1; i <= targetReplicas; i++ {
-			resProps := map[string]string{"StorPoolName": storagePoolName}
-			newRes := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
-			resCreate := client.ResourceCreate{Resource: newRes}
-			err := c.Resources.Create(ctx, resCreate)
-			if err != nil {
-				return err
+		for _, nName := range nodeName {
+			for _, spName := range storagePoolName {
+				resProps := map[string]string{"StorPoolName": spName}
+				newRes := client.Resource{Name: resName, NodeName: nName, Props: resProps}
+				resCreate := client.ResourceCreate{Resource: newRes}
+				err := c.Resources.Create(ctx, resCreate)
+				if err != nil {
+					return err
+				}
 			}
 		}
+
 	} else if delta < 0 {
-		// 减少副本
-		for i := currentReplicas; i > targetReplicas; i-- {
-			err := c.Resources.Delete(ctx, resName, nodeName)
+		for _, nName := range nodeName {
+			err := c.Resources.Delete(ctx, resName, nName)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		// 副本数量相等，无需执行任何操作
 		return nil
 	}
 

@@ -47,17 +47,17 @@ type LinstorNode struct {
 }
 
 type LinstorSP struct {
-	Name     string `json:"name"`
-	NodeName string `json:"node"`
-	Type     string `json:"type"`
-	Volume   string `json:"volume"`
+	Metadata map[string]interface{} `json:"metadata"`
+	NodeName string                 `json:"node"`
+	Type     string                 `json:"type"`
+	Volume   string                 `json:"volume"`
 }
 
 type LinstorRes struct {
-	Name        string     `json:"name"`
-	Node        []string   `json:"node"`
-	StoragePool [][]string `json:"storagepool"`
-	Size        string     `json:"size"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Node        []string               `json:"node"`
+	StoragePool [][]string             `json:"storagepool"`
+	Size        string                 `json:"size"`
 }
 
 type LvmPV struct {
@@ -95,11 +95,11 @@ type DiskfulSP struct {
 }
 
 type ReplicaRes struct {
-	ResName         string `json:"resname"`
-	NodeName        string `json:"nodename"`
-	PoolName        string `json:"poolname"`
-	TargetReplicas  int    `json:"originalnum"`
-	CurrentReplicas int    `json:"newnum"`
+	ResName         string   `json:"resname"`
+	NodeName        []string `json:"nodename"`
+	PoolName        []string `json:"poolname"`
+	TargetReplicas  int      `json:"originalnum"`
+	CurrentReplicas int      `json:"newnum"`
 }
 
 //func init(){
@@ -198,6 +198,19 @@ func (h *handler) GetAvailableStoragePools(req *restful.Request, resp *restful.R
 
 }
 
+//func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response) {
+//	storagePool := new(LinstorSP)
+//	err := req.ReadEntity(&storagePool)
+//	if err != nil {
+//		api.HandleBadRequest(resp, req, err)
+//		return
+//	}
+//	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+//	err = linstorv1alpha1.CreateSP(ctx, client, storagePool.Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
+//	if err != nil {
+//		resp.WriteAsJson(err)
+//	}
+
 func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response) {
 	storagePool := new(LinstorSP)
 	err := req.ReadEntity(&storagePool)
@@ -206,12 +219,12 @@ func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateSP(ctx, client, storagePool.Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
+	Name := storagePool.Metadata["name"].(string)
+	err = linstorv1alpha1.CreateSP(ctx, client, Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
 	if err != nil {
 		resp.WriteAsJson(err)
 	}
 }
-
 func (h *handler) DeleteStoragePool(req *restful.Request, resp *restful.Response) {
 	nodeName := req.PathParameter("node")
 	spName := req.PathParameter("storagepool")
@@ -288,7 +301,8 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	}
 
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateResource(ctx, client, res.Name, res.StoragePool, res.Size)
+	Name := res.Metadata["name"].(string)
+	err = linstorv1alpha1.CreateResource(ctx, client, Name, res.StoragePool, res.Size)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
@@ -318,10 +332,13 @@ func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	Name := res.Metadata["name"].(string)
 	for _, node := range res.Node {
-		err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
+		err = linstorv1alpha1.CreateDisklessResource(ctx, client, Name, node)
 		if err != nil {
 			resp.WriteAsJson(err)
+		} else {
+			resp.WriteAsJson(node)
 		}
 	}
 }
@@ -333,6 +350,7 @@ func (h *handler) IncreaseReplicas(req *restful.Request, resp *restful.Response)
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
+
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	err = linstorv1alpha1.UpdateDiskfulResource(ctx, client, res.ResName, res.NodeName, res.PoolName, res.TargetReplicas,
 		res.CurrentReplicas)
