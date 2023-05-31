@@ -356,7 +356,6 @@ func (h *handler) IncreaseReplicas(req *restful.Request, resp *restful.Response)
 		res.CurrentReplicas)
 	if err != nil {
 		resp.WriteAsJson(err)
-		return
 	}
 }
 

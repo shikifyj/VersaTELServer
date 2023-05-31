@@ -69,7 +69,6 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 			}
 			if vol.State.DiskState == "Diskless" {
 				resMap[resName]["assignedNode"] = res.Resource.NodeName
-				fmt.Println(res.Resource.NodeName)
 			}
 
 			switch {
@@ -310,7 +309,6 @@ func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string
 	targetReplicas int, currentReplicas int) error {
 	// 副本数量差
 	delta := currentReplicas - targetReplicas
-	fmt.Println(delta)
 
 	if delta > 0 {
 		for _, nName := range nodeName {
@@ -327,7 +325,19 @@ func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string
 
 	} else if delta < 0 {
 		for _, nName := range nodeName {
-			err := c.Resources.Delete(ctx, resName, nName)
+			resources, err := c.Resources.GetAll(ctx, resName)
+			if err != nil {
+				return err
+			}
+			for _, res := range resources {
+				if res.NodeName != nName {
+					errInfo := fmt.Sprintf("在节点 %s 下不存在副本 %s ,请重新选择节点调整副本", nName, resName)
+					Message := client.ApiCallError{client.ApiCallRc{RetCode: -1, Message: errInfo}}
+					return Message
+					break
+				}
+			}
+			err = c.Resources.Delete(ctx, resName, nName)
 			if err != nil {
 				return err
 			}
