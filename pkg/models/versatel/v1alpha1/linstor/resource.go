@@ -318,24 +318,32 @@ func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string
 				resCreate := client.ResourceCreate{Resource: newRes}
 				err := c.Resources.Create(ctx, resCreate)
 				if err != nil {
+					fmt.Printf("创建资源失败: 节点名: %s, 存储池名: %s, 错误: %v\n", nName, spName, err)
 					return err
+				} else {
+					fmt.Printf("成功创建资源: 节点名: %s, 存储池名: %s\n", nName, spName)
 				}
 			}
 		}
-
 	} else if delta < 0 {
 		for _, nName := range nodeName {
 			resources, err := c.Resources.GetAll(ctx, resName)
 			if err != nil {
 				return err
 			}
+			nodeNames := []string{}
 			for _, res := range resources {
-				if res.NodeName != nName {
-					errInfo := fmt.Sprintf("在节点 %s 下不存在副本 %s ,请重新选择节点调整副本", nName, resName)
-					Message := client.ApiCallError{client.ApiCallRc{RetCode: -1, Message: errInfo}}
-					return Message
-					break
-				}
+				fmt.Println(res.NodeName)
+				nodeNames = append(nodeNames, res.NodeName)
+			}
+			if !contains(nodeNames, nName) {
+				errInfo := fmt.Sprintf("在节点 %s 下不存在副本 %s ,请重新选择节点调整副本", nName, resName)
+				Message := client.ApiCallError{client.ApiCallRc{RetCode: -1, Message: errInfo}}
+				return Message
+			}
+			err = c.Resources.Delete(ctx, resName, nName)
+			if err != nil {
+				return err
 			}
 			err = c.Resources.Delete(ctx, resName, nName)
 			if err != nil {
@@ -347,4 +355,13 @@ func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string
 	}
 
 	return nil
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
