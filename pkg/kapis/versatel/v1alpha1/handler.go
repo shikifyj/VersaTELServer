@@ -2,10 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
-
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/kubesphere/pkg/api"
-	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	linstorv1alpha1 "kubesphere.io/kubesphere/pkg/models/versatel/v1alpha1/linstor"
 	servererr "kubesphere.io/kubesphere/pkg/server/errors"
@@ -41,9 +39,9 @@ type MessageExist struct {
 }
 
 type LinstorNode struct {
-	Name     string `json:"name"`
-	IP       string `json:"addr"`
-	NodeType string `json:"node_type"`
+	Metadata map[string]interface{} `json:"metadata"`
+	IP       string                 `json:"addr"`
+	NodeType string                 `json:"node_type"`
 }
 
 type LinstorSP struct {
@@ -137,7 +135,8 @@ func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateNode(ctx, client, node.Name, node.IP, node.NodeType)
+	Name := node.Metadata["name"].(string)
+	err = linstorv1alpha1.CreateNode(ctx, client, Name, node.IP, node.NodeType)
 	if err != nil {
 		resp.WriteAsJson(err)
 	}
@@ -258,6 +257,16 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResources(ctx, client)
+	data2 := linstorv1alpha1.GetassignedNode(ctx, client)
+	for i := range data {
+		for j := range data2 {
+			if data[i]["name"] == data2[j]["name"] {
+				data[i]["assignedNode"] = data2[j]["assignedNode"]
+				break
+			}
+		}
+
+	}
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
 	resp.WriteAsJson(message)
@@ -317,9 +326,9 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	//	return
 	//}
 	fmt.Println("linstor audit run....")
-	lnau := auditing.GetLinstorAudit()
-	isenable := lnau.Enabled()
-	fmt.Println("isenable: ", isenable)
+	//lnau := auditing.GetLinstorAudit()
+	//isenable := lnau.Enabled()
+	//fmt.Println("isenable: ", isenable)
 
 	resp.WriteEntity(servererr.None)
 }

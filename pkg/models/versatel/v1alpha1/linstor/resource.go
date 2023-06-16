@@ -10,88 +10,47 @@ import (
 	"github.com/LINBIT/golinstor/client"
 )
 
-// func GetResources(ctx context.Context, c *client.Client) []map[string]string {
-// 	resources, _ := c.Resources.GetResourceView(ctx)
-// 	resMap := map[string]map[string]string{}
-// 	mirrorWay := map[string]int{}
-// 	resArray := []map[string]string{}
-// 	for _, res := range resources {
-// 		resInfo := map[string]string{}
-// 		_, exist := mirrorWay[res.Resource.Name]
-// 		if !exist {
-// 			mirrorWay[res.Resource.Name] = 1
-// 		} else {
-// 			mirrorWay[res.Resource.Name]++
-// 		}
-
-// 		for _, vol := range res.Volumes {
-// 			if vol.State.DiskState == "Diskless" {
-// 				mirrorWay[res.Resource.Name]--
-// 				break
-// 			} else {
-// 				resInfo["name"] = res.Resource.Name
-// 				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-// 				resInfo["deviceName"] = vol.DevicePath
-// 				resInfo["status"] = vol.State.DiskState
-// 				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-// 				resMap[res.Resource.Name] = resInfo
-// 				break
-// 			}
-// 		}
-
-// 	}
-// 	for _, v := range resMap {
-// 		resArray = append(resArray, v)
-// 	}
-// 	return resArray
-// }
-
 func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := map[string]map[string]string{}
-	mirrorWay := map[string]int{}
+	resMap := make(map[string]map[string]string)
+	mirrorWay := make(map[string]int)
 	resArray := []map[string]string{}
 
 	for _, res := range resources {
-		resInfo := map[string]string{}
 		resName := res.Resource.Name
-
 		mirrorWay[resName]++
 
 		for _, vol := range res.Volumes {
-			resInfo["name"] = resName
-			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-			resInfo["deviceName"] = vol.DevicePath
-			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+			resInfo := map[string]string{
+				"name":         resName,
+				"size":         FormatSize(vol.AllocatedSizeKib),
+				"deviceName":   vol.DevicePath,
+				"mirrorWay":    strconv.Itoa(mirrorWay[res.Resource.Name]),
+				"assignedNode": "",
+			}
 
 			if res.CreateTimestamp != nil {
 				resInfo["createTime"] = res.CreateTimestamp.Time.String()
 			}
+
 			if vol.State.DiskState == "Diskless" {
-				resMap[resName]["assignedNode"] = res.Resource.NodeName
+				mirrorWay[resName]--
+				break
 			}
 
 			switch {
-			case vol.State.DiskState == "Diskless":
-				mirrorWay[resName]--
-				break
 			case strings.Contains(vol.State.DiskState, "SyncTarget"):
 				resInfo["status"] = "Synching"
-				if _, exist := resMap[resName]; exist && resMap[resName]["State"] == "Unhealthy" {
-					resMap[resName]["MirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-				} else {
-					resMap[resName] = resInfo
-				}
 			case vol.State.DiskState == "UpToDate":
 				resInfo["status"] = "Healthy"
-				if _, exist := resMap[resName]; !exist {
-					resMap[resName] = resInfo
-				} else {
-					resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-				}
 			default:
 				resInfo["status"] = "Unhealthy"
+			}
+
+			if _, exist := resMap[resName]; !exist || resMap[resName]["status"] == "Unhealthy" {
 				resMap[resName] = resInfo
+			} else {
+				resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
 			}
 		}
 	}
@@ -104,6 +63,28 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 		return resArray[i]["createTime"] > resArray[j]["createTime"]
 	})
 
+	return resArray
+}
+
+func GetassignedNode(ctx context.Context, c *client.Client) []map[string]string {
+	resArray := []map[string]string{}
+	resources, _ := c.Resources.GetResourceView(ctx)
+	resMap := make(map[string]map[string]string)
+	for _, res := range resources {
+		resName := res.Resource.Name
+		for _, vol := range res.Volumes {
+			resInfo := map[string]string{
+				"name": resName,
+			}
+			if vol.State.DiskState == "Diskless" {
+				resInfo["assignedNode"] = res.Resource.NodeName
+				resMap[resName] = resInfo
+			}
+		}
+	}
+	for _, v := range resMap {
+		resArray = append(resArray, v)
+	}
 	return resArray
 }
 
@@ -311,18 +292,16 @@ func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string
 	delta := currentReplicas - targetReplicas
 
 	if delta > 0 {
-		for _, nName := range nodeName {
-			for _, spName := range storagePoolName {
-				resProps := map[string]string{"StorPoolName": spName}
-				newRes := client.Resource{Name: resName, NodeName: nName, Props: resProps}
-				resCreate := client.ResourceCreate{Resource: newRes}
-				err := c.Resources.Create(ctx, resCreate)
-				if err != nil {
-					fmt.Printf("创建资源失败: 节点名: %s, 存储池名: %s, 错误: %v\n", nName, spName, err)
-					return err
-				} else {
-					fmt.Printf("成功创建资源: 节点名: %s, 存储池名: %s\n", nName, spName)
-				}
+		for i := range nodeName {
+			nName := nodeName[i]
+			spName := storagePoolName[i]
+
+			resProps := map[string]string{"StorPoolName": spName}
+			newRes := client.Resource{Name: resName, NodeName: nName, Props: resProps}
+			resCreate := client.ResourceCreate{Resource: newRes}
+			err := c.Resources.Create(ctx, resCreate)
+			if err != nil {
+				return err
 			}
 		}
 	} else if delta < 0 {
