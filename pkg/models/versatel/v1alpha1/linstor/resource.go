@@ -3,11 +3,10 @@ package linstor
 import (
 	"context"
 	"fmt"
+	"github.com/LINBIT/golinstor/client"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/LINBIT/golinstor/client"
 )
 
 func GetResources(ctx context.Context, c *client.Client) []map[string]string {
@@ -33,25 +32,52 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 				resInfo["createTime"] = res.CreateTimestamp.Time.String()
 			}
 
-			if vol.State.DiskState == "Diskless" {
+			connFail := map[string][]string{}
+			for k, v := range res.LayerObject.Drbd.Connections {
+				if !v.Connected {
+					connFail[v.Message] = append(connFail[v.Message], k)
+				}
+			}
+
+			volState := res.Volumes[0].State.DiskState
+			if volState == "Diskless" {
 				mirrorWay[resName]--
 				break
-			}
-
-			switch {
-			case strings.Contains(vol.State.DiskState, "SyncTarget"):
-				resInfo["status"] = "Synching"
-			case vol.State.DiskState == "UpToDate":
-				resInfo["status"] = "Healthy"
-			default:
+			} else if volState == "UpToDate" && len(connFail) != 0 {
 				resInfo["status"] = "Unhealthy"
-			}
-
-			if _, exist := resMap[resName]; !exist || resMap[resName]["status"] == "Unhealthy" {
 				resMap[resName] = resInfo
-			} else {
-				resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+			} else if volState == "UpToDate" && len(connFail) == 0 {
+				resInfo["status"] = "Healthy"
+				resMap[resName] = resInfo
+			} else if volState == "" {
+				resInfo["status"] = "Unhealthy"
+				resMap[resName] = resInfo
+			} else if strings.Contains(vol.State.DiskState, "SyncTarget") {
+				resInfo["status"] = "Synching"
+				if _, exist := resMap[resName]; exist && resMap[resName]["State"] == "Unhealthy" {
+					resMap[resName]["MirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+				} else {
+					resMap[resName] = resInfo
+				}
 			}
+			//switch volState {
+			//case "Diskless":
+			//	mirrorWay[resName]--
+			//case "UpToDate":
+			//	resInfo["status"] = "Healthy"
+			//	resMap[resName] = resInfo
+			//case "":
+			//	resInfo["status"] = "Unhealthy"
+			//	resMap[resName] = resInfo
+			//default:
+			//	resInfo["status"] = "Synching"
+			//	if _, exist := resMap[resName]; exist && resMap[resName]["status"] == "Unhealthy" {
+			//		resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[resName])
+			//	} else {
+			//		resMap[resName] = resInfo
+			//	}
+			//}
+
 		}
 	}
 
@@ -156,7 +182,7 @@ func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]str
 	for _, res := range resources {
 		resInfo := map[string]string{}
 
-		if *res.State.InUse {
+		if res.State != nil && *res.State.InUse {
 			resInfo["usage"] = "InUse"
 		} else {
 			resInfo["usage"] = "Unused"
