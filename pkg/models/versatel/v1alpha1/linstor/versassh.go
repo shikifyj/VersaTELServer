@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -280,7 +281,7 @@ func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]string {
 		replay, _ := SshCmd(cli.Sshclient, "lvmdiskscan")
 		expr := `(?<=\[\D*)\d.+(?=\])`
 		regAll := regexp.MustCompile(`/dev/sd.+`)
-		regDevice := regexp.MustCompile(`/dev/sd\s*`)
+		regDevice := regexp.MustCompile(`/dev/sd[a-z]\d*`)
 		regSize, _ := regexp2.Compile(expr, 0)
 
 		resultAll := regAll.FindAllStringSubmatch(replay, -1)
@@ -297,7 +298,7 @@ func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]string {
 					lvmInfo := map[string]string{
 						"node": cli.Host,
 						"name": resultDevice[0][0],
-						"size": resSize,
+						"size": convertMBtoGB(resSize),
 					}
 					clusterLvm = append(clusterLvm, lvmInfo)
 				}
@@ -361,15 +362,28 @@ func GetLvmVGs(ctx context.Context, c *client.Client) []map[string]string {
 		for _, data := range resultAll {
 
 			resultVG := regVG.FindString(data[0])
+			if resultVG == "ubuntu-vg" {
+				continue
+			}
 
 			n, _ := regSize.FindStringMatch(data[0])
 			resultSize := n.String()
-
+			l := strings.Fields(data[0])
+			if len(l) < 2 {
+				continue
+			}
+			resultLV := l[2]
+			lv := "true"
+			if resultLV == "0" {
+				lv = "false"
+			}
 			lvmInfo := map[string]string{
 				"node": cli.Host,
 				"vg":   resultVG,
 				"size": resultSize,
+				"lv":   lv,
 			}
+
 			clusterVG = append(clusterVG, lvmInfo)
 
 		}
@@ -503,4 +517,14 @@ func DeleteLV(ctx context.Context, c *client.Client, lvName string, nodeName str
 	}
 	return err
 
+}
+
+func convertMBtoGB(mbSize string) string {
+	mbSizeFloat, err := strconv.ParseFloat(mbSize, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	gbSizeFloat := mbSizeFloat / 1024 / 1024
+	gbSize := fmt.Sprintf("%.2fG", gbSizeFloat)
+	return gbSize
 }
