@@ -8,6 +8,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/kubesphere/pkg/api"
 	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
+
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	linstorv1alpha1 "kubesphere.io/kubesphere/pkg/models/versatel/v1alpha1/linstor"
 	servererr "kubesphere.io/kubesphere/pkg/server/errors"
@@ -43,23 +44,23 @@ type MessageExist struct {
 }
 
 type LinstorNode struct {
-	Name     string `json:"name"`
-	IP       string `json:"addr"`
-	NodeType string `json:"node_type"`
+	Metadata map[string]interface{} `json:"metadata"`
+	IP       string                 `json:"addr"`
+	NodeType string                 `json:"node_type"`
 }
 
 type LinstorSP struct {
-	Name     string `json:"name"`
-	NodeName string `json:"node"`
-	Type     string `json:"type"`
-	Volume   string `json:"volume"`
+	Metadata map[string]interface{} `json:"metadata"`
+	NodeName string                 `json:"node"`
+	Type     string                 `json:"type"`
+	Volume   string                 `json:"volume"`
 }
 
 type LinstorRes struct {
-	Name        string     `json:"name"`
-	Node        []string   `json:"node"`
-	StoragePool [][]string `json:"storagepool"`
-	Size        string     `json:"size"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Node        []string               `json:"node"`
+	StoragePool [][]string             `json:"storagepool"`
+	Size        string                 `json:"size"`
 }
 
 type LvmPV struct {
@@ -91,6 +92,18 @@ type LvmLV struct {
 
 type URLResponse struct {
 	URL string `json:"URL"`
+}
+
+type DiskfulSP struct {
+	NodeName string `json:"nodename"`
+}
+
+type ReplicaRes struct {
+	ResName         string   `json:"resname"`
+	NodeName        []string `json:"nodename"`
+	PoolName        []string `json:"poolname"`
+	TargetReplicas  int      `json:"originalnum"`
+	CurrentReplicas int      `json:"newnum"`
 }
 
 //func init(){
@@ -128,7 +141,8 @@ func (h *handler) CreateNode(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateNode(ctx, client, node.Name, node.IP, node.NodeType)
+	Name := node.Metadata["name"].(string)
+	err = linstorv1alpha1.CreateNode(ctx, client, Name, node.IP, node.NodeType)
 	if err != nil {
 		resp.WriteAsJson(err)
 	}
@@ -159,6 +173,48 @@ func (h *handler) DescribeStoragePool(req *restful.Request, resp *restful.Respon
 	resp.WriteAsJson(MessageExist{exist})
 }
 
+func (h *handler) GetAvailableStoragePools(req *restful.Request, resp *restful.Response) {
+	reNodename := new(DiskfulSP)
+	err := req.ReadEntity(&reNodename)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	allSPs := linstorv1alpha1.GetSPData(ctx, client)
+	diskfulResources := linstorv1alpha1.GetResourcesDiskful(ctx, client)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	for _, sp := range allSPs {
+		if sp["node"] == reNodename.NodeName {
+			isDiskful := false
+			for _, res := range diskfulResources {
+				if res["storagepool"] == sp["name"] {
+					isDiskful = true
+					break
+				}
+			}
+			if !isDiskful {
+				data := sp
+				resp.WriteAsJson(data)
+			}
+		}
+	}
+
+}
+
+//func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response) {
+//	storagePool := new(LinstorSP)
+//	err := req.ReadEntity(&storagePool)
+//	if err != nil {
+//		api.HandleBadRequest(resp, req, err)
+//		return
+//	}
+//	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+//	err = linstorv1alpha1.CreateSP(ctx, client, storagePool.Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
+//	if err != nil {
+//		resp.WriteAsJson(err)
+//	}
+
 func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response) {
 	storagePool := new(LinstorSP)
 	err := req.ReadEntity(&storagePool)
@@ -167,12 +223,12 @@ func (h *handler) CreateStoragePool(req *restful.Request, resp *restful.Response
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateSP(ctx, client, storagePool.Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
+	Name := storagePool.Metadata["name"].(string)
+	err = linstorv1alpha1.CreateSP(ctx, client, Name, storagePool.NodeName, storagePool.Type, storagePool.Volume)
 	if err != nil {
 		resp.WriteAsJson(err)
 	}
 }
-
 func (h *handler) DeleteStoragePool(req *restful.Request, resp *restful.Response) {
 	nodeName := req.PathParameter("node")
 	spName := req.PathParameter("storagepool")
@@ -206,6 +262,16 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResources(ctx, client)
+	data2 := linstorv1alpha1.GetassignedNode(ctx, client)
+	for i := range data {
+		for j := range data2 {
+			if data[i]["name"] == data2[j]["name"] {
+				data[i]["assignedNode"] = data2[j]["assignedNode"]
+				break
+			}
+		}
+
+	}
 	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
 	message.List(query)
 	resp.WriteAsJson(message)
@@ -249,24 +315,25 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	}
 
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.CreateResource(ctx, client, res.Name, res.StoragePool, res.Size)
+	Name := res.Metadata["name"].(string)
+	err = linstorv1alpha1.CreateResource(ctx, client, Name, res.StoragePool, res.Size)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
 	}
-	if res.Node != nil {
-		for _, node := range res.Node {
-			err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
-		}
-	}
-	if err != nil {
-		resp.WriteAsJson(err)
-		return
-	}
+	//if res.Node != nil {
+	//	for _, node := range res.Node {
+	//		err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
+	//	}
+	//}
+	//if err != nil {
+	//	resp.WriteAsJson(err)
+	//	return
+	//}
 	fmt.Println("linstor audit run....")
-	lnau := auditing.GetLinstorAudit()
-	isenable := lnau.Enabled()
-	fmt.Println("isenable: ", isenable)
+	//lnau := auditing.GetLinstorAudit()
+	//isenable := lnau.Enabled()
+	//fmt.Println("isenable: ", isenable)
 
 	resp.WriteEntity(servererr.None)
 }
@@ -279,11 +346,30 @@ func (h *handler) CreateDiskless(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	Name := res.Metadata["name"].(string)
 	for _, node := range res.Node {
-		err = linstorv1alpha1.CreateDisklessResource(ctx, client, res.Name, node)
+		err = linstorv1alpha1.CreateDisklessResource(ctx, client, Name, node)
 		if err != nil {
 			resp.WriteAsJson(err)
+		} else {
+			resp.WriteAsJson(node)
 		}
+	}
+}
+
+func (h *handler) IncreaseReplicas(req *restful.Request, resp *restful.Response) {
+	res := new(ReplicaRes)
+	err := req.ReadEntity(&res)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.UpdateDiskfulResource(ctx, client, res.ResName, res.NodeName, res.PoolName, res.TargetReplicas,
+		res.CurrentReplicas)
+	if err != nil {
+		resp.WriteAsJson(err)
 	}
 }
 
