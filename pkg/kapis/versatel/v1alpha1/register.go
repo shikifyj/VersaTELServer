@@ -179,7 +179,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.GET("/lvm/device").
+	webservice.Route(webservice.GET("/device").
 		To(handler.handleListLvmDevices).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level lvm").
@@ -190,7 +190,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("/lvm/pv").
+	webservice.Route(webservice.GET("/pv").
 		To(handler.handleListLvmPVs).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level pv").
@@ -201,7 +201,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("/lvm/vg").
+	webservice.Route(webservice.GET("/vg").
 		To(handler.handleListLvmVGs).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level vg").
@@ -212,7 +212,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.GET("/lvm/lv").
+	webservice.Route(webservice.GET("/thinpool").
 		To(handler.handleListLvmLVs).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Cluster level lv").
@@ -223,28 +223,29 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-	webservice.Route(webservice.POST("/lvm/pv").
+
+	webservice.Route(webservice.POST("/pv").
 		To(handler.CreateResourceLvmPV).
 		Doc("Create pvs.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LvmPV{}))
 
-	webservice.Route(webservice.POST("/lvm/vg").
+	webservice.Route(webservice.POST("/vg").
 		To(handler.CreateResourceLvmVG).
 		Doc("Create pvs.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LvmVG{}))
 
-	webservice.Route(webservice.POST("/lvm/thinpool").
+	webservice.Route(webservice.POST("/thinpool").
 		To(handler.CreateResourceLvmThinPool).
 		Doc("Create pvs.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(LvmThinPool{}))
 
-	webservice.Route(webservice.POST("/lvm/lv").
+	webservice.Route(webservice.POST("/lv").
 		To(handler.CreateResourceLvmLV).
 		Doc("Create pvs.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
@@ -256,6 +257,30 @@ func AddToContainer(container *restful.Container, ip string) error {
 	//	Param(webservice.PathParameter("node", "linstor node name")).
 	//	Returns(http.StatusOK, api.StatusOK, LinstorNode{}).
 	//	Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	webservice.Route(webservice.DELETE("/pv/{node}/{name}").
+		To(handler.DeletePV).
+		Doc("Delete the PV.").
+		Param(webservice.PathParameter("name", "pv_name")).
+		Param(webservice.PathParameter("node", "node_name")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/vg/{node}/{name}").
+		To(handler.DeleteVG).
+		Doc("Delete the VG.").
+		Param(webservice.PathParameter("name", "vg_name")).
+		Param(webservice.PathParameter("node", "node_name")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/thinpool/{node}/{name}").
+		To(handler.DeleteThinPool).
+		Doc("Delete the VG.").
+		Param(webservice.PathParameter("name", "thinpool_name")).
+		Param(webservice.PathParameter("node", "node_name")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 	container.Add(webservice)
 
