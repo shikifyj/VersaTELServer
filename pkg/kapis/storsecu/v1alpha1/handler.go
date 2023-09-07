@@ -6,12 +6,12 @@ import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"kubesphere.io/kubesphere/pkg/api"
 	//servererr "kubesphere.io/kubesphere/pkg/server/errors"
 	//"kubesphere.io/kubesphere/pkg/apiserver/auditing"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
-	servererr "kubesphere.io/kubesphere/pkg/server/errors"
 	backupv1alpha1 "kubesphere.io/kubesphere/pkg/models/storsecu/v1alpha1/backup"
-	"kubesphere.io/kubesphere/pkg/api"
+	servererr "kubesphere.io/kubesphere/pkg/server/errors"
 )
 
 //var PyStr = python3.PyUnicode_FromString
@@ -19,12 +19,10 @@ import (
 //var GoStr = python3.PyUnicode_AsUTF8
 //var GoInt = python3.PyLong_AsLong
 
-
 type handler struct {
-	Client  kubernetes.Interface
-	Config  *rest.Config
+	Client kubernetes.Interface
+	Config *rest.Config
 }
-
 
 func newHandler(client kubernetes.Interface, config *rest.Config) *handler {
 	return &handler{Client: client, Config: config}
@@ -42,21 +40,18 @@ type MessageList struct {
 }
 
 type BackupMetadata struct {
-	Type     string `json:"type"`
-	Name     string `json:"name"`
+	Type string `json:"type"`
+	Name string `json:"name"`
 }
 
 type BackupInfo struct {
-	Metadata     BackupMetadata `json:"metadata"`
-	Snapshot     string `json:"snapshot"`
-	Vg           string `json:"vg"`
-	Image        string `json:"image"`
-	BackupType   string `json:"backupType"`
-	Schedule       string `json:"schedule"`
-
-
+	Metadata   BackupMetadata `json:"metadata"`
+	Snapshot   string         `json:"snapshot"`
+	Vg         string         `json:"vg"`
+	Image      string         `json:"image"`
+	BackupType string         `json:"backupType"`
+	Schedule   string         `json:"schedule"`
 }
-
 
 //func init(){
 //	gp.Initialize()
@@ -69,16 +64,15 @@ func (h *handler) handleListbackupres(req *restful.Request, resp *restful.Respon
 	resname := "test"
 	data, _ := backupv1alpha1.GetBackupRes(h.Client, h.Config, resname)
 
-
-	message := backupv1alpha1.LinstorGetter{0, len(data), data}
-	message.List(query)
-	resp.WriteAsJson(message)
-
+	if data != nil {
+		message := backupv1alpha1.LinstorGetter{0, len(data), data}
+		message.List(query)
+		resp.WriteAsJson(message)
+	}
 }
 
-
 func (h *handler) Backup(req *restful.Request, resp *restful.Response) {
-	
+
 	backupInfo := new(BackupInfo)
 	err := req.ReadEntity(&backupInfo)
 	fmt.Println("backupInfo: ", backupInfo)
@@ -115,12 +109,11 @@ func (h *handler) Backup(req *restful.Request, resp *restful.Response) {
 	}
 
 	resp.WriteEntity(servererr.None)
-
 
 }
 
 func (h *handler) AntiVirus(req *restful.Request, resp *restful.Response) {
-	
+
 	backupInfo := new(BackupInfo)
 	err := req.ReadEntity(&backupInfo)
 	fmt.Println("backupInfo: ", backupInfo)
@@ -158,9 +151,4 @@ func (h *handler) AntiVirus(req *restful.Request, resp *restful.Response) {
 
 	resp.WriteEntity(servererr.None)
 
-
 }
-
-
-
-

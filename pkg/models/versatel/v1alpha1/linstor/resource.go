@@ -3,77 +3,55 @@ package linstor
 import (
 	"context"
 	"fmt"
+	"github.com/LINBIT/golinstor/client"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/LINBIT/golinstor/client"
 )
-
-// func GetResources(ctx context.Context, c *client.Client) []map[string]string {
-// 	resources, _ := c.Resources.GetResourceView(ctx)
-// 	resMap := map[string]map[string]string{}
-// 	mirrorWay := map[string]int{}
-// 	resArray := []map[string]string{}
-// 	for _, res := range resources {
-// 		resInfo := map[string]string{}
-// 		_, exist := mirrorWay[res.Resource.Name]
-// 		if !exist {
-// 			mirrorWay[res.Resource.Name] = 1
-// 		} else {
-// 			mirrorWay[res.Resource.Name]++
-// 		}
-
-// 		for _, vol := range res.Volumes {
-// 			if vol.State.DiskState == "Diskless" {
-// 				mirrorWay[res.Resource.Name]--
-// 				break
-// 			} else {
-// 				resInfo["name"] = res.Resource.Name
-// 				resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-// 				resInfo["deviceName"] = vol.DevicePath
-// 				resInfo["status"] = vol.State.DiskState
-// 				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-// 				resMap[res.Resource.Name] = resInfo
-// 				break
-// 			}
-// 		}
-
-// 	}
-// 	for _, v := range resMap {
-// 		resArray = append(resArray, v)
-// 	}
-// 	return resArray
-// }
 
 func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := map[string]map[string]string{}
-	mirrorWay := map[string]int{}
+	resMap := make(map[string]map[string]string)
+	mirrorWay := make(map[string]int)
 	resArray := []map[string]string{}
+
 	for _, res := range resources {
-		// fmt.Println(res.Resource.Flags)
-		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // Connection
-		// fmt.Println(res.Resource.LayerObject.Drbd.Connections) // 可能Unused是false，InUse是ture
-		resInfo := map[string]string{}
 		resName := res.Resource.Name
-		_, exist := mirrorWay[res.Resource.Name]
-		if !exist {
-			mirrorWay[res.Resource.Name] = 1
-		} else {
-			mirrorWay[res.Resource.Name]++
-		}
+		mirrorWay[resName]++
+
 		for _, vol := range res.Volumes {
-			resInfo["name"] = resName
-			resInfo["size"] = FormatSize(vol.AllocatedSizeKib)
-			resInfo["deviceName"] = vol.DevicePath
-			resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
+			resInfo := map[string]string{
+				"name":         resName,
+				"size":         FormatSize(vol.AllocatedSizeKib),
+				"deviceName":   vol.DevicePath,
+				"mirrorWay":    strconv.Itoa(mirrorWay[res.Resource.Name]),
+				"assignedNode": "",
+			}
+
 			if res.CreateTimestamp != nil {
 				resInfo["createTime"] = res.CreateTimestamp.Time.String()
 			}
-			if vol.State.DiskState == "Diskless" {
+
+			connFail := map[string][]string{}
+			for k, v := range res.LayerObject.Drbd.Connections {
+				if !v.Connected {
+					connFail[v.Message] = append(connFail[v.Message], k)
+				}
+			}
+
+			volState := res.Volumes[0].State.DiskState
+			if volState == "Diskless" {
 				mirrorWay[resName]--
 				break
+			} else if volState == "UpToDate" && len(connFail) != 0 {
+				resInfo["status"] = "Unhealthy"
+				resMap[resName] = resInfo
+			} else if volState == "UpToDate" && len(connFail) == 0 {
+				resInfo["status"] = "Healthy"
+				resMap[resName] = resInfo
+			} else if volState == "" {
+				resInfo["status"] = "Unhealthy"
+				resMap[resName] = resInfo
 			} else if strings.Contains(vol.State.DiskState, "SyncTarget") {
 				resInfo["status"] = "Synching"
 				if _, exist := resMap[resName]; exist && resMap[resName]["State"] == "Unhealthy" {
@@ -81,22 +59,28 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 				} else {
 					resMap[resName] = resInfo
 				}
-			} else if vol.State.DiskState == "UpToDate" {
-				resInfo["status"] = "Healthy"
-				resInfo["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-				if _, exist := resMap[resName]; !exist {
-					resInfo["status"] = "Healthy"
-					resMap[resName] = resInfo
-				} else {
-					resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[res.Resource.Name])
-				}
-			} else if vol.State.DiskState == "" {
-				resInfo["status"] = "Unhealthy"
-				resMap[resName] = resInfo
 			}
+			//switch volState {
+			//case "Diskless":
+			//	mirrorWay[resName]--
+			//case "UpToDate":
+			//	resInfo["status"] = "Healthy"
+			//	resMap[resName] = resInfo
+			//case "":
+			//	resInfo["status"] = "Unhealthy"
+			//	resMap[resName] = resInfo
+			//default:
+			//	resInfo["status"] = "Synching"
+			//	if _, exist := resMap[resName]; exist && resMap[resName]["status"] == "Unhealthy" {
+			//		resMap[resName]["mirrorWay"] = strconv.Itoa(mirrorWay[resName])
+			//	} else {
+			//		resMap[resName] = resInfo
+			//	}
+			//}
 
 		}
 	}
+
 	for _, v := range resMap {
 		resArray = append(resArray, v)
 	}
@@ -105,6 +89,28 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 		return resArray[i]["createTime"] > resArray[j]["createTime"]
 	})
 
+	return resArray
+}
+
+func GetassignedNode(ctx context.Context, c *client.Client) []map[string]string {
+	resArray := []map[string]string{}
+	resources, _ := c.Resources.GetResourceView(ctx)
+	resMap := make(map[string]map[string]string)
+	for _, res := range resources {
+		resName := res.Resource.Name
+		for _, vol := range res.Volumes {
+			resInfo := map[string]string{
+				"name": resName,
+			}
+			if vol.State.DiskState == "Diskless" {
+				resInfo["assignedNode"] = res.Resource.NodeName
+				resMap[resName] = resInfo
+			}
+		}
+	}
+	for _, v := range resMap {
+		resArray = append(resArray, v)
+	}
 	return resArray
 }
 
@@ -127,7 +133,7 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 			} else {
 				resInfo["usage"] = "Unused"
 			}
-		}else {
+		} else {
 			resInfo["usage"] = "Unknown"
 		}
 
@@ -176,7 +182,7 @@ func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]str
 	for _, res := range resources {
 		resInfo := map[string]string{}
 
-		if *res.State.InUse {
+		if res.State != nil && *res.State.InUse {
 			resInfo["usage"] = "InUse"
 		} else {
 			resInfo["usage"] = "Unused"
@@ -304,4 +310,63 @@ func CreateDisklessResource(ctx context.Context, c *client.Client, resName, node
 	res := client.Resource{Name: resName, NodeName: nodeName, Props: resProps}
 	resCreate := client.ResourceCreate{Resource: res}
 	return c.Resources.Create(ctx, resCreate)
+}
+
+func UpdateDiskfulResource(ctx context.Context, c *client.Client, resName string, nodeName []string, storagePoolName []string,
+	targetReplicas int, currentReplicas int) error {
+	// 副本数量差
+	delta := currentReplicas - targetReplicas
+
+	if delta > 0 {
+		for i := range nodeName {
+			nName := nodeName[i]
+			spName := storagePoolName[i]
+
+			resProps := map[string]string{"StorPoolName": spName}
+			newRes := client.Resource{Name: resName, NodeName: nName, Props: resProps}
+			resCreate := client.ResourceCreate{Resource: newRes}
+			err := c.Resources.Create(ctx, resCreate)
+			if err != nil {
+				return err
+			}
+		}
+	} else if delta < 0 {
+		for _, nName := range nodeName {
+			resources, err := c.Resources.GetAll(ctx, resName)
+			if err != nil {
+				return err
+			}
+			nodeNames := []string{}
+			for _, res := range resources {
+				fmt.Println(res.NodeName)
+				nodeNames = append(nodeNames, res.NodeName)
+			}
+			if !contains(nodeNames, nName) {
+				errInfo := fmt.Sprintf("在节点 %s 下不存在副本 %s ,请重新选择节点调整副本", nName, resName)
+				Message := client.ApiCallError{client.ApiCallRc{RetCode: -1, Message: errInfo}}
+				return Message
+			}
+			err = c.Resources.Delete(ctx, resName, nName)
+			if err != nil {
+				return err
+			}
+			err = c.Resources.Delete(ctx, resName, nName)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		return nil
+	}
+
+	return nil
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
