@@ -7,8 +7,6 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/kubesphere/pkg/api"
-	"kubesphere.io/kubesphere/pkg/apiserver/auditing"
-
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	linstorv1alpha1 "kubesphere.io/kubesphere/pkg/models/versatel/v1alpha1/linstor"
 	servererr "kubesphere.io/kubesphere/pkg/server/errors"
@@ -544,8 +542,9 @@ func (h *handler) DeleteVG(req *restful.Request, resp *restful.Response) {
 func (h *handler) DeleteThinPool(req *restful.Request, resp *restful.Response) {
 	poolName := req.PathParameter("name")
 	nodeName := req.PathParameter("node")
+	vgName := req.PathParameter("vg_name")
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err := linstorv1alpha1.DeleteThinPool(ctx, client, poolName, nodeName)
+	err := linstorv1alpha1.DeleteThinPool(ctx, client, poolName, nodeName, vgName)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return

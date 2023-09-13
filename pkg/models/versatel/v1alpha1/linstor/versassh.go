@@ -478,7 +478,7 @@ func DeleteVG(ctx context.Context, c *client.Client, vgName string, nodeName str
 
 }
 
-func DeleteThinPool(ctx context.Context, c *client.Client, thinPoolName string, nodeName string) error {
+func DeleteThinPool(ctx context.Context, c *client.Client, thinPoolName string, nodeName string, VgName string) error {
 
 	var err error = errors.New("Can not find the node: " + nodeName)
 	GetSshList(ctx, c)
@@ -487,7 +487,7 @@ func DeleteThinPool(ctx context.Context, c *client.Client, thinPoolName string, 
 
 		if nodeName == cli.Host {
 			err = nil
-			out, err := SshCmd(cli.Sshclient, "lvremove -y "+thinPoolName)
+			out, err := SshCmd(cli.Sshclient, "lvremove -y "+VgName+"/"+thinPoolName)
 			if err != nil {
 				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
 				Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
