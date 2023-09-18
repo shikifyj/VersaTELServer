@@ -223,7 +223,6 @@ func AddToContainer(container *restful.Container, ip string) error {
 		//Param(webservice.QueryParameter(query.ParameterOrderBy, "sort parameters, e.g. orderBy=createTime")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
-
 	webservice.Route(webservice.POST("/pv").
 		To(handler.CreateResourceLvmPV).
 		Doc("Create pvs.").
@@ -274,11 +273,12 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.DELETE("/thinpool/{node}/{name}").
+	webservice.Route(webservice.DELETE("/thinpool/{node}/{vg_name}/{name}").
 		To(handler.DeleteThinPool).
 		Doc("Delete the VG.").
 		Param(webservice.PathParameter("name", "thinpool_name")).
 		Param(webservice.PathParameter("node", "node_name")).
+		Param(webservice.PathParameter("vg_name", "vg_name")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
