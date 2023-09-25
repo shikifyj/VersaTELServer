@@ -3,6 +3,7 @@ package linstor
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"github.com/LINBIT/golinstor/client"
 	log "github.com/sirupsen/logrus"
@@ -48,7 +49,7 @@ func DescribeNode(ctx context.Context, c *client.Client, nodename string) error 
 }
 
 func CreateNode(ctx context.Context, c *client.Client, name, ip, nodeType string) error {
-	netInterfaces := []client.NetInterface{client.NetInterface{Name: "default", Address: ip, SatellitePort: 3366, SatelliteEncryptionType: "Plain"}}
+	netInterfaces := []client.NetInterface{client.NetInterface{Name: "default", Address: net.IP(ip), SatellitePort: 3366, SatelliteEncryptionType: "Plain"}}
 	node := client.Node{Name: name, Type: nodeType, NetInterfaces: netInterfaces}
 	err := c.Nodes.Create(ctx, node)
 	return err

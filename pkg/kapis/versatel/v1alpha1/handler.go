@@ -104,6 +104,18 @@ type ReplicaRes struct {
 	CurrentReplicas int      `json:"newnum"`
 }
 
+type Snapshot struct {
+	ResName      string `json:"resource"`
+	SnapshotName string `json:"name"`
+}
+
+type RestoreSnapshot struct {
+	ResName      string   `json:"oldres"`
+	SnapshotName string   `json:"snapshotname"`
+	NewResName   string   `json:"newres"`
+	Nodes        []string `json:"node"`
+}
+
 //func init(){
 //	gp.Initialize()
 //	gp.ImportSystemModule()
@@ -551,5 +563,84 @@ func (h *handler) DeleteThinPool(req *restful.Request, resp *restful.Response) {
 	} else {
 		resp.WriteAsJson("删除成功")
 		return
+	}
+}
+
+func (h *handler) handleListThinres(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetThinResources(ctx, client)
+	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListSnapshot(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetSnapshot(ctx, client)
+	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) CreateSnapshot(req *restful.Request, resp *restful.Response) {
+	snapshot := new(Snapshot)
+	err := req.ReadEntity(&snapshot)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreateSnapshot(ctx, client, snapshot.ResName, snapshot.SnapshotName)
+	if err != nil {
+		resp.WriteAsJson(err)
+	}
+}
+
+func (h *handler) DeleteSnapshot(req *restful.Request, resp *restful.Response) {
+	resName := req.PathParameter("resource")
+	snapName := req.PathParameter("name")
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err := linstorv1alpha1.DeleteSnapshot(ctx, client, resName, snapName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除成功")
+		return
+	}
+}
+
+func (h *handler) RollbackSnapshot(req *restful.Request, resp *restful.Response) {
+	snapshot := new(Snapshot)
+	err := req.ReadEntity(&snapshot)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.RollbackSnapshot(ctx, client, snapshot.ResName, snapshot.SnapshotName)
+	if err != nil {
+		resp.WriteAsJson(err)
+	} else {
+		resp.WriteAsJson("回滚快照成功:")
+	}
+}
+
+func (h *handler) RestoreSnapshot(req *restful.Request, resp *restful.Response) {
+	restoreSnapshot := new(RestoreSnapshot)
+	err := req.ReadEntity(&restoreSnapshot)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.RecoverSnapshot(ctx, client, restoreSnapshot.ResName, restoreSnapshot.SnapshotName,
+		restoreSnapshot.NewResName, restoreSnapshot.Nodes)
+	if err != nil {
+		resp.WriteAsJson(err)
+	} else {
+		resp.WriteAsJson("快照恢复到资源成功:")
 	}
 }
