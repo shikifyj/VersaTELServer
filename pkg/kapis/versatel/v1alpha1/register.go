@@ -317,6 +317,13 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
+	webservice.Route(webservice.POST("/rollsnapshot").
+		To(handler.RollbackSnapshot).
+		Doc("Back roll Snapshot.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Snapshot{}))
+
 	webservice.Route(webservice.POST("/restoresnapshot").
 		To(handler.RestoreSnapshot).
 		Doc("Restore Snapshot.").

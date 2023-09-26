@@ -293,6 +293,16 @@ func CreateResource(ctx context.Context, c *client.Client, resName string, sps [
 }
 
 func DeleteResource(ctx context.Context, c *client.Client, resName string) error {
+	snapshotResource, _ := c.Resources.GetSnapshots(ctx, resName)
+	if snapshotResource != nil {
+		return fmt.Errorf("resource %s has snapshot, please delete snapshot first", resName)
+	} else {
+		err := c.ResourceDefinitions.Delete(ctx, resName)
+		return err
+	}
+	//resources, _ := c.Resources.GetAll(ctx,resName)
+	//for _,res := range resources{
+	//	nodeName := res.NodeName
 	//err := c.Resources.Delete(ctx,resName,nodeName)
 	//if err != nil{
 	//	return err
@@ -301,8 +311,6 @@ func DeleteResource(ctx context.Context, c *client.Client, resName string) error
 	//if len(resources) == 0 {
 	//	err = c.ResourceDefinitions.Delete(ctx,resName)
 	//}
-	err := c.ResourceDefinitions.Delete(ctx, resName)
-	return err
 }
 
 func CreateDisklessResource(ctx context.Context, c *client.Client, resName, nodeName string) error {

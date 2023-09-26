@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/LINBIT/golinstor/client"
 	"strconv"
+	"time"
 )
 
 func GetThinResources(ctx context.Context, c *client.Client) []map[string]string {
@@ -12,6 +13,7 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]string
 	snapResource, _ := c.Resources.GetSnapshotView(ctx)
 	var ResMap []map[string]string
 	var resArray []map[string]string
+	processedNames := make(map[string]bool)
 
 	for _, res := range DRBDResource {
 		for _, vol := range res.Volumes {
@@ -24,12 +26,14 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]string
 					count++
 				}
 			}
-			resInfo := map[string]string{
-				"name":    res.Name,
-				"numbers": strconv.Itoa(count),
+			if _, processed := processedNames[res.Name]; !processed {
+				resInfo := map[string]string{
+					"name":    res.Name,
+					"numbers": strconv.Itoa(count),
+				}
+				ResMap = append(ResMap, resInfo)
+				processedNames[res.Name] = true
 			}
-			ResMap = append(ResMap, resInfo)
-
 		}
 	}
 	for _, v := range ResMap {
@@ -41,28 +45,39 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]string
 func GetSnapshot(ctx context.Context, c *client.Client) []map[string]string {
 	snapshotResource, _ := c.Resources.GetSnapshotView(ctx)
 	var ResMap []map[string]string
-	var resArray []map[string]string
+	resInfoMap := make(map[string]map[string]interface{})
 
 	for _, res := range snapshotResource {
 		for _, snapshot := range res.Snapshots {
-			resInfo := map[string]string{
-				"name":     snapshot.SnapshotName,
-				"resource": res.ResourceName,
-				"time":     snapshot.CreateTimestamp.Time.String(),
-				"state":    res.Flags[0],
+			if resInfo, ok := resInfoMap[snapshot.SnapshotName]; ok {
+				resInfo["node"] = append(resInfo["node"].([]string), snapshot.NodeName)
+			} else {
+				resInfo := map[string]interface{}{
+					"name":     snapshot.SnapshotName,
+					"resource": res.ResourceName,
+					"node":     []string{snapshot.NodeName},
+					"time":     snapshot.CreateTimestamp.Time.String(),
+					"state":    res.Flags[0],
+				}
+				resInfoMap[snapshot.SnapshotName] = resInfo
 			}
-			ResMap = append(ResMap, resInfo)
 		}
 	}
-	for _, v := range ResMap {
-		resArray = append(resArray, v)
+	for _, v := range resInfoMap {
+		strMap := make(map[string]string)
+		for key, value := range v {
+			strMap[key] = fmt.Sprintf("%v", value)
+		}
+		ResMap = append(ResMap, strMap)
 	}
-	return resArray
+	return ResMap
 }
 
 func CreateSnapshot(ctx context.Context, c *client.Client, resName string, snapName string) error {
+	timestamp := time.Now().Format("20060102150405") // Format as YYYYMMDDHHMMSS
+	snapNameWithTimestamp := fmt.Sprintf("%s_%s", snapName, timestamp)
 	snapshot := client.Snapshot{
-		Name:              snapName,
+		Name:              snapNameWithTimestamp,
 		ResourceName:      resName,
 		Nodes:             nil,
 		Props:             nil,
