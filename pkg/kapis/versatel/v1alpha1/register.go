@@ -31,8 +31,8 @@ func GetLinstorIP() string {
 
 func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
-	//linstorip := GetLinstorIP()
-	//ip = linstorip
+	linstorip := GetLinstorIP()
+	ip = linstorip
 	handler := newHandler(ip)
 
 	tagsLinstor := []string{"Clustered Resource"}
