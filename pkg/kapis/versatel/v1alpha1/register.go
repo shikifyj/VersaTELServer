@@ -31,8 +31,8 @@ func GetLinstorIP() string {
 
 func AddToContainer(container *restful.Container, ip string) error {
 	webservice := runtime.NewWebService(GroupVersion)
-	//linstorip := GetLinstorIP()
-	//ip = linstorip
+	linstorip := GetLinstorIP()
+	ip = linstorip
 	handler := newHandler(ip)
 
 	tagsLinstor := []string{"Clustered Resource"}
@@ -275,12 +275,61 @@ func AddToContainer(container *restful.Container, ip string) error {
 
 	webservice.Route(webservice.DELETE("/thinpool/{node}/{vg_name}/{name}").
 		To(handler.DeleteThinPool).
-		Doc("Delete the VG.").
+		Doc("Delete the ThinPool.").
 		Param(webservice.PathParameter("name", "thinpool_name")).
 		Param(webservice.PathParameter("node", "node_name")).
 		Param(webservice.PathParameter("vg_name", "vg_name")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.GET("/thinresource").
+		To(handler.handleListThinres).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get Thin resource").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.GET("/snapshot").
+		To(handler.handleListSnapshot).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get Snapshot").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.POST("/snapshot").
+		To(handler.CreateSnapshot).
+		Doc("Create Snapshot.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Snapshot{}))
+
+	webservice.Route(webservice.DELETE("/snapshot/{name}/{resource}").
+		To(handler.DeleteSnapshot).
+		Doc("Delete the ThinPool.").
+		Param(webservice.PathParameter("name", "snapshotName")).
+		Param(webservice.PathParameter("resource", "resourceName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.POST("/rollsnapshot").
+		To(handler.RollbackSnapshot).
+		Doc("Back roll Snapshot.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Snapshot{}))
+
+	webservice.Route(webservice.POST("/restoresnapshot").
+		To(handler.RestoreSnapshot).
+		Doc("Restore Snapshot.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Snapshot{}))
 
 	container.Add(webservice)
 

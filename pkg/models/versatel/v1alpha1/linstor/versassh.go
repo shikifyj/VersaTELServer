@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,45 +30,36 @@ type SshConnectList struct {
 
 var sshlist = &SshConnectList{}
 
-func SSHConnect(user, host string, port int) (*ssh.Client, error) {
+func SSHConnect(host string, port int) (*ssh.Client, error) {
 	var (
-		addr         string
-		clientConfig *ssh.ClientConfig
-		client       *ssh.Client
-		err          error
+		conn *ssh.Client
+		err  error
 	)
+	privateKeyPath := "/etc/localssh/id_rsa"
 
-	//homePath, err := os.UserHomeDir()
-	//if err != nil {
-	//  return nil, err
-	//}
-	//key, err := ioutil.ReadFile(path.Join(homePath, ".ssh", "id_rsa"))
-	key, err := ioutil.ReadFile("/etc/localssh/id_rsa")
-	//key, err := ioutil.ReadFile("/root/.ssh/id_rsa")
+	privateKey, err := ioutil.ReadFile(privateKeyPath)
 	if err != nil {
-		return nil, err
-	}
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return nil, err
+		log.Fatalf("unable to read private key: %v", err)
 	}
 
-	clientConfig = &ssh.ClientConfig{
-		User: user,
+	signer, err := ssh.ParsePrivateKey(privateKey)
+	if err != nil {
+		log.Fatalf("unable to parse private key: %v", err)
+	}
+
+	config := &ssh.ClientConfig{
+		User: "root",
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		Timeout:         30 * time.Second,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
 	}
-
-	// connet to ssh
-	addr = fmt.Sprintf("%s:%d", host, port)
-
-	if client, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
-		return nil, err
+	addr := fmt.Sprintf("%s:%d", host, port)
+	conn, err = ssh.Dial("tcp", addr, config)
+	if err != nil {
+		log.Fatalf("Failed to connect to remote host: %v", err)
 	}
-	return client, nil
+	return conn, nil
 }
 
 func GetSshList(ctx context.Context, c *client.Client) {
@@ -80,20 +72,21 @@ func GetSshList(ctx context.Context, c *client.Client) {
 func DoSshs(ctx context.Context, c *client.Client) {
 
 	data := GetNodesIP(ctx, c)
+	//      fmt.Println(data)
 
 	for _, node := range data {
 		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
 		result := reg.FindAllStringSubmatch(node["addr"], -1)
-		if result[0][0] != "10.203.1.240" {
-			sshclient, err := SSHConnect("root", result[0][0], 22)
-			if err != nil {
-				sshlist.Connects = nil
-				log.Fatal(err)
-			}
-			sc := &SshConnect{sshclient, node["name"]}
-			sshlist.Connects = append(sshlist.Connects, sc)
+		//              if result[0][0] != "10.203.1.240" {
+		sshclient, err := SSHConnect(result[0][0], 22)
+		if err != nil {
+			log.Fatal(err)
 		}
+		sc := &SshConnect{sshclient, node["name"]}
+		sshlist.Connects = append(sshlist.Connects, sc)
 	}
+	//      }
+
 }
 
 func SshCmd(sshclient *ssh.Client, cmd string) (string, error) {
