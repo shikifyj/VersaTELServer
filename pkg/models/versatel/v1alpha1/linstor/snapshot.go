@@ -52,14 +52,17 @@ func GetSnapshot(ctx context.Context, c *client.Client) []map[string]string {
 			if resInfo, ok := resInfoMap[snapshot.SnapshotName]; ok {
 				resInfo["node"] = append(resInfo["node"].([]string), snapshot.NodeName)
 			} else {
-				resInfo := map[string]interface{}{
-					"name":     snapshot.SnapshotName,
-					"resource": res.ResourceName,
-					"node":     []string{snapshot.NodeName},
-					"time":     snapshot.CreateTimestamp.Time.String(),
-					"state":    res.Flags[0],
+				if snapshot.CreateTimestamp != nil {
+					resInfo := map[string]interface{}{
+						"name":     snapshot.SnapshotName,
+						"resource": res.ResourceName,
+						"node":     []string{snapshot.NodeName},
+						"state":    res.Flags[0],
+						"time":     snapshot.CreateTimestamp.Time.String(),
+					}
+
+					resInfoMap[snapshot.SnapshotName] = resInfo
 				}
-				resInfoMap[snapshot.SnapshotName] = resInfo
 			}
 		}
 	}
