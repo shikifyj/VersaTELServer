@@ -607,7 +607,7 @@ func (h *handler) DeleteSnapshot(req *restful.Request, resp *restful.Response) {
 		resp.WriteAsJson(err)
 		return
 	} else {
-		resp.WriteAsJson("删除成功")
+		resp.WriteAsJson("快照删除成功")
 		return
 	}
 }
