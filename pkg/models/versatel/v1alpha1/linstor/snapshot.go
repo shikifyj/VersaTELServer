@@ -58,7 +58,7 @@ func GetSnapshot(ctx context.Context, c *client.Client) []map[string]string {
 						"resource": res.ResourceName,
 						"node":     []string{snapshot.NodeName},
 						"state":    res.Flags[0],
-						"time":     snapshot.CreateTimestamp.Time.String(),
+						"time":     snapshot.CreateTimestamp.Time.UTC().Format("2006-01-02T15:04:05Z07:00"),
 					}
 
 					resInfoMap[snapshot.SnapshotName] = resInfo
