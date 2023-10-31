@@ -224,3 +224,53 @@ func CreateNodeOn(tgn string, nodeOn string) error {
 
 	return nil
 }
+
+func DeleteTarget(tgn string, vips []string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := fmt.Sprintf("crm res constraints target%s", tgn)
+	out, err := SshCmd(sc, cmd)
+	if err != nil {
+		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+		return Message
+	} else if strings.Contains(out, "drbd") {
+		Message := client.ApiCallError{client.ApiCallRc{Message: "Target绑定了DRBD资源，不能删除该Target"}}
+		return Message
+	} else {
+		if len(vips) == 1 {
+			cmd = fmt.Sprintf("crm conf delete vip_prtblk_on%s_1 vip%s_1 target%s vip_prtblk_off%s_1 "+
+				"--force", tgn, tgn, tgn, tgn)
+		} else {
+			cmd = fmt.Sprintf("crm conf delete vip_prtblk_on%s_1 vip_prtblk_on%s_2"+
+				" vip%s_1 vip%s_2 target%s vip_prtblk_off%s_1 vip_prtblk_off%s_2 --force",
+				tgn, tgn, tgn, tgn, tgn, tgn, tgn)
+		}
+		out, err := SshCmd(sc, cmd)
+		if err != nil {
+			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+			return Message
+		}
+	}
+
+	return nil
+}
+
+func ConfigureDRBD(tgn string, nodeOn string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := fmt.Sprintf("primitive p_drbd_<resource_name> ocf:linbit:drbd "+
+		"params drbd_resource=<resource_name> "+
+		"op monitor interval=29 role=Master "+
+		"op monitor interval=30 role=Slave "+
+		"ms ms_drbd_<resource_name> p_drbd_<resource_name> "+
+		"meta master-max=1 master-node-max=1 clone-max=<clone_max> clone-node-max=1 notify=true target-role=Started ",
+		tgn, nodeOn)
+	out, err := SshCmd(sc, cmd)
+	if err != nil {
+		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+		return Message
+	}
+
+	return nil
+}
