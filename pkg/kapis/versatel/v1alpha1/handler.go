@@ -644,3 +644,20 @@ func (h *handler) RestoreSnapshot(req *restful.Request, resp *restful.Response) 
 		resp.WriteAsJson("快照恢复到资源成功:")
 	}
 }
+
+func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
+	restoreSnapshot := new(RestoreSnapshot)
+	err := req.ReadEntity(&restoreSnapshot)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.RecoverSnapshot(ctx, client, restoreSnapshot.ResName, restoreSnapshot.SnapshotName,
+		restoreSnapshot.NewResName, restoreSnapshot.Nodes)
+	if err != nil {
+		resp.WriteAsJson(err)
+	} else {
+		resp.WriteAsJson("快照恢复到资源成功:")
+	}
+}
