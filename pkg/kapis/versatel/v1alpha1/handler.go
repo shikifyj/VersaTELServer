@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
@@ -114,6 +115,20 @@ type RestoreSnapshot struct {
 	SnapshotName string   `json:"snapshotname"`
 	NewResName   string   `json:"newres"`
 	Nodes        []string `json:"node"`
+}
+
+type Registered struct {
+	HostName string `json:"hostname"`
+	Iqn      string `json:"iqn"`
+}
+
+type Target struct {
+	Name     string   `json:"name"`
+	Iqn      string   `json:"iqn"`
+	NodeRun  []string `json:"nodeRun"`
+	NodeLess []string `json:"nodeLess"`
+	NodeOn   string   `json:"nodeOn"`
+	VipList  []string `json:"vipList"`
 }
 
 //func init(){
@@ -645,19 +660,92 @@ func (h *handler) RestoreSnapshot(req *restful.Request, resp *restful.Response) 
 	}
 }
 
+func (h *handler) Registered(req *restful.Request, resp *restful.Response) {
+	registered := new(Registered)
+	err := req.ReadEntity(&registered)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	err = linstorv1alpha1.Registered(registered.HostName, registered.Iqn)
+	if err != nil {
+		resp.WriteAsJson(err)
+	} else {
+		resp.WriteAsJson("注册成功:")
+	}
+}
+
+func (h *handler) handleListRegistered(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.GetRegistered()
+	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
 func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
-	restoreSnapshot := new(RestoreSnapshot)
-	err := req.ReadEntity(&restoreSnapshot)
+	target := new(Target)
+	err := req.ReadEntity(&target)
 	if err != nil {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	err = linstorv1alpha1.RecoverSnapshot(ctx, client, restoreSnapshot.ResName, restoreSnapshot.SnapshotName,
-		restoreSnapshot.NewResName, restoreSnapshot.Nodes)
+	tgn, _ := linstorv1alpha1.GetTgn()
+
+	err = linstorv1alpha1.CreatePortBlockOn(target.VipList, strconv.Itoa(tgn))
 	if err != nil {
 		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateVip(target.VipList, strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateTarget(target.VipList, strconv.Itoa(tgn), target.Iqn)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateResourceGroup(target.VipList, strconv.Itoa(tgn), target.NodeLess)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreatePortBlockOff(target.VipList, strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateResourceBond(strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateNodeAway(ctx, client, strconv.Itoa(tgn), target.NodeRun)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateNodeOn(strconv.Itoa(tgn), target.NodeOn)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+	err = linstorv1alpha1.SaveTarget(target.Name, target.Iqn, tgn, target.VipList, target.NodeRun, target.NodeLess,
+		target.NodeOn, nil)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
 	} else {
-		resp.WriteAsJson("快照恢复到资源成功:")
+		resp.WriteAsJson("创建Target成功:")
 	}
 }

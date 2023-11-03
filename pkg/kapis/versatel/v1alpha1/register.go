@@ -331,6 +331,30 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(Snapshot{}))
 
+	webservice.Route(webservice.POST("/registered").
+		To(handler.Registered).
+		Doc("Registered hostname and iqn.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Snapshot{}))
+
+	webservice.Route(webservice.GET("/registered").
+		To(handler.handleListRegistered).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get registered").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.POST("/target").
+		To(handler.CreateTarget).
+		Doc("Create Target.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Snapshot{}))
+
 	container.Add(webservice)
 
 	return nil

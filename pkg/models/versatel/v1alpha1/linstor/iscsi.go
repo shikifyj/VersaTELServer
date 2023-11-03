@@ -6,12 +6,23 @@ import (
 	"github.com/LINBIT/golinstor/client"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 )
+
+type Target struct {
+	Name          string   `yaml:"name"`
+	Iqn           string   `yaml:"iqn"`
+	Tgn           int      `yaml:"tgn"`
+	Vip           []string `yaml:"vip"`
+	RunNode       []string `yaml:"run_node"`
+	AssistantNode []string `yaml:"assistant_node"`
+	StartNode     string   `yaml:"start_node"`
+	Lun           []string `yaml:"lun"`
+}
 
 func GetIPAndConnect(port int) (*ssh.Client, error) {
 	ipFile := "/etc/linstorip/linstorip"
@@ -33,31 +44,11 @@ func GetIPAndConnect(port int) (*ssh.Client, error) {
 	return sshClient, nil
 }
 
-func CreateYamlFile(filename string, data string) {
-	filePath := "/etc/linstorip/" + filename
-	file, err := os.Create(filePath)
-	if err != nil {
-		log.Fatalf("Failed to create file: %s", err)
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(data)
-	if err != nil {
-		log.Fatalf("Failed to write to file: %s", err)
-	}
-
-	err = file.Sync()
-	if err != nil {
-		log.Fatalf("Failed to save file: %s", err)
-	}
-}
-
 func Registered(hostname string, iqn string) error {
 	type Node struct {
-		HostName string `yaml:"hostName"`
-		Iqn      string `yaml:"iqn"`
+		hostname string `yaml:"hostName"`
+		iqn      string `yaml:"iqn"`
 	}
-
 	var nodes []Node
 	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
 	if err != nil {
@@ -73,7 +64,7 @@ func Registered(hostname string, iqn string) error {
 		}
 	}
 
-	nodes = append(nodes, Node{HostName: hostname, Iqn: iqn})
+	nodes = append(nodes, Node{hostname: hostname, iqn: iqn})
 
 	data, err = yaml.Marshal(&nodes)
 	if err != nil {
@@ -82,7 +73,7 @@ func Registered(hostname string, iqn string) error {
 	}
 
 	// Write the data back to the file
-	err = ioutil.WriteFile("/etc/linstorip/linstorip", data, 0644)
+	err = ioutil.WriteFile("/etc/linstorip/host.yaml", data, 0644)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return err
@@ -90,6 +81,104 @@ func Registered(hostname string, iqn string) error {
 
 	return nil
 }
+func GetRegistered() []map[string]string {
+	var nodes []map[string]string
+
+	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Fatalf("err：%v", err)
+		}
+		return nodes
+	}
+
+	err = yaml.Unmarshal(data, &nodes)
+	if err != nil {
+		log.Fatalf("err：%v", err)
+		return nodes
+	}
+
+	return nodes
+}
+func SaveTarget(name string, iqn string, tng int, vip []string, NodeRun []string, NodeLess []string,
+	NodeOn string, lun []string) error {
+	var targets []Target
+	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Fatalf("error: %v", err)
+			return err
+		}
+	} else {
+		err = yaml.Unmarshal(data, &targets)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+			return err
+		}
+	}
+
+	newTarget := Target{
+		Name:          name,
+		Iqn:           iqn,
+		Tgn:           tng,
+		Vip:           vip,
+		RunNode:       NodeRun,
+		AssistantNode: NodeLess,
+		StartNode:     NodeOn,
+		Lun:           lun,
+	}
+	targets = append(targets, newTarget)
+
+	data, err = yaml.Marshal(&targets)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func GetTgn() (int, error) {
+	filePath := "/etc/linstorip/target.yaml"
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return 1, nil
+	}
+
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return 0, err
+	}
+
+	var tgnList []Target
+	err = yaml.Unmarshal(data, &tgnList)
+	if err != nil {
+		return 0, err
+	}
+
+	tgn := 1
+	for _, target := range tgnList {
+		if contain(target.Tgn, tgn) {
+			tgn++
+		}
+	}
+
+	return tgn, nil
+}
+
+func contain(list int, item int) bool {
+	if list == item {
+		return true
+	}
+	return false
+}
+
 func CreatePortBlockOn(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
 	for vip := range vips {
