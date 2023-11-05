@@ -336,7 +336,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Doc("Registered hostname and iqn.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(Snapshot{}))
+		Reads(Registered{}))
 
 	webservice.Route(webservice.GET("/registered").
 		To(handler.handleListRegistered).
@@ -353,7 +353,31 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Doc("Create Target.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(Snapshot{}))
+		Reads(Target{}))
+
+	webservice.Route(webservice.GET("/target").
+		To(handler.handleListTarget).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get Target").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.POST("/storage").
+		To(handler.conDRBD).
+		Doc("Create DRBD.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(TargetDRBD{}))
+
+	webservice.Route(webservice.POST("/mapping").
+		To(handler.CreateLun).
+		Doc("Create Lun.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(TargetLun{}))
 
 	container.Add(webservice)
 

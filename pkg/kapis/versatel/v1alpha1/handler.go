@@ -131,6 +131,17 @@ type Target struct {
 	VipList  []string `json:"vipList"`
 }
 
+type TargetDRBD struct {
+	Name    string `json:"name"`
+	ResName string `json:"resName"`
+}
+
+type TargetLun struct {
+	HostName string `json:"hostname"`
+	ResName  string `json:"resName"`
+	UnMap    string `json:"unMap"`
+}
+
 //func init(){
 //	gp.Initialize()
 //	gp.ImportSystemModule()
@@ -729,7 +740,7 @@ func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
 		return
 	}
 
-	err = linstorv1alpha1.CreateNodeAway(ctx, client, strconv.Itoa(tgn), target.NodeRun)
+	err = linstorv1alpha1.CreateNodeAway(ctx, client, strconv.Itoa(tgn), target.NodeRun, target.NodeLess)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
@@ -747,5 +758,57 @@ func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
 		return
 	} else {
 		resp.WriteAsJson("创建Target成功:")
+	}
+}
+
+func (h *handler) handleListTarget(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowTarget()
+	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
+	targetDRBD := new(TargetDRBD)
+	err := req.ReadEntity(&targetDRBD)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	target, _ := linstorv1alpha1.FindTargetOfName(targetDRBD.Name)
+	err = linstorv1alpha1.ConfigureDRBD(ctx, client, target, targetDRBD.ResName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("绑定资源成功:")
+	}
+}
+
+//func (h *handler) handleListDRBD(req *restful.Request, resp *restful.Response) {
+//	query := query.ParseQueryParameter(req)
+//	data := linstorv1alpha1.ShowDRBD()
+//	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+//	message.List(query)
+//	resp.WriteAsJson(message)
+//}
+
+func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
+	targetDRBD := new(TargetDRBD)
+	err := req.ReadEntity(&targetDRBD)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	target, _ := linstorv1alpha1.FindTargetOfName(targetDRBD.Name)
+	err = linstorv1alpha1.ConfigureDRBD(ctx, client, target, targetDRBD.ResName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("绑定资源成功:")
 	}
 }

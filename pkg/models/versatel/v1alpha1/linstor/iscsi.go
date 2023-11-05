@@ -24,6 +24,17 @@ type Target struct {
 	Lun           []string `yaml:"lun"`
 }
 
+type Node struct {
+	hostname string `yaml:"hostName"`
+	iqn      string `yaml:"iqn"`
+}
+
+type Lun struct {
+	lun    string   `yaml:"lun"`
+	number int      `yaml:"number"`
+	host   []string `yaml:"host"`
+}
+
 func GetIPAndConnect(port int) (*ssh.Client, error) {
 	ipFile := "/etc/linstorip/linstorip"
 
@@ -45,10 +56,7 @@ func GetIPAndConnect(port int) (*ssh.Client, error) {
 }
 
 func Registered(hostname string, iqn string) error {
-	type Node struct {
-		hostname string `yaml:"hostName"`
-		iqn      string `yaml:"iqn"`
-	}
+
 	var nodes []Node
 	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
 	if err != nil {
@@ -302,7 +310,7 @@ func CreateResourceBond(tgn string) error {
 	return nil
 }
 
-func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun []string) error {
+func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun []string, nodeLess []string) error {
 	data := GetNodeData(ctx, c)
 	var nodes []string
 	for _, node := range data {
@@ -313,6 +321,12 @@ func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun [
 		found := false
 		for _, run := range nodeRun {
 			if node == run {
+				found = true
+				break
+			}
+		}
+		for _, less := range nodeLess {
+			if node == less {
 				found = true
 				break
 			}
@@ -353,6 +367,33 @@ func CreateNodeOn(tgn string, nodeOn string) error {
 	return nil
 }
 
+func ShowTarget() []map[string]string {
+	var targets []Target
+	var result []map[string]string
+	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return result
+	}
+	err = yaml.Unmarshal(data, &targets)
+	if err != nil {
+		return nil
+	}
+
+	for _, target := range targets {
+		targetMap := map[string]string{
+			"name":        target.Name,
+			"storageNum":  strconv.Itoa(len(target.Lun)),
+			"storageList": strings.Join(target.Lun, ","),
+			"vipList":     strings.Join(target.Vip, ","),
+		}
+		result = append(result, targetMap)
+	}
+	return result
+}
+
 func DeleteTarget(tgn string, vips []string) error {
 	sc, _ := GetIPAndConnect(22)
 	cmd := fmt.Sprintf("crm res constraints target%s", tgn)
@@ -384,36 +425,100 @@ func DeleteTarget(tgn string, vips []string) error {
 	return nil
 }
 
-func ConfigureDRBD(tgn string, nodeAway []string, resName string, cloneMax string) error {
-	sc, _ := GetIPAndConnect(22)
+func FindTargetOfName(name string) (*Target, error) {
+	var targets []Target
+	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(data, &targets)
+	if err != nil {
+		return nil, err
+	}
+	for _, target := range targets {
+		if target.Name == name {
+			return &target, nil
+		}
+	}
+	return nil, fmt.Errorf("target with name %s not found", name)
+}
+
+func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resName string) error {
+	nodeRun := target.RunNode
+	nodeLess := target.AssistantNode
+	cloneMax := len(nodeRun) + len(nodeLess)
+	data := GetNodeData(ctx, c)
+
+	var nodes []string
+	for _, node := range data {
+		nodes = append(nodes, node["name"])
+	}
+
+	nodeAwayList := make([]string, 0)
+	for _, node := range nodes {
+		found := false
+		for _, run := range nodeRun {
+			if node == run {
+				found = true
+				break
+			}
+		}
+		for _, less := range nodeLess {
+			if node == less {
+				found = true
+				break
+			}
+		}
+		if !found {
+			nodeAwayList = append(nodeAwayList, node)
+		}
+	}
+
+	sc, err := GetIPAndConnect(22)
+	if err != nil {
+		return err
+	}
+
 	cmd := fmt.Sprintf("primitive p_drbd_%s ocf:linbit:drbd "+
 		"params drbd_resource=%s "+
 		"op monitor interval=29 role=Master "+
 		"op monitor interval=30 role=Slave "+
 		"ms ms_drbd_%s p_drbd_%s "+
 		"meta master-max=1 master-node-max=1 clone-max=%s clone-node-max=1 notify=true target-role=Started ",
-		resName, resName, resName, resName, cloneMax)
+		resName, resName, resName, resName, strconv.Itoa(cloneMax))
+
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
-		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-		return Message
-	} else {
-		for away := range nodeAway {
+		errInfo := strings.TrimSpace(out)
+		return client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+	}
+
+	if len(nodeAwayList) > 0 {
+		for _, away := range nodeAwayList {
 			cmd := fmt.Sprintf("location DRBD_%s_%s ms_drbd_%s -inf: %s",
-				resName, nodeAway, resName, away)
+				resName, away, resName, away)
+
 			out, err := SshCmd(sc, cmd)
 			if err != nil {
-				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-				Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-				return Message
+				errInfo := strings.TrimSpace(out)
+				return client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+			}
+
+			target.Lun = append(target.Lun, resName)
+			data, err := yaml.Marshal(target)
+			if err != nil {
+				return err
+			}
+
+			err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
 	return nil
 }
-
 func DeleteDRBD(resName string) error {
 	sc, _ := GetIPAndConnect(22)
 	cmd := fmt.Sprintf("crm res constraints p_drbd_%s", resName)
@@ -423,7 +528,7 @@ func DeleteDRBD(resName string) error {
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return Message
 	} else if strings.Contains(out, "LUN") {
-		Message := client.ApiCallError{client.ApiCallRc{Message: "该DRBD资源已经被映射，不能删除该"}}
+		Message := client.ApiCallError{client.ApiCallRc{Message: "该DRBD资源已经被映射，不能删除"}}
 		return Message
 	} else {
 		cmd := fmt.Sprintf("crm conf delete p_drbd_%s --force", resName)
@@ -451,14 +556,91 @@ func ShowDRBD() error {
 	return nil
 }
 
-func CreateISCSI(tIqn string, iIqn string, resName string, tng string, lun string, tpu string) error {
-	sc, _ := GetIPAndConnect(22)
-	cmd := fmt.Sprintf("crm conf show \"p_drbd_*\" | grep \"drbd_resource=\" | grep -oP '(?<=\\=).*?(?=\\\\)' | grep -v \"linstordb\"")
-	out, err := SshCmd(sc, cmd)
+func findTargetOfRes(resName string) (*Target, error) {
+	var targets []Target
+	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
 	if err != nil {
-		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+		return nil, err
+	}
+	err = yaml.Unmarshal(data, &targets)
+	if err != nil {
+		return nil, err
+	}
+	for _, target := range targets {
+		for _, lun := range target.Lun {
+			if lun == resName {
+				return &target, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("lun with resource %s not found", resName)
+}
+func GetNum() (int, error) {
+	filePath := "/etc/linstorip/lun.yaml"
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return 1, nil
+	}
+
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return 0, err
+	}
+
+	var numList []Lun
+	err = yaml.Unmarshal(data, &numList)
+	if err != nil {
+		return 0, err
+	}
+
+	number := 1
+	for _, num := range numList {
+		if contain(num.number, number) {
+			number++
+		}
+	}
+
+	return number, nil
+}
+func CreateISCSI(target Target, node Node, unMap string, resName string, number string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := fmt.Sprintf("linstor r list-volumes -r %s | awk 'NR>2 {print $12}' | head -n 2", resName)
+	Device, err := SshCmd(sc, cmd)
+	if err != nil {
+		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(Device), "\n", "", -1))
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return Message
+	} else {
+		cmd := fmt.Sprintf("crm conf show LUN_%s", resName)
+		out, err := SshCmd(sc, cmd)
+		if err != nil {
+			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+			return Message
+		} else {
+			if strings.Contains(out, "not") {
+				if unMap == "1" {
+					cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
+						"params target_iqn=\"%s\" implementation=lio-t lun=%s path=\"%s\" emulate_tpu=1 allowed_initiators=\"%s\" "+
+						"op start timeout=40 interval=0 "+
+						"op stop timeout=40 interval=0 "+
+						"op monitor timeout=40 interval=15 "+
+						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.iqn)
+					SshCmd(sc, cmd)
+				} else {
+					cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
+						"params target_iqn=\"%s\" implementation=lio-t lun=%s path=\"%s\" emulate_tpu=0 allowed_initiators=\"%s\" "+
+						"op start timeout=40 interval=0 "+
+						"op stop timeout=40 interval=0 "+
+						"op monitor timeout=40 interval=15 "+
+						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.iqn)
+					SshCmd(sc, cmd)
+				}
+				if len(target.Vip) == 1 {
+
+				}
+			}
+		}
 	}
 
 	return nil
