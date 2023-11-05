@@ -25,8 +25,8 @@ type Target struct {
 }
 
 type Node struct {
-	hostname string `yaml:"hostName"`
-	iqn      string `yaml:"iqn"`
+	Hostname string `yaml:"hostName"`
+	Iqn      string `yaml:"iqn"`
 }
 
 type Lun struct {
@@ -72,7 +72,7 @@ func Registered(hostname string, iqn string) error {
 		}
 	}
 
-	nodes = append(nodes, Node{hostname: hostname, iqn: iqn})
+	nodes = append(nodes, Node{Hostname: hostname, Iqn: iqn})
 
 	data, err = yaml.Marshal(&nodes)
 	if err != nil {
@@ -91,7 +91,7 @@ func Registered(hostname string, iqn string) error {
 }
 func GetRegistered() []map[string]string {
 	var nodes []map[string]string
-
+	var hosts []Node
 	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -104,6 +104,13 @@ func GetRegistered() []map[string]string {
 	if err != nil {
 		log.Fatalf("err：%v", err)
 		return nodes
+	}
+	for _, host := range hosts {
+		hostMap := map[string]string{
+			"hostname": host.Hostname,
+			"iqn":      host.Iqn,
+		}
+		nodes = append(nodes, hostMap)
 	}
 
 	return nodes
@@ -625,7 +632,7 @@ func CreateISCSI(target Target, node Node, unMap string, resName string, number 
 						"op start timeout=40 interval=0 "+
 						"op stop timeout=40 interval=0 "+
 						"op monitor timeout=40 interval=15 "+
-						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.iqn)
+						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.Iqn)
 					SshCmd(sc, cmd)
 				} else {
 					cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
@@ -633,7 +640,7 @@ func CreateISCSI(target Target, node Node, unMap string, resName string, number 
 						"op start timeout=40 interval=0 "+
 						"op stop timeout=40 interval=0 "+
 						"op monitor timeout=40 interval=15 "+
-						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.iqn)
+						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.Iqn)
 					SshCmd(sc, cmd)
 				}
 				if len(target.Vip) == 1 {
