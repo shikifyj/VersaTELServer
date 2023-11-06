@@ -142,6 +142,10 @@ type TargetLun struct {
 	UnMap    string   `json:"unMap"`
 }
 
+type Node struct {
+	TargetName string `json:"name"`
+}
+
 //func init(){
 //	gp.Initialize()
 //	gp.ImportSystemModule()
@@ -813,6 +817,12 @@ func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
 		}
 	}
 	err = linstorv1alpha1.SaveLun(targetLun.ResName, targetLun.HostName, num)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("创建映射成功:")
+	}
 
 }
 
@@ -821,5 +831,17 @@ func (h *handler) handleListLun(req *restful.Request, resp *restful.Response) {
 	data := linstorv1alpha1.ShowLun()
 	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
 	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListNode(req *restful.Request, resp *restful.Response) {
+	node := new(Node)
+	err := req.ReadEntity(&node)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	data := linstorv1alpha1.ShowNode(node.TargetName)
+	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
 	resp.WriteAsJson(message)
 }

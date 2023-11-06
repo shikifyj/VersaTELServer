@@ -389,6 +389,13 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
+	webservice.Route(webservice.POST("/getnode").
+		To(handler.handleListNode).
+		Doc("Create Lun.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Node{}))
+
 	container.Add(webservice)
 
 	return nil

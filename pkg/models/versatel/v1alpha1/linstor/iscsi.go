@@ -287,7 +287,7 @@ func CreateResourceGroup(vips []string, tgn string, nodeLess []string) error {
 func CreatePortBlockOff(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
 	for vip := range vips {
-		cmd := fmt.Sprintf("primitive vip_prtblk_off%s_1 portblock "+
+		cmd := fmt.Sprintf("crm conf primitive vip_prtblk_off%s_1 portblock "+
 			"ip=%s portno=3260 protocol=tcp action=unblock "+
 			"op start timeout=20 interval=0 "+
 			"op stop timeout=20 interval=0 "+
@@ -488,40 +488,59 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 	var errs []string
 
 	for _, res := range resName {
-		cmd := fmt.Sprintf("primitive p_drbd_%s ocf:linbit:drbd "+
+		cmd := fmt.Sprintf("crm conf primitive p_drbd_%s ocf:linbit:drbd "+
 			"params drbd_resource=%s "+
 			"op monitor interval=29 role=Master "+
-			"op monitor interval=30 role=Slave "+
-			"ms ms_drbd_%s p_drbd_%s "+
-			"meta master-max=1 master-node-max=1 clone-max=%s clone-node-max=1 notify=true target-role=Started ",
-			res, res, res, res, strconv.Itoa(cloneMax))
-
+			"op monitor interval=30 role=Slave", res, res)
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errs = append(errs, strings.TrimSpace(out))
 		}
+		cmd2 := fmt.Sprintf("crm conf ms ms_drbd_%s p_drbd_%s "+
+			"meta master-max=1 master-node-max=1 clone-max=%s "+
+			"clone-node-max=1 notify=true target-role=Started", res, res, strconv.Itoa(cloneMax))
+
+		out2, err := SshCmd(sc, cmd2)
+		if err != nil {
+			errs = append(errs, strings.TrimSpace(out2))
+		}
 
 		if len(nodeAwayList) > 0 {
 			for _, away := range nodeAwayList {
-				cmd := fmt.Sprintf("location DRBD_%s_%s ms_drbd_%s -inf: %s",
-					resName, away, resName, away)
+				cmd := fmt.Sprintf("crm conf location DRBD_%s_%s ms_drbd_%s -inf: %s",
+					res, away, res, away)
 
 				out, err := SshCmd(sc, cmd)
 				if err != nil {
 					errs = append(errs, strings.TrimSpace(out))
 				}
-
-				target.Lun = append(target.Lun, res)
-				data, err := yaml.Marshal(target)
-				if err != nil {
-					errs = append(errs, err.Error())
-				}
-
-				err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
-				if err != nil {
-					errs = append(errs, err.Error())
-				}
 			}
+		}
+
+		var targets []Target
+		data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+		err = yaml.Unmarshal(data, &targets)
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+
+		for i, t := range targets {
+			if t.Name == target.Name {
+				targets[i].Lun = append(targets[i].Lun, res)
+				break
+			}
+		}
+		data, err = yaml.Marshal(&targets)
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+
+		err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
+		if err != nil {
+			errs = append(errs, err.Error())
 		}
 	}
 
@@ -638,97 +657,78 @@ func CreateISCSI(target *Target, node *Node, unMap string, resName string, numbe
 	sc, _ := GetIPAndConnect(22)
 	cmd := fmt.Sprintf("linstor r list-volumes -r %s | awk 'NR>2 {print $12}' | head -n 2", resName)
 	Device, err := SshCmd(sc, cmd)
+	Device = strings.ReplaceAll(Device, " ", "")
 	if err != nil {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(Device), "\n", "", -1))
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return Message
 	} else {
 		cmd := fmt.Sprintf("crm conf show LUN_%s", resName)
-		out, err := SshCmd(sc, cmd)
-		if err != nil {
-			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-			return Message
-		} else {
-			if strings.Contains(out, "not") {
-				if unMap == "1" {
-					cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
-						"params target_iqn=\"%s\" implementation=lio-t lun=%s path=\"%s\" emulate_tpu=1 allowed_initiators=\"%s\" "+
-						"op start timeout=40 interval=0 "+
-						"op stop timeout=40 interval=0 "+
-						"op monitor timeout=40 interval=15 "+
-						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.Iqn)
-					SshCmd(sc, cmd)
+		out, _ := SshCmd(sc, cmd)
+		if strings.Contains(out, "not") {
+			if unMap == "1" {
+				cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
+					"params target_iqn=\"%s\" implementation=lio-t lun=%s path=\"%s\" emulate_tpu=1 allowed_initiators=\"%s\" "+
+					"op start timeout=40 interval=0 "+
+					"op stop timeout=40 interval=0 "+
+					"op monitor timeout=40 interval=15 "+
+					"meta target-role=Stopped", resName, target.Iqn, number, strings.TrimSpace(Device), node.Iqn)
+				SshCmd(sc, cmd)
+			} else {
+				cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
+					"params target_iqn=\"%s\" implementation=lio-t lun=%s path=\"%s\" emulate_tpu=0 allowed_initiators=\"%s\" "+
+					"op start timeout=40 interval=0 "+
+					"op stop timeout=40 interval=0 "+
+					"op monitor timeout=40 interval=15 "+
+					"meta target-role=Stopped", resName, target.Iqn, number, strings.TrimSpace(Device), node.Iqn)
+				SshCmd(sc, cmd)
+			}
+			if len(target.Vip) == 1 {
+				cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
+					"ms_drbd_%s:Master", resName, resName, resName)
+				SshCmd(sc, cmd1)
+				cmd2 := fmt.Sprintf("crm conf colocation co_LUN_%s_gvip%s "+
+					"inf: ms_drbd_%s:Master gvip%s", resName, strconv.Itoa(target.Tgn), resName, strconv.Itoa(target.Tgn))
+				SshCmd(sc, cmd2)
+				cmd3 := fmt.Sprintf("crm conf order or_1_LUN_%s "+
+					"gvip%s ms_drbd_%s:promote", resName, strconv.Itoa(target.Tgn), resName)
+				SshCmd(sc, cmd3)
+				cmd4 := fmt.Sprintf("crm conf order or_2_LUN_%s ms_drbd_%s:promote "+
+					"LUN_%s:start", resName, resName, resName)
+				SshCmd(sc, cmd4)
+				cmd5 := fmt.Sprintf("crm conf order or_3_LUN_%s LUN_%s "+
+					"vip_prtblk_off%s_1", resName, resName, strconv.Itoa(target.Tgn))
+				SshCmd(sc, cmd5)
+				cmd6 := fmt.Sprintf("crm res start LUN_%s", resName)
+				SshCmd(sc, cmd6)
+				cmd7 := fmt.Sprintf("crm res status LUN_%s", resName)
+				out, _ := SshCmd(sc, cmd7)
+				if strings.Contains(out, "running") {
+					errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+					Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+					return Message
 				} else {
-					cmd = fmt.Sprintf("crm conf primitive LUN_%s iSCSILogicalUnit "+
-						"params target_iqn=\"%s\" implementation=lio-t lun=%s path=\"%s\" emulate_tpu=0 allowed_initiators=\"%s\" "+
-						"op start timeout=40 interval=0 "+
-						"op stop timeout=40 interval=0 "+
-						"op monitor timeout=40 interval=15 "+
-						"meta target-role=Stopped", resName, target.Iqn, number, Device, node.Iqn)
-					SshCmd(sc, cmd)
-				}
-				if len(target.Vip) == 1 {
-					cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
-						"ms_drbd_%s:Master", resName, resName, resName)
-					SshCmd(sc, cmd1)
-					cmd2 := fmt.Sprintf("crm conf colocation co_LUN_%s_gvip%s "+
-						"inf: ms_drbd_%s:Master gvip%s", resName, strconv.Itoa(target.Tgn), resName, strconv.Itoa(target.Tgn))
-					SshCmd(sc, cmd2)
-					cmd3 := fmt.Sprintf("crm conf order or_1_LUN_%s "+
-						"gvip%s ms_drbd_%s:promote", resName, strconv.Itoa(target.Tgn), resName)
-					SshCmd(sc, cmd3)
-					cmd4 := fmt.Sprintf("crm conf order or_2_LUN_%s ms_drbd_%s:promote "+
-						"LUN_%s:start", resName, resName, resName)
-					SshCmd(sc, cmd4)
-					cmd5 := fmt.Sprintf("crm conf order or_3_LUN_%s LUN_%s "+
-						"vip_prtblk_off%s_1", resName, resName, strconv.Itoa(target.Tgn))
-					SshCmd(sc, cmd5)
-					cmd6 := fmt.Sprintf("crm res start LUN_%s", resName)
-					SshCmd(sc, cmd6)
-					cmd7 := fmt.Sprintf("crm res status LUN_%s", resName)
-					out, _ := SshCmd(sc, cmd7)
-					if strings.Contains(out, "running") {
-						errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-						Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-						return Message
-					} else {
-						return fmt.Errorf("lun_%s is not running", resName)
-					}
-				} else {
-					cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
-						"ms_drbd_%s:Master", resName, resName, resName)
-					SshCmd(sc, cmd1)
-					cmd2 := fmt.Sprintf("crm conf colocation co_LUN_%s_gvip%s "+
-						"inf: ms_drbd_%s:Master gvip%s", resName, strconv.Itoa(target.Tgn), resName, strconv.Itoa(target.Tgn))
-					SshCmd(sc, cmd2)
-					cmd3 := fmt.Sprintf("crm conf order or_1_LUN_%s "+
-						"gvip%s ms_drbd_%s:promote", resName, strconv.Itoa(target.Tgn), resName)
-					SshCmd(sc, cmd3)
-					cmd4 := fmt.Sprintf("crm conf order or_2_LUN_%s ms_drbd_%s:promote "+
-						"LUN_%s:start", resName, resName, resName)
-					SshCmd(sc, cmd4)
-					cmd5 := fmt.Sprintf("crm conf order or_3_LUN_%s LUN_%s "+
-						"vip_prtblk_off%s_1", resName, resName, strconv.Itoa(target.Tgn))
-					SshCmd(sc, cmd5)
-					cmd6 := fmt.Sprintf("crm conf order or_4_LUN_%s LUN_%s "+
-						"vip_prtblk_off%s_2", resName, resName, strconv.Itoa(target.Tgn))
-					SshCmd(sc, cmd6)
-					cmd7 := fmt.Sprintf("crm res start LUN_%s", resName)
-					SshCmd(sc, cmd7)
-					cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
-					out, _ := SshCmd(sc, cmd8)
-					if strings.Contains(out, "running") {
-						errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-						Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-						return Message
-					} else {
-						return fmt.Errorf("lun_%s is not running", resName)
-					}
+					return fmt.Errorf("lun_%s is not running", resName)
 				}
 			} else {
-				cmd1 := fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", resName, node.Iqn)
+				cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
+					"ms_drbd_%s:Master", resName, resName, resName)
 				SshCmd(sc, cmd1)
+				cmd2 := fmt.Sprintf("crm conf colocation co_LUN_%s_gvip%s "+
+					"inf: ms_drbd_%s:Master gvip%s", resName, strconv.Itoa(target.Tgn), resName, strconv.Itoa(target.Tgn))
+				SshCmd(sc, cmd2)
+				cmd3 := fmt.Sprintf("crm conf order or_1_LUN_%s "+
+					"gvip%s ms_drbd_%s:promote", resName, strconv.Itoa(target.Tgn), resName)
+				SshCmd(sc, cmd3)
+				cmd4 := fmt.Sprintf("crm conf order or_2_LUN_%s ms_drbd_%s:promote "+
+					"LUN_%s:start", resName, resName, resName)
+				SshCmd(sc, cmd4)
+				cmd5 := fmt.Sprintf("crm conf order or_3_LUN_%s LUN_%s "+
+					"vip_prtblk_off%s_1", resName, resName, strconv.Itoa(target.Tgn))
+				SshCmd(sc, cmd5)
+				cmd6 := fmt.Sprintf("crm conf order or_4_LUN_%s LUN_%s "+
+					"vip_prtblk_off%s_2", resName, resName, strconv.Itoa(target.Tgn))
+				SshCmd(sc, cmd6)
 				cmd7 := fmt.Sprintf("crm res start LUN_%s", resName)
 				SshCmd(sc, cmd7)
 				cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
@@ -740,8 +740,22 @@ func CreateISCSI(target *Target, node *Node, unMap string, resName string, numbe
 				} else {
 					return fmt.Errorf("lun_%s is not running", resName)
 				}
-
 			}
+		} else {
+			cmd1 := fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", resName, node.Iqn)
+			SshCmd(sc, cmd1)
+			cmd7 := fmt.Sprintf("crm res start LUN_%s", resName)
+			SshCmd(sc, cmd7)
+			cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
+			out, _ := SshCmd(sc, cmd8)
+			if strings.Contains(out, "running") {
+				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+				Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+				return Message
+			} else {
+				return fmt.Errorf("lun_%s is not running", resName)
+			}
+
 		}
 	}
 }
@@ -802,10 +816,36 @@ func ShowLun() []map[string]string {
 	for _, lun := range luns {
 		lunMap := map[string]string{
 			"hostName": strings.Join(lun.Host, ","),
-			"hostNum":  strconv.Itoa(lun.Number),
+			"hostNum":  strconv.Itoa(len(lun.Host)),
 			"resName":  lun.Lun,
 		}
 		result = append(result, lunMap)
+	}
+	return result
+}
+
+func ShowNode(Name string) []map[string]string {
+	var targets []Target
+	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return nil
+	}
+	err = yaml.Unmarshal(data, &targets)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return nil
+	}
+
+	var result []map[string]string
+	for _, target := range targets {
+		if target.Name == Name {
+			nodeMap := map[string]string{
+				"nodeRun":  strings.Join(target.RunNode, ","),
+				"NodeLess": strings.Join(target.AssistantNode, ","),
+			}
+			result = append(result, nodeMap)
+		}
 	}
 	return result
 }
