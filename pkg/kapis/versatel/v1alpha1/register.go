@@ -379,6 +379,16 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(TargetLun{}))
 
+	webservice.Route(webservice.GET("/mapping").
+		To(handler.handleListLun).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get Target").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
 	container.Add(webservice)
 
 	return nil

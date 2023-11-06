@@ -132,14 +132,14 @@ type Target struct {
 }
 
 type TargetDRBD struct {
-	Name    string `json:"name"`
-	ResName string `json:"resName"`
+	Name    string   `json:"name"`
+	ResName []string `json:"resName"`
 }
 
 type TargetLun struct {
-	HostName string `json:"hostname"`
-	ResName  string `json:"resName"`
-	UnMap    string `json:"unMap"`
+	HostName []string `json:"hostname"`
+	ResName  string   `json:"resName"`
+	UnMap    string   `json:"unMap"`
 }
 
 //func init(){
@@ -796,19 +796,30 @@ func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
 //}
 
 func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
-	targetDRBD := new(TargetDRBD)
-	err := req.ReadEntity(&targetDRBD)
+	targetLun := new(TargetLun)
+	err := req.ReadEntity(&targetLun)
 	if err != nil {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	target, _ := linstorv1alpha1.FindTargetOfName(targetDRBD.Name)
-	err = linstorv1alpha1.ConfigureDRBD(ctx, client, target, targetDRBD.ResName)
-	if err != nil {
-		resp.WriteAsJson(err)
-		return
-	} else {
-		resp.WriteAsJson("绑定资源成功:")
+	num, _ := linstorv1alpha1.GetNum()
+	target, _ := linstorv1alpha1.FindTargetOfRes(targetLun.ResName)
+	for _, host := range targetLun.HostName {
+		node, _ := linstorv1alpha1.FindNodeOfHostName(host)
+		err = linstorv1alpha1.CreateISCSI(target, node, targetLun.UnMap, targetLun.ResName, strconv.Itoa(num))
+		if err != nil {
+			resp.WriteAsJson(err)
+			return
+		}
 	}
+	err = linstorv1alpha1.SaveLun(targetLun.ResName, targetLun.HostName, num)
+
+}
+
+func (h *handler) handleListLun(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowLun()
+	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
 }

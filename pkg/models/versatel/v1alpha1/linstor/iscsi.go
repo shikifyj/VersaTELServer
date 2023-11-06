@@ -29,10 +29,10 @@ type Node struct {
 	Iqn      string `yaml:"iqn"`
 }
 
-type Lun struct {
-	lun    string   `yaml:"lun"`
-	number int      `yaml:"number"`
-	host   []string `yaml:"host"`
+type Mapping struct {
+	Lun    string   `yaml:"lun"`
+	Number int      `yaml:"number"`
+	Host   []string `yaml:"host"`
 }
 
 func GetIPAndConnect(port int) (*ssh.Client, error) {
@@ -450,7 +450,7 @@ func FindTargetOfName(name string) (*Target, error) {
 	return nil, fmt.Errorf("target with name %s not found", name)
 }
 
-func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resName string) error {
+func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resName []string) error {
 	nodeRun := target.RunNode
 	nodeLess := target.AssistantNode
 	cloneMax := len(nodeRun) + len(nodeLess)
@@ -485,46 +485,52 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 	if err != nil {
 		return err
 	}
+	var errs []string
 
-	cmd := fmt.Sprintf("primitive p_drbd_%s ocf:linbit:drbd "+
-		"params drbd_resource=%s "+
-		"op monitor interval=29 role=Master "+
-		"op monitor interval=30 role=Slave "+
-		"ms ms_drbd_%s p_drbd_%s "+
-		"meta master-max=1 master-node-max=1 clone-max=%s clone-node-max=1 notify=true target-role=Started ",
-		resName, resName, resName, resName, strconv.Itoa(cloneMax))
+	for _, res := range resName {
+		cmd := fmt.Sprintf("primitive p_drbd_%s ocf:linbit:drbd "+
+			"params drbd_resource=%s "+
+			"op monitor interval=29 role=Master "+
+			"op monitor interval=30 role=Slave "+
+			"ms ms_drbd_%s p_drbd_%s "+
+			"meta master-max=1 master-node-max=1 clone-max=%s clone-node-max=1 notify=true target-role=Started ",
+			res, res, res, res, strconv.Itoa(cloneMax))
 
-	out, err := SshCmd(sc, cmd)
-	if err != nil {
-		errInfo := strings.TrimSpace(out)
-		return client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-	}
+		out, err := SshCmd(sc, cmd)
+		if err != nil {
+			errs = append(errs, strings.TrimSpace(out))
+		}
 
-	if len(nodeAwayList) > 0 {
-		for _, away := range nodeAwayList {
-			cmd := fmt.Sprintf("location DRBD_%s_%s ms_drbd_%s -inf: %s",
-				resName, away, resName, away)
+		if len(nodeAwayList) > 0 {
+			for _, away := range nodeAwayList {
+				cmd := fmt.Sprintf("location DRBD_%s_%s ms_drbd_%s -inf: %s",
+					resName, away, resName, away)
 
-			out, err := SshCmd(sc, cmd)
-			if err != nil {
-				errInfo := strings.TrimSpace(out)
-				return client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-			}
+				out, err := SshCmd(sc, cmd)
+				if err != nil {
+					errs = append(errs, strings.TrimSpace(out))
+				}
 
-			target.Lun = append(target.Lun, resName)
-			data, err := yaml.Marshal(target)
-			if err != nil {
-				return err
-			}
+				target.Lun = append(target.Lun, res)
+				data, err := yaml.Marshal(target)
+				if err != nil {
+					errs = append(errs, err.Error())
+				}
 
-			err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
-			if err != nil {
-				return err
+				err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
+				if err != nil {
+					errs = append(errs, err.Error())
+				}
 			}
 		}
 	}
 
+	if len(errs) > 0 {
+		return fmt.Errorf(strings.Join(errs, "; "))
+	}
+
 	return nil
+
 }
 func DeleteDRBD(resName string) error {
 	sc, _ := GetIPAndConnect(22)
@@ -563,7 +569,7 @@ func ShowDRBD() error {
 	return nil
 }
 
-func findTargetOfRes(resName string) (*Target, error) {
+func FindTargetOfRes(resName string) (*Target, error) {
 	var targets []Target
 	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
 	if err != nil {
@@ -582,6 +588,25 @@ func findTargetOfRes(resName string) (*Target, error) {
 	}
 	return nil, fmt.Errorf("lun with resource %s not found", resName)
 }
+
+func FindNodeOfHostName(hostName string) (*Node, error) {
+	var nodes []Node
+	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(data, &nodes)
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range nodes {
+		if hostName == node.Hostname {
+			return &node, nil
+		}
+	}
+	return nil, fmt.Errorf("host with hostname %s not found", hostName)
+}
+
 func GetNum() (int, error) {
 	filePath := "/etc/linstorip/lun.yaml"
 
@@ -594,7 +619,7 @@ func GetNum() (int, error) {
 		return 0, err
 	}
 
-	var numList []Lun
+	var numList []Mapping
 	err = yaml.Unmarshal(data, &numList)
 	if err != nil {
 		return 0, err
@@ -602,14 +627,14 @@ func GetNum() (int, error) {
 
 	number := 1
 	for _, num := range numList {
-		if contain(num.number, number) {
+		if contain(num.Number, number) {
 			number++
 		}
 	}
 
 	return number, nil
 }
-func CreateISCSI(target Target, node Node, unMap string, resName string, number string) error {
+func CreateISCSI(target *Target, node *Node, unMap string, resName string, number string) error {
 	sc, _ := GetIPAndConnect(22)
 	cmd := fmt.Sprintf("linstor r list-volumes -r %s | awk 'NR>2 {print $12}' | head -n 2", resName)
 	Device, err := SshCmd(sc, cmd)
@@ -644,11 +669,143 @@ func CreateISCSI(target Target, node Node, unMap string, resName string, number 
 					SshCmd(sc, cmd)
 				}
 				if len(target.Vip) == 1 {
-
+					cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
+						"ms_drbd_%s:Master", resName, resName, resName)
+					SshCmd(sc, cmd1)
+					cmd2 := fmt.Sprintf("crm conf colocation co_LUN_%s_gvip%s "+
+						"inf: ms_drbd_%s:Master gvip%s", resName, strconv.Itoa(target.Tgn), resName, strconv.Itoa(target.Tgn))
+					SshCmd(sc, cmd2)
+					cmd3 := fmt.Sprintf("crm conf order or_1_LUN_%s "+
+						"gvip%s ms_drbd_%s:promote", resName, strconv.Itoa(target.Tgn), resName)
+					SshCmd(sc, cmd3)
+					cmd4 := fmt.Sprintf("crm conf order or_2_LUN_%s ms_drbd_%s:promote "+
+						"LUN_%s:start", resName, resName, resName)
+					SshCmd(sc, cmd4)
+					cmd5 := fmt.Sprintf("crm conf order or_3_LUN_%s LUN_%s "+
+						"vip_prtblk_off%s_1", resName, resName, strconv.Itoa(target.Tgn))
+					SshCmd(sc, cmd5)
+					cmd6 := fmt.Sprintf("crm res start LUN_%s", resName)
+					SshCmd(sc, cmd6)
+					cmd7 := fmt.Sprintf("crm res status LUN_%s", resName)
+					out, _ := SshCmd(sc, cmd7)
+					if strings.Contains(out, "running") {
+						errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+						Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+						return Message
+					} else {
+						return fmt.Errorf("lun_%s is not running", resName)
+					}
+				} else {
+					cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
+						"ms_drbd_%s:Master", resName, resName, resName)
+					SshCmd(sc, cmd1)
+					cmd2 := fmt.Sprintf("crm conf colocation co_LUN_%s_gvip%s "+
+						"inf: ms_drbd_%s:Master gvip%s", resName, strconv.Itoa(target.Tgn), resName, strconv.Itoa(target.Tgn))
+					SshCmd(sc, cmd2)
+					cmd3 := fmt.Sprintf("crm conf order or_1_LUN_%s "+
+						"gvip%s ms_drbd_%s:promote", resName, strconv.Itoa(target.Tgn), resName)
+					SshCmd(sc, cmd3)
+					cmd4 := fmt.Sprintf("crm conf order or_2_LUN_%s ms_drbd_%s:promote "+
+						"LUN_%s:start", resName, resName, resName)
+					SshCmd(sc, cmd4)
+					cmd5 := fmt.Sprintf("crm conf order or_3_LUN_%s LUN_%s "+
+						"vip_prtblk_off%s_1", resName, resName, strconv.Itoa(target.Tgn))
+					SshCmd(sc, cmd5)
+					cmd6 := fmt.Sprintf("crm conf order or_4_LUN_%s LUN_%s "+
+						"vip_prtblk_off%s_2", resName, resName, strconv.Itoa(target.Tgn))
+					SshCmd(sc, cmd6)
+					cmd7 := fmt.Sprintf("crm res start LUN_%s", resName)
+					SshCmd(sc, cmd7)
+					cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
+					out, _ := SshCmd(sc, cmd8)
+					if strings.Contains(out, "running") {
+						errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+						Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+						return Message
+					} else {
+						return fmt.Errorf("lun_%s is not running", resName)
+					}
 				}
+			} else {
+				cmd1 := fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", resName, node.Iqn)
+				SshCmd(sc, cmd1)
+				cmd7 := fmt.Sprintf("crm res start LUN_%s", resName)
+				SshCmd(sc, cmd7)
+				cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
+				out, _ := SshCmd(sc, cmd8)
+				if strings.Contains(out, "running") {
+					errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+					Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+					return Message
+				} else {
+					return fmt.Errorf("lun_%s is not running", resName)
+				}
+
 			}
 		}
 	}
+}
+
+func SaveLun(resName string, hostName []string, number int) error {
+	var lun []Mapping
+	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Fatalf("error: %v", err)
+			return err
+		}
+	} else {
+		err = yaml.Unmarshal(data, &lun)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+			return err
+		}
+	}
+
+	newLun := Mapping{
+		Host:   hostName,
+		Number: number,
+		Lun:    resName,
+	}
+	lun = append(lun, newLun)
+
+	data, err = yaml.Marshal(&lun)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	err = ioutil.WriteFile("/etc/linstorip/lun.yaml", data, 0644)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
 
 	return nil
+}
+
+func ShowLun() []map[string]string {
+	var luns []Mapping
+	var result []map[string]string
+	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return result
+	}
+	err = yaml.Unmarshal(data, &luns)
+	if err != nil {
+		return nil
+	}
+
+	for _, lun := range luns {
+		lunMap := map[string]string{
+			"hostName": strings.Join(lun.Host, ","),
+			"hostNum":  strconv.Itoa(lun.Number),
+			"resName":  lun.Lun,
+		}
+		result = append(result, lunMap)
+	}
+	return result
 }
