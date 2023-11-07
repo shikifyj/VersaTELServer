@@ -76,13 +76,13 @@ func DoSshs(ctx context.Context, c *client.Client) {
 
 	for _, node := range data {
 		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
-		result := reg.FindAllStringSubmatch(node["addr"], -1)
+		result := reg.FindAllStringSubmatch(node["addr"].(string), -1)
 		//              if result[0][0] != "10.203.1.240" {
 		sshclient, err := SSHConnect(result[0][0], 22)
 		if err != nil {
 			log.Fatal(err)
 		}
-		sc := &SshConnect{sshclient, node["name"]}
+		sc := &SshConnect{Sshclient: sshclient, Host: node["name"].(string)}
 		sshlist.Connects = append(sshlist.Connects, sc)
 	}
 	//      }
@@ -106,15 +106,15 @@ func SshCmd(sshclient *ssh.Client, cmd string) (string, error) {
 	return string(combo), err
 }
 
-func GetNodesIP(ctx context.Context, c *client.Client) []map[string]string {
+func GetNodesIP(ctx context.Context, c *client.Client) []map[string]interface{} {
 
-	nodesInfo := []map[string]string{}
+	var nodesInfo []map[string]interface{}
 
 	data := GetNodeData(ctx, c)
 
 	for _, node := range data {
 
-		nodeInfo := map[string]string{
+		nodeInfo := map[string]interface{}{
 			"name": node["name"],
 			"addr": node["addr"],
 		}
@@ -253,9 +253,9 @@ func CreateLV(ctx context.Context, c *client.Client, size string, lvName string,
 
 }
 
-func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]string {
+func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]interface{} {
 	GetSshList(ctx, c)
-	clusterLvm := []map[string]string{}
+	var clusterLvm []map[string]interface{}
 
 	for _, cli := range sshlist.Connects {
 		// Execute df command via SSH
@@ -288,7 +288,7 @@ func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]string {
 					resultSize := m.String()
 					resSize, _ := ParseSizeForLvm(resultSize)
 
-					lvmInfo := map[string]string{
+					lvmInfo := map[string]interface{}{
 						"node": cli.Host,
 						"name": resultDevice[0][0],
 						"size": convertMBtoGB(resSize),
@@ -301,9 +301,9 @@ func GetLvmDevices(ctx context.Context, c *client.Client) []map[string]string {
 	return clusterLvm
 }
 
-func GetLvmPVs(ctx context.Context, c *client.Client) []map[string]string {
+func GetLvmPVs(ctx context.Context, c *client.Client) []map[string]interface{} {
 	GetSshList(ctx, c)
-	clusterPV := []map[string]string{}
+	var clusterPV []map[string]interface{}
 	for _, cli := range sshlist.Connects {
 
 		replay, _ := SshCmd(cli.Sshclient, "pvs")
@@ -324,7 +324,7 @@ func GetLvmPVs(ctx context.Context, c *client.Client) []map[string]string {
 			n, _ := regSize.FindStringMatch(data[0])
 			resultSize := n.String()
 
-			lvmInfo := map[string]string{
+			lvmInfo := map[string]interface{}{
 				"node": cli.Host,
 				"name": resultPV[0][0],
 				"vg":   resultVG,
@@ -339,9 +339,9 @@ func GetLvmPVs(ctx context.Context, c *client.Client) []map[string]string {
 
 }
 
-func GetLvmVGs(ctx context.Context, c *client.Client) []map[string]string {
+func GetLvmVGs(ctx context.Context, c *client.Client) []map[string]interface{} {
 	GetSshList(ctx, c)
-	clusterVG := []map[string]string{}
+	var clusterVG []map[string]interface{}
 	for _, cli := range sshlist.Connects {
 
 		replay, _ := SshCmd(cli.Sshclient, "vgs")
@@ -370,7 +370,7 @@ func GetLvmVGs(ctx context.Context, c *client.Client) []map[string]string {
 			if resultLV == "0" {
 				lv = "false"
 			}
-			lvmInfo := map[string]string{
+			lvmInfo := map[string]interface{}{
 				"node": cli.Host,
 				"vg":   resultVG,
 				"size": resultSize,
@@ -386,9 +386,9 @@ func GetLvmVGs(ctx context.Context, c *client.Client) []map[string]string {
 
 }
 
-func GetLvmLVs(ctx context.Context, c *client.Client) []map[string]string {
+func GetLvmLVs(ctx context.Context, c *client.Client) []map[string]interface{} {
 	GetSshList(ctx, c)
-	clusterLV := []map[string]string{}
+	var clusterLV []map[string]interface{}
 	for _, cli := range sshlist.Connects {
 
 		replay, _ := SshCmd(cli.Sshclient, "lvs")
@@ -409,7 +409,7 @@ func GetLvmLVs(ctx context.Context, c *client.Client) []map[string]string {
 			//	pool = resultInfo[4][0]
 			//}
 
-			lvmInfo := map[string]string{
+			lvmInfo := map[string]interface{}{
 				"node": cli.Host,
 				"name": resultInfo[0][0],
 				"vg":   resultInfo[1][0],

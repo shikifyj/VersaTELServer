@@ -89,8 +89,8 @@ func Registered(hostname string, iqn string) error {
 
 	return nil
 }
-func GetRegistered() []map[string]string {
-	var nodes []map[string]string
+func GetRegistered() []map[string]interface{} {
+	var nodes []map[string]interface{}
 	var hosts []Node
 	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
 	if err != nil {
@@ -106,7 +106,7 @@ func GetRegistered() []map[string]string {
 		return nodes
 	}
 	for _, host := range hosts {
-		hostMap := map[string]string{
+		hostMap := map[string]interface{}{
 			"hostname": host.Hostname,
 			"iqn":      host.Iqn,
 		}
@@ -196,12 +196,12 @@ func contain(list int, item int) bool {
 
 func CreatePortBlockOn(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
-	for vip := range vips {
+	for _, vip := range vips {
 		cmd := fmt.Sprintf("crm conf primitive vip_prtblk_on%s_1 portblock "+
 			"prams ip=%s portno=3260 protocol=tcp action=block "+
 			"op start timeout=20 interval=0 "+
 			"op stop timeout=20 interval=0 "+
-			"op monitor timeout=20 interval=20", tgn, strconv.Itoa(vip))
+			"op monitor timeout=20 interval=20", tgn, vip)
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -215,10 +215,10 @@ func CreatePortBlockOn(vips []string, tgn string) error {
 
 func CreateVip(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
-	for vip := range vips {
+	for _, vip := range vips {
 		cmd := fmt.Sprintf("crm conf primitive vip%s_1 IPaddr2 "+
 			"params ip=%s cidr_netmask=24 "+
-			"op monitor interval=10 timeout=20", tgn, strconv.Itoa(vip))
+			"op monitor interval=10 timeout=20", tgn, vip)
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -286,12 +286,12 @@ func CreateResourceGroup(vips []string, tgn string, nodeLess []string) error {
 
 func CreatePortBlockOff(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
-	for vip := range vips {
+	for _, vip := range vips {
 		cmd := fmt.Sprintf("crm conf primitive vip_prtblk_off%s_1 portblock "+
 			"ip=%s portno=3260 protocol=tcp action=unblock "+
 			"op start timeout=20 interval=0 "+
 			"op stop timeout=20 interval=0 "+
-			"op monitor timeout=20 interval=20", tgn, strconv.Itoa(vip))
+			"op monitor timeout=20 interval=20", tgn, vip)
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -321,7 +321,7 @@ func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun [
 	data := GetNodeData(ctx, c)
 	var nodes []string
 	for _, node := range data {
-		nodes = append(nodes, node["name"])
+		nodes = append(nodes, node["name"].(string))
 	}
 	nodeAwayList := make([]string, 0)
 	for _, node := range nodes {
@@ -374,9 +374,9 @@ func CreateNodeOn(tgn string, nodeOn string) error {
 	return nil
 }
 
-func ShowTarget() []map[string]string {
+func ShowTarget() []map[string]interface{} {
 	var targets []Target
-	var result []map[string]string
+	var result []map[string]interface{}
 	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -390,11 +390,11 @@ func ShowTarget() []map[string]string {
 	}
 
 	for _, target := range targets {
-		targetMap := map[string]string{
+		targetMap := map[string]interface{}{
 			"name":        target.Name,
 			"storageNum":  strconv.Itoa(len(target.Lun)),
-			"storageList": strings.Join(target.Lun, ","),
-			"vipList":     strings.Join(target.Vip, ","),
+			"storageList": target.Lun,
+			"vipList":     target.Vip,
 		}
 		result = append(result, targetMap)
 	}
@@ -458,7 +458,7 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 
 	var nodes []string
 	for _, node := range data {
-		nodes = append(nodes, node["name"])
+		nodes = append(nodes, node["name"].(string))
 	}
 
 	nodeAwayList := make([]string, 0)
@@ -798,9 +798,9 @@ func SaveLun(resName string, hostName []string, number int) error {
 	return nil
 }
 
-func ShowLun() []map[string]string {
+func ShowLun() []map[string]interface{} {
 	var luns []Mapping
-	var result []map[string]string
+	var result []map[string]interface{}
 	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -814,17 +814,20 @@ func ShowLun() []map[string]string {
 	}
 
 	for _, lun := range luns {
-		lunMap := map[string]string{
-			"hostName": strings.Join(lun.Host, ","),
-			"hostNum":  strconv.Itoa(len(lun.Host)),
-			"resName":  lun.Lun,
+		var result []map[string]string
+		for _, host := range lun.Host {
+			lunMap := map[string]string{
+				"hostName": host,
+				"hostNum":  strconv.Itoa(len(lun.Host)),
+				"resName":  lun.Lun,
+			}
+			result = append(result, lunMap)
 		}
-		result = append(result, lunMap)
 	}
 	return result
 }
 
-func ShowNode(Name string) []map[string]string {
+func ShowNode(Name string) []map[string]interface{} {
 	var targets []Target
 	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
 	if err != nil {
@@ -837,12 +840,12 @@ func ShowNode(Name string) []map[string]string {
 		return nil
 	}
 
-	var result []map[string]string
+	var result []map[string]interface{}
 	for _, target := range targets {
 		if target.Name == Name {
-			nodeMap := map[string]string{
-				"nodeRun":  strings.Join(target.RunNode, ","),
-				"NodeLess": strings.Join(target.AssistantNode, ","),
+			nodeMap := map[string]interface{}{
+				"nodeRun":  target.RunNode,
+				"NodeLess": target.AssistantNode,
 			}
 			result = append(result, nodeMap)
 		}

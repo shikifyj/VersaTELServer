@@ -8,11 +8,11 @@ import (
 	"time"
 )
 
-func GetThinResources(ctx context.Context, c *client.Client) []map[string]string {
+func GetThinResources(ctx context.Context, c *client.Client) []map[string]interface{} {
 	DRBDResource, _ := c.Resources.GetResourceView(ctx)
 	snapResource, _ := c.Resources.GetSnapshotView(ctx)
-	var ResMap []map[string]string
-	var resArray []map[string]string
+	var ResMap []map[string]interface{}
+	var resArray []map[string]interface{}
 	processedNames := make(map[string]bool)
 
 	for _, res := range DRBDResource {
@@ -27,7 +27,7 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]string
 				}
 			}
 			if _, processed := processedNames[res.Name]; !processed {
-				resInfo := map[string]string{
+				resInfo := map[string]interface{}{
 					"name":    res.Name,
 					"numbers": strconv.Itoa(count),
 				}
@@ -42,9 +42,9 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]string
 	return resArray
 }
 
-func GetSnapshot(ctx context.Context, c *client.Client) []map[string]string {
+func GetSnapshot(ctx context.Context, c *client.Client) []map[string]interface{} {
 	snapshotResource, _ := c.Resources.GetSnapshotView(ctx)
-	var ResMap []map[string]string
+	var ResMap []map[string]interface{}
 	resInfoMap := make(map[string]map[string]interface{})
 
 	for _, res := range snapshotResource {
@@ -67,7 +67,7 @@ func GetSnapshot(ctx context.Context, c *client.Client) []map[string]string {
 		}
 	}
 	for _, v := range resInfoMap {
-		strMap := make(map[string]string)
+		strMap := make(map[string]interface{})
 		for key, value := range v {
 			strMap[key] = fmt.Sprintf("%v", value)
 		}

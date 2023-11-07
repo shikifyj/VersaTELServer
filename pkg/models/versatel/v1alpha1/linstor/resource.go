@@ -7,20 +7,21 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func GetResources(ctx context.Context, c *client.Client) []map[string]string {
+func GetResources(ctx context.Context, c *client.Client) []map[string]interface{} {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := make(map[string]map[string]string)
+	resMap := make(map[string]map[string]interface{})
 	mirrorWay := make(map[string]int)
-	resArray := []map[string]string{}
+	var resArray []map[string]interface{}
 
 	for _, res := range resources {
 		resName := res.Resource.Name
 		mirrorWay[resName]++
 
 		for _, vol := range res.Volumes {
-			resInfo := map[string]string{
+			resInfo := map[string]interface{}{
 				"name":         resName,
 				"size":         FormatSize(vol.AllocatedSizeKib),
 				"deviceName":   vol.DevicePath,
@@ -86,20 +87,24 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 	}
 
 	sort.SliceStable(resArray, func(i, j int) bool {
-		return resArray[i]["createTime"] > resArray[j]["createTime"]
+		t1, err1 := time.Parse(time.RFC3339, resArray[i]["createTime"].(string))
+		t2, err2 := time.Parse(time.RFC3339, resArray[j]["createTime"].(string))
+		if err1 != nil || err2 != nil {
+		}
+		return t1.After(t2)
 	})
 
 	return resArray
 }
 
-func GetassignedNode(ctx context.Context, c *client.Client) []map[string]string {
-	resArray := []map[string]string{}
+func GetassignedNode(ctx context.Context, c *client.Client) []map[string]interface{} {
+	var resArray []map[string]interface{}
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := make(map[string]map[string]string)
+	resMap := make(map[string]map[string]interface{})
 	for _, res := range resources {
 		resName := res.Resource.Name
 		for _, vol := range res.Volumes {
-			resInfo := map[string]string{
+			resInfo := map[string]interface{}{
 				"name": resName,
 			}
 			if vol.State.DiskState == "Diskless" {
@@ -114,9 +119,9 @@ func GetassignedNode(ctx context.Context, c *client.Client) []map[string]string 
 	return resArray
 }
 
-func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]string {
+func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]interface{} {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := []map[string]string{}
+	var resMap []map[string]interface{}
 	resMap = append(resMap)
 
 	for _, res := range resources {
@@ -125,7 +130,7 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 			mapFlag[v] = struct{}{}
 		}
 
-		resInfo := map[string]string{}
+		resInfo := map[string]interface{}{}
 
 		if res.State != nil {
 			if *res.State.InUse {
@@ -175,12 +180,12 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 	return resMap
 }
 
-func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]string {
+func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]interface{} {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := []map[string]string{}
+	var resMap []map[string]interface{}
 
 	for _, res := range resources {
-		resInfo := map[string]string{}
+		resInfo := map[string]interface{}{}
 
 		if res.State != nil && *res.State.InUse {
 			resInfo["usage"] = "InUse"
