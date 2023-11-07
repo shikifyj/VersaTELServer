@@ -814,15 +814,14 @@ func ShowLun() []map[string]interface{} {
 	}
 
 	for _, lun := range luns {
-		var result []map[string]string
-		for _, host := range lun.Host {
-			lunMap := map[string]string{
-				"hostName": host,
-				"hostNum":  strconv.Itoa(len(lun.Host)),
-				"resName":  lun.Lun,
-			}
-			result = append(result, lunMap)
+
+		lunMap := map[string]interface{}{
+			"hostName": lun.Host,
+			"hostNum":  strconv.Itoa(len(lun.Host)),
+			"resName":  lun.Lun,
 		}
+		result = append(result, lunMap)
+
 	}
 	return result
 }
