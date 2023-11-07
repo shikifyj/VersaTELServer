@@ -45,7 +45,7 @@ func GetIPAndConnect(port int) (*ssh.Client, error) {
 	}
 
 	ip := strings.TrimSpace(string(ipBytes))
-
+	ip = strings.Replace(ip, ":3370", "", -1)
 	sshClient, err := SSHConnect(ip, port)
 	if err != nil {
 		log.Fatalf("Failed to connect to remote host: %v", err)
@@ -272,8 +272,8 @@ func CreateResourceGroup(vips []string, tgn string, nodeLess []string) error {
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return Message
 	} else {
-		for less := range nodeLess {
-			cmd = fmt.Sprintf("crm conf location lo_gvip%s gvip%s -100: %s", tgn, tgn, strconv.Itoa(less))
+		for _, less := range nodeLess {
+			cmd = fmt.Sprintf("crm conf location lo_gvip%s gvip%s -100: %s", tgn, tgn, less)
 			if err != nil {
 				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
 				Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
@@ -317,7 +317,7 @@ func CreateResourceBond(tgn string) error {
 	return nil
 }
 
-func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun []string, nodeLess []string) error {
+func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun []string) error {
 	data := GetNodeData(ctx, c)
 	var nodes []string
 	for _, node := range data {
@@ -332,12 +332,6 @@ func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun [
 				break
 			}
 		}
-		for _, less := range nodeLess {
-			if node == less {
-				found = true
-				break
-			}
-		}
 		if !found {
 			nodeAwayList = append(nodeAwayList, node)
 		}
@@ -346,9 +340,9 @@ func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun [
 
 	} else {
 		sc, _ := GetIPAndConnect(22)
-		for nodeAway := range nodeAwayList {
-			cmd := fmt.Sprintf("crm conf location lo_gvip%s_%s gvip%s -inf: %s\n", tgn, strconv.Itoa(nodeAway),
-				tgn, strconv.Itoa(nodeAway))
+		for _, nodeAway := range nodeAwayList {
+			cmd := fmt.Sprintf("crm conf location lo_gvip%s_%s gvip%s -inf: %s", tgn, nodeAway,
+				tgn, nodeAway)
 			out, err := SshCmd(sc, cmd)
 			if err != nil {
 				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -466,12 +460,6 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 		found := false
 		for _, run := range nodeRun {
 			if node == run {
-				found = true
-				break
-			}
-		}
-		for _, less := range nodeLess {
-			if node == less {
 				found = true
 				break
 			}
@@ -603,6 +591,25 @@ func FindTargetOfRes(resName string) (*Target, error) {
 			if lun == resName {
 				return &target, nil
 			}
+		}
+	}
+	return nil, fmt.Errorf("target with resource %s not found", resName)
+}
+
+func FindLunOfRes(resName string) (*Mapping, error) {
+	var luns []Mapping
+	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(data, &luns)
+	if err != nil {
+		return nil, err
+	}
+	for _, lun := range luns {
+		if lun.Lun == resName {
+			return &lun, nil
+
 		}
 	}
 	return nil, fmt.Errorf("lun with resource %s not found", resName)
@@ -761,7 +768,7 @@ func CreateISCSI(target *Target, node *Node, unMap string, resName string, numbe
 }
 
 func SaveLun(resName string, hostName []string, number int) error {
-	var lun []Mapping
+	var luns []Mapping
 	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -769,21 +776,31 @@ func SaveLun(resName string, hostName []string, number int) error {
 			return err
 		}
 	} else {
-		err = yaml.Unmarshal(data, &lun)
+		err = yaml.Unmarshal(data, &luns)
 		if err != nil {
 			log.Fatalf("error: %v", err)
 			return err
 		}
 	}
-
-	newLun := Mapping{
-		Host:   hostName,
-		Number: number,
-		Lun:    resName,
+	exist := false
+	for i, lun := range luns {
+		if lun.Lun == resName {
+			luns[i].Host = append(luns[i].Host, hostName...)
+			exist = true
+			break
+		}
 	}
-	lun = append(lun, newLun)
 
-	data, err = yaml.Marshal(&lun)
+	if !exist {
+		newLun := Mapping{
+			Host:   hostName,
+			Number: number,
+			Lun:    resName,
+		}
+		luns = append(luns, newLun)
+	}
+
+	data, err = yaml.Marshal(&luns)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return err

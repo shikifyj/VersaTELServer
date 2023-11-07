@@ -744,7 +744,7 @@ func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
 		return
 	}
 
-	err = linstorv1alpha1.CreateNodeAway(ctx, client, strconv.Itoa(tgn), target.NodeRun, target.NodeLess)
+	err = linstorv1alpha1.CreateNodeAway(ctx, client, strconv.Itoa(tgn), target.NodeRun)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
@@ -786,9 +786,17 @@ func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
-	} else {
-		resp.WriteAsJson("绑定资源成功:")
 	}
+	for _, res := range targetDRBD.ResName {
+		num, _ := linstorv1alpha1.GetNum()
+		err = linstorv1alpha1.SaveLun(res, nil, num)
+		if err != nil {
+			resp.WriteAsJson(err)
+			return
+		}
+	}
+	resp.WriteAsJson("绑定资源成功:")
+
 }
 
 //func (h *handler) handleListDRBD(req *restful.Request, resp *restful.Response) {
@@ -806,17 +814,17 @@ func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	num, _ := linstorv1alpha1.GetNum()
+	lun, _ := linstorv1alpha1.FindLunOfRes(targetLun.ResName)
 	target, _ := linstorv1alpha1.FindTargetOfRes(targetLun.ResName)
 	for _, host := range targetLun.HostName {
 		node, _ := linstorv1alpha1.FindNodeOfHostName(host)
-		err = linstorv1alpha1.CreateISCSI(target, node, targetLun.UnMap, targetLun.ResName, strconv.Itoa(num))
+		err = linstorv1alpha1.CreateISCSI(target, node, targetLun.UnMap, targetLun.ResName, strconv.Itoa(lun.Number))
 		if err != nil {
 			resp.WriteAsJson(err)
 			return
 		}
 	}
-	err = linstorv1alpha1.SaveLun(targetLun.ResName, targetLun.HostName, num)
+	err = linstorv1alpha1.SaveLun(targetLun.ResName, targetLun.HostName, lun.Number)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
