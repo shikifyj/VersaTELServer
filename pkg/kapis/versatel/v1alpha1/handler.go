@@ -738,7 +738,7 @@ func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
 		return
 	}
 
-	err = linstorv1alpha1.CreateResourceBond(strconv.Itoa(tgn))
+	err = linstorv1alpha1.CreateResourceBond(target.VipList, strconv.Itoa(tgn))
 	if err != nil {
 		resp.WriteAsJson(err)
 		return
@@ -821,7 +821,6 @@ func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
 		err = linstorv1alpha1.CreateISCSI(target, node, targetLun.UnMap, targetLun.ResName, strconv.Itoa(lun.Number))
 		if err != nil {
 			resp.WriteAsJson(err)
-			return
 		}
 	}
 	err = linstorv1alpha1.SaveLun(targetLun.ResName, targetLun.HostName, lun.Number)

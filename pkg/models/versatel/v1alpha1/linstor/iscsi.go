@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Target struct {
@@ -196,12 +197,21 @@ func contain(list int, item int) bool {
 
 func CreatePortBlockOn(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
-	for _, vip := range vips {
-		cmd := fmt.Sprintf("crm conf primitive vip_prtblk_on%s_1 portblock "+
-			"prams ip=%s portno=3260 protocol=tcp action=block "+
-			"op start timeout=20 interval=0 "+
-			"op stop timeout=20 interval=0 "+
-			"op monitor timeout=20 interval=20", tgn, vip)
+	for i, vip := range vips {
+		var cmd string
+		if i == 0 {
+			cmd = fmt.Sprintf("crm conf primitive vip_prtblk_on%s_1 portblock "+
+				"prams ip=%s portno=3260 protocol=tcp action=block "+
+				"op start timeout=20 interval=0 "+
+				"op stop timeout=20 interval=0 "+
+				"op monitor timeout=20 interval=20", tgn, vip)
+		} else if i == 1 {
+			cmd = fmt.Sprintf("crm conf primitive vip_prtblk_on%s_2 portblock "+
+				"prams ip=%s portno=3260 protocol=tcp action=block "+
+				"op start timeout=20 interval=0 "+
+				"op stop timeout=20 interval=0 "+
+				"op monitor timeout=20 interval=20", tgn, vip)
+		}
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -215,16 +225,24 @@ func CreatePortBlockOn(vips []string, tgn string) error {
 
 func CreateVip(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
-	for _, vip := range vips {
-		cmd := fmt.Sprintf("crm conf primitive vip%s_1 IPaddr2 "+
-			"params ip=%s cidr_netmask=24 "+
-			"op monitor interval=10 timeout=20", tgn, vip)
+	for i, vip := range vips {
+		var cmd string
+		if i == 0 {
+			cmd = fmt.Sprintf("crm conf primitive vip%s_1 IPaddr2 "+
+				"params ip=%s cidr_netmask=24 "+
+				"op monitor interval=10 timeout=20", tgn, vip)
+		} else if i == 1 {
+			cmd = fmt.Sprintf("crm conf primitive vip%s_2 IPaddr2 "+
+				"params ip=%s cidr_netmask=24 "+
+				"op monitor interval=10 timeout=20", tgn, vip)
+		}
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
 			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 			return Message
 		}
+
 	}
 
 	return nil
@@ -286,12 +304,21 @@ func CreateResourceGroup(vips []string, tgn string, nodeLess []string) error {
 
 func CreatePortBlockOff(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
-	for _, vip := range vips {
-		cmd := fmt.Sprintf("crm conf primitive vip_prtblk_off%s_1 portblock "+
-			"ip=%s portno=3260 protocol=tcp action=unblock "+
-			"op start timeout=20 interval=0 "+
-			"op stop timeout=20 interval=0 "+
-			"op monitor timeout=20 interval=20", tgn, vip)
+	for i, vip := range vips {
+		var cmd string
+		if i == 0 {
+			cmd = fmt.Sprintf("crm conf primitive vip_prtblk_off%s_1 portblock "+
+				"ip=%s portno=3260 protocol=tcp action=unblock "+
+				"op start timeout=20 interval=0 "+
+				"op stop timeout=20 interval=0 "+
+				"op monitor timeout=20 interval=20", tgn, vip)
+		} else if i == 1 {
+			cmd = fmt.Sprintf("crm conf primitive vip_prtblk_off%s_2 portblock "+
+				"ip=%s portno=3260 protocol=tcp action=unblock "+
+				"op start timeout=20 interval=0 "+
+				"op stop timeout=20 interval=0 "+
+				"op monitor timeout=20 interval=20", tgn, vip)
+		}
 		out, err := SshCmd(sc, cmd)
 		if err != nil {
 			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -303,15 +330,22 @@ func CreatePortBlockOff(vips []string, tgn string) error {
 	return nil
 }
 
-func CreateResourceBond(tgn string) error {
+func CreateResourceBond(vips []string, tgn string) error {
 	sc, _ := GetIPAndConnect(22)
+	for i := range vips {
+		var cmd string
+		if i == 0 {
+			cmd = fmt.Sprintf("crm conf colocation co_prtblkoff%s_1 inf: vip_prtblk_off%s_1 gvip%s", tgn, tgn, tgn)
 
-	cmd := fmt.Sprintf("crm conf colocation co_prtblkoff%s_1 inf: vip_prtblk_off%s_1 gvip%s", tgn, tgn, tgn)
-	out, err := SshCmd(sc, cmd)
-	if err != nil {
-		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-		return Message
+		} else if i == 1 {
+			cmd = fmt.Sprintf("crm conf colocation co_prtblkoff%s_2 inf: vip_prtblk_off%s_2 gvip%s", tgn, tgn, tgn)
+		}
+		out, err := SshCmd(sc, cmd)
+		if err != nil {
+			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+			return Message
+		}
 	}
 
 	return nil
@@ -357,12 +391,26 @@ func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun [
 
 func CreateNodeOn(tgn string, nodeOn string) error {
 	sc, _ := GetIPAndConnect(22)
-	cmd := fmt.Sprintf("crm res move gvip%s %s", tgn, nodeOn)
-	out, err := SshCmd(sc, cmd)
-	if err != nil {
-		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-		return Message
+	cmd1 := fmt.Sprintf("crm status givp%s", tgn)
+	status, _ := SshCmd(sc, cmd1)
+	if strings.Contains(status, nodeOn) {
+		return nil
+	} else {
+		cmd2 := fmt.Sprintf("crm res move gvip%s %s", tgn, nodeOn)
+		out, err := SshCmd(sc, cmd2)
+		if err != nil {
+			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+			return Message
+		}
+		time.Sleep(3)
+		cmd3 := fmt.Sprintf("crm res unmove gvip%s", tgn)
+		out1, err := SshCmd(sc, cmd3)
+		if err != nil {
+			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out1), "\n", "", -1))
+			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+			return Message
+		}
 	}
 
 	return nil
@@ -446,8 +494,7 @@ func FindTargetOfName(name string) (*Target, error) {
 
 func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resName []string) error {
 	nodeRun := target.RunNode
-	nodeLess := target.AssistantNode
-	cloneMax := len(nodeRun) + len(nodeLess)
+	cloneMax := len(nodeRun)
 	data := GetNodeData(ctx, c)
 
 	var nodes []string
@@ -486,7 +533,7 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 		}
 		cmd2 := fmt.Sprintf("crm conf ms ms_drbd_%s p_drbd_%s "+
 			"meta master-max=1 master-node-max=1 clone-max=%s "+
-			"clone-node-max=1 notify=true target-role=Started", res, res, strconv.Itoa(cloneMax))
+			"clone-node-max=1 notify=true", res, res, strconv.Itoa(cloneMax))
 
 		out2, err := SshCmd(sc, cmd2)
 		if err != nil {
@@ -504,7 +551,8 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 				}
 			}
 		}
-
+		time.Sleep(5)
+		SshCmd(sc, fmt.Sprintf("crm res cleanup p_drbd_%s", resName))
 		var targets []Target
 		data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
 		if err != nil {
@@ -710,12 +758,10 @@ func CreateISCSI(target *Target, node *Node, unMap string, resName string, numbe
 				SshCmd(sc, cmd6)
 				cmd7 := fmt.Sprintf("crm res status LUN_%s", resName)
 				out, _ := SshCmd(sc, cmd7)
-				if strings.Contains(out, "running") {
-					errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-					Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-					return Message
+				if strings.Contains(out, "not") {
+					return fmt.Errorf(out)
 				} else {
-					return fmt.Errorf("lun_%s is not running", resName)
+					return nil
 				}
 			} else {
 				cmd1 := fmt.Sprintf("crm conf colocation co_LUN_%s inf: LUN_%s "+
@@ -740,31 +786,28 @@ func CreateISCSI(target *Target, node *Node, unMap string, resName string, numbe
 				SshCmd(sc, cmd7)
 				cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
 				out, _ := SshCmd(sc, cmd8)
-				if strings.Contains(out, "running") {
-					errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-					Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-					return Message
+				if strings.Contains(out, "not") {
+					return fmt.Errorf(out)
 				} else {
-					return fmt.Errorf("lun_%s is not running", resName)
+					return nil
 				}
 			}
 		} else {
-			cmd1 := fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", resName, node.Iqn)
+			cmd2 := fmt.Sprintf("crm res param LUN_%s show allowed_initiators", resName)
+			iqn, _ := SshCmd(sc, cmd2)
+			iqn = strings.ReplaceAll(iqn, "\n", "")
+			cmd1 := fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s %s\"", resName, node.Iqn, iqn)
 			SshCmd(sc, cmd1)
 			cmd7 := fmt.Sprintf("crm res start LUN_%s", resName)
 			SshCmd(sc, cmd7)
 			cmd8 := fmt.Sprintf("crm res status LUN_%s", resName)
-			out, _ := SshCmd(sc, cmd8)
-			if strings.Contains(out, "running") {
-				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-				Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-				return Message
-			} else {
-				return fmt.Errorf("lun_%s is not running", resName)
+			lun, _ := SshCmd(sc, cmd8)
+			if strings.Contains(lun, "not") {
+				return fmt.Errorf(lun)
 			}
-
 		}
 	}
+	return nil
 }
 
 func SaveLun(resName string, hostName []string, number int) error {

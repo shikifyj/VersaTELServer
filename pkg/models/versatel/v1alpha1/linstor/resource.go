@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/LINBIT/golinstor/client"
-	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func GetResources(ctx context.Context, c *client.Client) []map[string]interface{} {
@@ -86,13 +84,13 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]interface{
 		resArray = append(resArray, v)
 	}
 
-	sort.SliceStable(resArray, func(i, j int) bool {
-		t1, err1 := time.Parse(time.RFC3339, resArray[i]["createTime"].(string))
-		t2, err2 := time.Parse(time.RFC3339, resArray[j]["createTime"].(string))
-		if err1 != nil || err2 != nil {
-		}
-		return t1.After(t2)
-	})
+	//sort.SliceStable(resArray, func(i, j int) bool {
+	//	t1, err1 := time.Parse(time.RFC3339, resArray[i]["createTime"].(string))
+	//	t2, err2 := time.Parse(time.RFC3339, resArray[j]["createTime"].(string))
+	//	if err1 != nil || err2 != nil {
+	//	}
+	//	return t1.After(t2)
+	//})
 
 	return resArray
 }
