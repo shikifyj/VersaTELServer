@@ -59,7 +59,7 @@ func GetIPAndConnect(port int) (*ssh.Client, error) {
 func Registered(hostname string, iqn string) error {
 
 	var nodes []Node
-	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/host.yaml")
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.Fatalf("error: %v", err)
@@ -82,7 +82,7 @@ func Registered(hostname string, iqn string) error {
 	}
 
 	// Write the data back to the file
-	err = ioutil.WriteFile("/etc/linstorip/host.yaml", data, 0644)
+	err = ioutil.WriteFile("/etc/iscsi/host.yaml", data, 0644)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return err
@@ -93,7 +93,7 @@ func Registered(hostname string, iqn string) error {
 func GetRegistered() []map[string]interface{} {
 	var nodes []map[string]interface{}
 	var hosts []Node
-	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/host.yaml")
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.Fatalf("err：%v", err)
@@ -116,10 +116,46 @@ func GetRegistered() []map[string]interface{} {
 
 	return nodes
 }
+func DeleteRegistered(hostname string) error {
+	var nodes []Node
+	data, err := ioutil.ReadFile("/etc/iscsi/host.yaml")
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	err = yaml.Unmarshal(data, &nodes)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	var newNodes []Node
+	for _, node := range nodes {
+		if node.Hostname != hostname && node.Iqn != hostname {
+			newNodes = append(newNodes, node)
+		}
+	}
+
+	newData, err := yaml.Marshal(&newNodes)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	err = ioutil.WriteFile("/etc/iscsi/host.yaml", newData, 0644)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func SaveTarget(name string, iqn string, tng int, vip []string, NodeRun []string, NodeLess []string,
 	NodeOn string, lun []string) error {
 	var targets []Target
-	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.Fatalf("error: %v", err)
@@ -151,7 +187,7 @@ func SaveTarget(name string, iqn string, tng int, vip []string, NodeRun []string
 		return err
 	}
 
-	err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
+	err = ioutil.WriteFile("/etc/iscsi/target.yaml", data, 0644)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return err
@@ -161,7 +197,7 @@ func SaveTarget(name string, iqn string, tng int, vip []string, NodeRun []string
 }
 
 func GetTgn() (int, error) {
-	filePath := "/etc/linstorip/target.yaml"
+	filePath := "/etc/iscsi/target.yaml"
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return 1, nil
@@ -419,7 +455,7 @@ func CreateNodeOn(tgn string, nodeOn string) error {
 func ShowTarget() []map[string]interface{} {
 	var targets []Target
 	var result []map[string]interface{}
-	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -443,40 +479,59 @@ func ShowTarget() []map[string]interface{} {
 	return result
 }
 
-func DeleteTarget(tgn string, vips []string) error {
+func DeleteTarget(target *Target) error {
 	sc, _ := GetIPAndConnect(22)
-	cmd := fmt.Sprintf("crm res constraints target%s", tgn)
+	cmd := fmt.Sprintf("crm res constraints target%s", strconv.Itoa(target.Tgn))
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
-		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-		return Message
-	} else if strings.Contains(out, "drbd") {
-		Message := client.ApiCallError{client.ApiCallRc{Message: "Target绑定了DRBD资源，不能删除该Target"}}
-		return Message
-	} else {
-		if len(vips) == 1 {
-			cmd = fmt.Sprintf("crm conf delete vip_prtblk_on%s_1 vip%s_1 target%s vip_prtblk_off%s_1 "+
-				"--force", tgn, tgn, tgn, tgn)
-		} else {
-			cmd = fmt.Sprintf("crm conf delete vip_prtblk_on%s_1 vip_prtblk_on%s_2"+
-				" vip%s_1 vip%s_2 target%s vip_prtblk_off%s_1 vip_prtblk_off%s_2 --force",
-				tgn, tgn, tgn, tgn, tgn, tgn, tgn)
-		}
-		out, err := SshCmd(sc, cmd)
-		if err != nil {
-			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-			return Message
-		}
+		return fmt.Errorf("error: %s", strings.TrimSpace(out))
+	}
+	if strings.Contains(out, "drbd") {
+		return client.ApiCallError{client.ApiCallRc{Message: "Target绑定了DRBD资源，不能删除该Target"}}
 	}
 
+	if len(target.Vip) == 1 {
+		cmd = fmt.Sprintf("crm conf delete vip_prtblk_on%s_1 vip%s_1 target%s vip_prtblk_off%s_1 --force",
+			strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn))
+	} else {
+		cmd = fmt.Sprintf("crm conf delete vip_prtblk_on%s_1 vip_prtblk_on%s_2 vip%s_1 vip%s_2 target%s "+
+			"vip_prtblk_off%s_1 vip_prtblk_off%s_2 --force", strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn),
+			strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn), strconv.Itoa(target.Tgn))
+	}
+	out, err = SshCmd(sc, cmd)
+	if err != nil {
+		return fmt.Errorf("error: %s", strings.TrimSpace(out))
+	}
+
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
+	if err != nil {
+		return err
+	}
+	var targets []Target
+	err = yaml.Unmarshal(data, &targets)
+	if err != nil {
+		return err
+	}
+	for i, t := range targets {
+		if t.Name == target.Name {
+			targets = append(targets[:i], targets[i+1:]...)
+			break
+		}
+	}
+	newData, err := yaml.Marshal(&targets)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("/etc/iscsi/target.yaml", newData, 0644)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func FindTargetOfName(name string) (*Target, error) {
 	var targets []Target
-	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +609,7 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 		time.Sleep(5)
 		SshCmd(sc, fmt.Sprintf("crm res cleanup p_drbd_%s", resName))
 		var targets []Target
-		data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+		data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 		if err != nil {
 			errs = append(errs, err.Error())
 		}
@@ -574,7 +629,7 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 			errs = append(errs, err.Error())
 		}
 
-		err = ioutil.WriteFile("/etc/linstorip/target.yaml", data, 0644)
+		err = ioutil.WriteFile("/etc/iscsi/target.yaml", data, 0644)
 		if err != nil {
 			errs = append(errs, err.Error())
 		}
@@ -592,20 +647,73 @@ func DeleteDRBD(resName string) error {
 	cmd := fmt.Sprintf("crm res constraints p_drbd_%s", resName)
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
-		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-		return Message
-	} else if strings.Contains(out, "LUN") {
-		Message := client.ApiCallError{client.ApiCallRc{Message: "该DRBD资源已经被映射，不能删除"}}
-		return Message
-	} else {
-		cmd := fmt.Sprintf("crm conf delete p_drbd_%s --force", resName)
-		out, err := SshCmd(sc, cmd)
-		if err != nil {
-			errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-			Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-			return Message
+		return client.ApiCallError{client.ApiCallRc{Message: strings.TrimSpace(out)}}
+	}
+	if strings.Contains(out, "LUN") {
+		return client.ApiCallError{client.ApiCallRc{Message: "该DRBD资源已经被映射，不能删除"}}
+	}
+	cmd = fmt.Sprintf("crm conf delete p_drbd_%s --force", resName)
+	out, err = SshCmd(sc, cmd)
+	if err != nil {
+		return client.ApiCallError{client.ApiCallRc{Message: strings.TrimSpace(out)}}
+	}
+
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
+	if err != nil {
+		return err
+	}
+
+	var targets []Target
+	err = yaml.Unmarshal(data, &targets)
+	if err != nil {
+		return err
+	}
+
+	for i, target := range targets {
+		for j, lun := range target.Lun {
+			if lun == resName {
+				targets[i].Lun = append(target.Lun[:j], target.Lun[j+1:]...)
+				break
+			}
 		}
+	}
+
+	newData, err := yaml.Marshal(&targets)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile("/etc/iscsi/target.yaml", newData, 0644)
+	if err != nil {
+		return err
+	}
+
+	data, err = ioutil.ReadFile("/etc/iscsi/lun.yaml")
+	if err != nil {
+		return err
+	}
+
+	var mappings []Mapping
+	err = yaml.Unmarshal(data, &mappings)
+	if err != nil {
+		return err
+	}
+
+	for i, mapping := range mappings {
+		if mapping.Lun == resName {
+			mappings = append(mappings[:i], mappings[i+1:]...)
+			break
+		}
+	}
+
+	newData, err = yaml.Marshal(&mappings)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile("/etc/iscsi/lun.yaml", newData, 0644)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -626,7 +734,7 @@ func ShowDRBD() error {
 
 func FindTargetOfRes(resName string) (*Target, error) {
 	var targets []Target
-	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -646,7 +754,7 @@ func FindTargetOfRes(resName string) (*Target, error) {
 
 func FindLunOfRes(resName string) (*Mapping, error) {
 	var luns []Mapping
-	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -665,7 +773,7 @@ func FindLunOfRes(resName string) (*Mapping, error) {
 
 func FindNodeOfHostName(hostName string) (*Node, error) {
 	var nodes []Node
-	data, err := ioutil.ReadFile("/etc/linstorip/host.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/host.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -682,7 +790,7 @@ func FindNodeOfHostName(hostName string) (*Node, error) {
 }
 
 func GetNum() (int, error) {
-	filePath := "/etc/linstorip/lun.yaml"
+	filePath := "/etc/iscsi/lun.yaml"
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return 1, nil
@@ -812,7 +920,7 @@ func CreateISCSI(target *Target, node *Node, unMap string, resName string, numbe
 
 func SaveLun(resName string, hostName []string, number int) error {
 	var luns []Mapping
-	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.Fatalf("error: %v", err)
@@ -849,7 +957,7 @@ func SaveLun(resName string, hostName []string, number int) error {
 		return err
 	}
 
-	err = ioutil.WriteFile("/etc/linstorip/lun.yaml", data, 0644)
+	err = ioutil.WriteFile("/etc/iscsi/lun.yaml", data, 0644)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return err
@@ -858,10 +966,87 @@ func SaveLun(resName string, hostName []string, number int) error {
 	return nil
 }
 
+func DeleteLun(hostname string) error {
+	var luns []Mapping
+	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(data, &luns)
+	if err != nil {
+		return err
+	}
+
+	var lun string
+	var found bool
+	var hostIndex, lunIndex int
+	for i, l := range luns {
+		for j, host := range l.Host {
+			if host == hostname {
+				lun = l.Lun
+				hostIndex = j
+				lunIndex = i
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+
+	var nodes []Node
+	data, err = ioutil.ReadFile("/etc/iscsi/target.yaml")
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(data, &nodes)
+	if err != nil {
+		return err
+	}
+
+	var iqn string
+	for _, node := range nodes {
+		if node.Hostname == hostname {
+			iqn = node.Iqn
+			break
+		}
+	}
+	sc, _ := GetIPAndConnect(22)
+	var cmd string
+	cmd = fmt.Sprintf("crm res param LUN_%s show allowed_initiators", lun)
+	out, err := SshCmd(sc, cmd)
+	iqnList := strings.Fields(out)
+	if len(iqnList) >= 2 {
+		cmd = fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", lun, iqn)
+		_, err = SshCmd(sc, cmd)
+		if err != nil {
+			return err
+		}
+	} else {
+		cmd = fmt.Sprintf("crm conf delete LUN_%s --force", lun)
+		_, err = SshCmd(sc, cmd)
+		if err != nil {
+			return err
+		}
+	}
+
+	luns[lunIndex].Host = append(luns[lunIndex].Host[:hostIndex], luns[lunIndex].Host[hostIndex+1:]...)
+	newData, err := yaml.Marshal(&luns)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("/etc/iscsi/lun.yaml", newData, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func ShowLun() []map[string]interface{} {
 	var luns []Mapping
 	var result []map[string]interface{}
-	data, err := ioutil.ReadFile("/etc/linstorip/lun.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -888,7 +1073,7 @@ func ShowLun() []map[string]interface{} {
 
 func ShowNode(Name string) []map[string]interface{} {
 	var targets []Target
-	data, err := ioutil.ReadFile("/etc/linstorip/target.yaml")
+	data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return nil

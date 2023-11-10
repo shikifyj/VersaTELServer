@@ -396,6 +396,34 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(Node{}))
 
+	webservice.Route(webservice.DELETE("/registered/{hostname}").
+		To(handler.DeleteRegistered).
+		Doc("Delete the registered.").
+		Param(webservice.PathParameter("hostname", "hostName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/target/{name}").
+		To(handler.DeleteTarget).
+		Doc("Delete the Target.").
+		Param(webservice.PathParameter("name", "targetName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/storage/{resname}").
+		To(handler.DeleteDRBD).
+		Doc("Delete the DRBD.").
+		Param(webservice.PathParameter("resname", "resName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/mapping/{hostname}").
+		To(handler.DeleteLun).
+		Doc("Delete the LUN.").
+		Param(webservice.PathParameter("hostname", "hostName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
 	container.Add(webservice)
 
 	return nil

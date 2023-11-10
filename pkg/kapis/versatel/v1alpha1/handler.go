@@ -852,3 +852,52 @@ func (h *handler) handleListNode(req *restful.Request, resp *restful.Response) {
 	//message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
 	resp.WriteAsJson(data)
 }
+
+func (h *handler) DeleteRegistered(req *restful.Request, resp *restful.Response) {
+	hostName := req.PathParameter("name")
+	err := linstorv1alpha1.DeleteRegistered(hostName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除注册成功")
+		return
+	}
+}
+
+func (h *handler) DeleteTarget(req *restful.Request, resp *restful.Response) {
+	targetName := req.PathParameter("name")
+	target, _ := linstorv1alpha1.FindTargetOfName(targetName)
+	err := linstorv1alpha1.DeleteTarget(target)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除Target成功")
+		return
+	}
+}
+
+func (h *handler) DeleteDRBD(req *restful.Request, resp *restful.Response) {
+	resName := req.PathParameter("name")
+	err := linstorv1alpha1.DeleteDRBD(resName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除存储成功")
+		return
+	}
+}
+
+func (h *handler) DeleteLun(req *restful.Request, resp *restful.Response) {
+	hostName := req.PathParameter("hostname")
+	err := linstorv1alpha1.DeleteLun(hostName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除映射主机成功")
+		return
+	}
+}
