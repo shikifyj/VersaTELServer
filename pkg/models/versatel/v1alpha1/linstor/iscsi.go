@@ -132,7 +132,7 @@ func DeleteRegistered(hostname string) error {
 
 	var newNodes []Node
 	for _, node := range nodes {
-		if node.Hostname != hostname && node.Iqn != hostname {
+		if node.Hostname != hostname {
 			newNodes = append(newNodes, node)
 		}
 	}
@@ -214,11 +214,13 @@ func GetTgn() (int, error) {
 		return 0, err
 	}
 
-	tgn := 1
+	tgnMap := make(map[int]bool)
 	for _, target := range tgnList {
-		if contain(target.Tgn, tgn) {
-			tgn++
-		}
+		tgnMap[target.Tgn] = true
+	}
+
+	tgn := 1
+	for ; tgnMap[tgn]; tgn++ {
 	}
 
 	return tgn, nil
@@ -427,7 +429,7 @@ func CreateNodeAway(ctx context.Context, c *client.Client, tgn string, nodeRun [
 
 func CreateNodeOn(tgn string, nodeOn string) error {
 	sc, _ := GetIPAndConnect(22)
-	cmd1 := fmt.Sprintf("crm status givp%s", tgn)
+	cmd1 := fmt.Sprintf("crm res status gvip%s", tgn)
 	status, _ := SshCmd(sc, cmd1)
 	if strings.Contains(status, nodeOn) {
 		return nil
