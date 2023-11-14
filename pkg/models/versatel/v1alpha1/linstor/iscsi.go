@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -609,7 +610,7 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 			}
 		}
 		time.Sleep(5)
-		SshCmd(sc, fmt.Sprintf("crm res cleanup p_drbd_%s", resName))
+		SshCmd(sc, fmt.Sprintf("crm res cleanup p_drbd_%s", res))
 		var targets []Target
 		data, err := ioutil.ReadFile("/etc/iscsi/target.yaml")
 		if err != nil {
@@ -651,7 +652,9 @@ func DeleteDRBD(resName string) error {
 	if err != nil {
 		return client.ApiCallError{client.ApiCallRc{Message: strings.TrimSpace(out)}}
 	}
-	if strings.Contains(out, "LUN") {
+	regexpPattern := fmt.Sprintf(`\bLUN_%s\b`, resName)
+	math, _ := regexp.MatchString(regexpPattern, out)
+	if math == true {
 		return client.ApiCallError{client.ApiCallRc{Message: "该DRBD资源已经被映射，不能删除"}}
 	}
 	cmd = fmt.Sprintf("crm conf delete p_drbd_%s --force", resName)

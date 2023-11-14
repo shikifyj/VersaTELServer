@@ -854,7 +854,7 @@ func (h *handler) handleListNode(req *restful.Request, resp *restful.Response) {
 }
 
 func (h *handler) DeleteRegistered(req *restful.Request, resp *restful.Response) {
-	hostName := req.PathParameter("name")
+	hostName := req.PathParameter("hostname")
 	err := linstorv1alpha1.DeleteRegistered(hostName)
 	if err != nil {
 		resp.WriteAsJson(err)
@@ -879,7 +879,7 @@ func (h *handler) DeleteTarget(req *restful.Request, resp *restful.Response) {
 }
 
 func (h *handler) DeleteDRBD(req *restful.Request, resp *restful.Response) {
-	resName := req.PathParameter("name")
+	resName := req.PathParameter("resname")
 	err := linstorv1alpha1.DeleteDRBD(resName)
 	if err != nil {
 		resp.WriteAsJson(err)
