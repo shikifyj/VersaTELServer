@@ -581,14 +581,47 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 	var errs []string
 
 	for _, res := range resName {
-		cmd := fmt.Sprintf("crm conf primitive p_drbd_%s ocf:linbit:drbd "+
-			"params drbd_resource=%s "+
-			"op monitor interval=29 role=Master "+
-			"op monitor interval=30 role=Slave", res, res)
-		out, err := SshCmd(sc, cmd)
-		if err != nil {
-			errs = append(errs, strings.TrimSpace(out))
+		sizeValueStr, _ := SshCmd(sc, fmt.Sprintf("linstor vd l -r %s | awk 'NR==4 {print $8}'", res))
+
+		sizeUnit, _ := SshCmd(sc, fmt.Sprintf("linstor vd l -r %s | awk 'NR==4 {print $9}'", res))
+
+		sizeStr := sizeValueStr + " " + sizeUnit
+
+		sizeData := strings.Split(sizeStr, " ")
+		sizeValue, _ := strconv.ParseFloat(sizeData[0], 64)
+		sizeUnit = sizeData[1]
+
+		switch sizeUnit {
+		case "MiB":
+			sizeValue = sizeValue / (1024 * 1024)
+		case "GiB":
+			sizeValue = sizeValue / 1024
+		case "TiB":
 		}
+		if sizeValue < 5 {
+			cmd := fmt.Sprintf("crm conf primitive p_drbd_%s ocf:linbit:drbd "+
+				"params drbd_resource=%s "+
+				"op monitor interval=29 role=Master "+
+				"op monitor interval=30 role=Slave"+
+				"op start timeout=60 role=Master"+
+				"op start timeout=60 role=Slave"+
+				"op stop timeout=60 role=Master"+
+				"op stop timeout=60 role=Slave", res, res)
+			out, err := SshCmd(sc, cmd)
+			if err != nil {
+				errs = append(errs, strings.TrimSpace(out))
+			}
+		} else {
+			cmd := fmt.Sprintf("crm conf primitive p_drbd_%s ocf:linbit:drbd "+
+				"params drbd_resource=%s "+
+				"op monitor interval=29 role=Master "+
+				"op monitor interval=30 role=Slave", res, res)
+			out, err := SshCmd(sc, cmd)
+			if err != nil {
+				errs = append(errs, strings.TrimSpace(out))
+			}
+		}
+
 		cmd2 := fmt.Sprintf("crm conf ms ms_drbd_%s p_drbd_%s "+
 			"meta master-max=1 master-node-max=1 clone-max=%s "+
 			"clone-node-max=1 notify=true", res, res, strconv.Itoa(cloneMax))
@@ -971,83 +1004,125 @@ func SaveLun(resName string, hostName []string, number int) error {
 	return nil
 }
 
-func DeleteLun(hostname string) error {
-	var luns []Mapping
+//func DeleteLun(hostname string) error {
+//	var luns []Mapping
+//	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
+//	if err != nil {
+//		return err
+//	}
+//	err = yaml.Unmarshal(data, &luns)
+//	if err != nil {
+//		return err
+//	}
+//
+//	var lun string
+//	var found bool
+//	var hostIndex, lunIndex int
+//	for i, l := range luns {
+//		for j, host := range l.Host {
+//			if host == hostname {
+//				lun = l.Lun
+//				hostIndex = j
+//				lunIndex = i
+//				found = true
+//				break
+//			}
+//		}
+//		if found {
+//			break
+//		}
+//	}
+//
+//	var nodes []Node
+//	data, err = ioutil.ReadFile("/etc/iscsi/target.yaml")
+//	if err != nil {
+//		return err
+//	}
+//	err = yaml.Unmarshal(data, &nodes)
+//	if err != nil {
+//		return err
+//	}
+//
+//	var iqn string
+//	for _, node := range nodes {
+//		if node.Hostname == hostname {
+//			iqn = node.Iqn
+//			break
+//		}
+//	}
+//	sc, _ := GetIPAndConnect(22)
+//	var cmd string
+//	cmd = fmt.Sprintf("crm res param LUN_%s show allowed_initiators", lun)
+//	out, err := SshCmd(sc, cmd)
+//	iqnList := strings.Fields(out)
+//	if len(iqnList) >= 2 {
+//		cmd = fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", lun, iqn)
+//		_, err = SshCmd(sc, cmd)
+//		if err != nil {
+//			return err
+//		}
+//	} else {
+//		cmd = fmt.Sprintf("crm conf delete LUN_%s --force", lun)
+//		_, err = SshCmd(sc, cmd)
+//		if err != nil {
+//			return err
+//		}
+//	}
+//
+//	luns[lunIndex].Host = append(luns[lunIndex].Host[:hostIndex], luns[lunIndex].Host[hostIndex+1:]...)
+//	newData, err := yaml.Marshal(&luns)
+//	if err != nil {
+//		return err
+//	}
+//	err = ioutil.WriteFile("/etc/iscsi/lun.yaml", newData, 0644)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
+
+func DeleteLun(lun string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := fmt.Sprintf("crm conf delete LUN_%s --force", lun)
+	_, err := SshCmd(sc, cmd)
+	if err != nil {
+		return err
+	}
+	var mappings []Mapping
 	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
 	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(data, &luns)
-	if err != nil {
+		log.Fatalf("error: %v", err)
 		return err
 	}
 
-	var lun string
-	var found bool
-	var hostIndex, lunIndex int
-	for i, l := range luns {
-		for j, host := range l.Host {
-			if host == hostname {
-				lun = l.Lun
-				hostIndex = j
-				lunIndex = i
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-	}
-
-	var nodes []Node
-	data, err = ioutil.ReadFile("/etc/iscsi/target.yaml")
+	err = yaml.Unmarshal(data, &mappings)
 	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(data, &nodes)
-	if err != nil {
+		log.Fatalf("error: %v", err)
 		return err
 	}
 
-	var iqn string
-	for _, node := range nodes {
-		if node.Hostname == hostname {
-			iqn = node.Iqn
-			break
-		}
-	}
-	sc, _ := GetIPAndConnect(22)
-	var cmd string
-	cmd = fmt.Sprintf("crm res param LUN_%s show allowed_initiators", lun)
-	out, err := SshCmd(sc, cmd)
-	iqnList := strings.Fields(out)
-	if len(iqnList) >= 2 {
-		cmd = fmt.Sprintf("crm conf set LUN_%s.allowed_initiators \"%s\"", lun, iqn)
-		_, err = SshCmd(sc, cmd)
-		if err != nil {
-			return err
-		}
-	} else {
-		cmd = fmt.Sprintf("crm conf delete LUN_%s --force", lun)
-		_, err = SshCmd(sc, cmd)
-		if err != nil {
-			return err
+	var newmappings []Mapping
+	for _, mapping := range mappings {
+		if mapping.Lun != lun {
+			newmappings = append(newmappings, mapping)
 		}
 	}
 
-	luns[lunIndex].Host = append(luns[lunIndex].Host[:hostIndex], luns[lunIndex].Host[hostIndex+1:]...)
-	newData, err := yaml.Marshal(&luns)
+	newData, err := yaml.Marshal(&newmappings)
 	if err != nil {
+		log.Fatalf("error: %v", err)
 		return err
 	}
+
 	err = ioutil.WriteFile("/etc/iscsi/lun.yaml", newData, 0644)
 	if err != nil {
+		log.Fatalf("error: %v", err)
 		return err
 	}
-
 	return nil
 }
+
 func ShowLun() []map[string]interface{} {
 	var luns []Mapping
 	var result []map[string]interface{}

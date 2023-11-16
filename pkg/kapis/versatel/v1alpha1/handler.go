@@ -891,8 +891,8 @@ func (h *handler) DeleteDRBD(req *restful.Request, resp *restful.Response) {
 }
 
 func (h *handler) DeleteLun(req *restful.Request, resp *restful.Response) {
-	hostName := req.PathParameter("hostname")
-	err := linstorv1alpha1.DeleteLun(hostName)
+	lun := req.PathParameter("lun")
+	err := linstorv1alpha1.DeleteLun(lun)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return

@@ -417,10 +417,10 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
-	webservice.Route(webservice.DELETE("/mapping/{hostname}").
+	webservice.Route(webservice.DELETE("/mapping/{lun}").
 		To(handler.DeleteLun).
 		Doc("Delete the LUN.").
-		Param(webservice.PathParameter("hostname", "hostName")).
+		Param(webservice.PathParameter("lun", "resName")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
