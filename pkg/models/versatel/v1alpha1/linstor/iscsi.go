@@ -1102,14 +1102,15 @@ func DeleteLun(lun string) error {
 		return err
 	}
 
-	var newmappings []Mapping
-	for _, mapping := range mappings {
-		if mapping.Lun != lun {
-			newmappings = append(newmappings, mapping)
+	for i, mapping := range mappings {
+		if mapping.Lun == lun {
+			mappings[i].Host = []string{}
+			mappings[i].Number = 0
+			break
 		}
 	}
 
-	newData, err := yaml.Marshal(&newmappings)
+	newData, err := yaml.Marshal(&mappings)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 		return err
