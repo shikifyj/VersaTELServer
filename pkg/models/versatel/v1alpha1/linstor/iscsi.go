@@ -588,8 +588,8 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 		sizeStr := sizeValueStr + " " + sizeUnit
 
 		sizeData := strings.Split(sizeStr, " ")
-		sizeValue, _ := strconv.ParseFloat(sizeData[0], 64)
-		sizeUnit = sizeData[1]
+		sizeValue, _ := strconv.ParseFloat(strings.TrimSpace(sizeData[0]), 64)
+		sizeUnit = strings.TrimSpace(sizeData[1])
 
 		switch sizeUnit {
 		case "MiB":
@@ -598,14 +598,14 @@ func ConfigureDRBD(ctx context.Context, c *client.Client, target *Target, resNam
 			sizeValue = sizeValue / 1024
 		case "TiB":
 		}
-		if sizeValue < 5 {
+		if sizeValue > 5 {
 			cmd := fmt.Sprintf("crm conf primitive p_drbd_%s ocf:linbit:drbd "+
 				"params drbd_resource=%s "+
 				"op monitor interval=29 role=Master "+
-				"op monitor interval=30 role=Slave"+
-				"op start timeout=60 role=Master"+
-				"op start timeout=60 role=Slave"+
-				"op stop timeout=60 role=Master"+
+				"op monitor interval=30 role=Slave "+
+				"op start timeout=60 role=Master "+
+				"op start timeout=60 role=Slave "+
+				"op stop timeout=60 role=Master "+
 				"op stop timeout=60 role=Slave", res, res)
 			out, err := SshCmd(sc, cmd)
 			if err != nil {
