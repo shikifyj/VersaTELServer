@@ -328,16 +328,12 @@ func CreateResourceGroup(vips []string, tgn string, nodeLess []string) error {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return Message
-	} else {
-		for _, less := range nodeLess {
-			cmd = fmt.Sprintf("crm conf location lo_gvip%s gvip%s -100: %s", tgn, tgn, less)
-			if err != nil {
-				errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
-				Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
-				return Message
-			}
-		}
 	}
+	for _, less := range nodeLess {
+		cmd = fmt.Sprintf("crm conf location lo_gvip%s gvip%s -100: %s", tgn, tgn, less)
+		SshCmd(sc, cmd)
+	}
+
 	return nil
 }
 

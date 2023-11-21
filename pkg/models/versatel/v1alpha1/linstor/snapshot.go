@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/LINBIT/golinstor/client"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -39,6 +40,9 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]interf
 	for _, v := range ResMap {
 		resArray = append(resArray, v)
 	}
+	sort.Slice(resArray, func(i, j int) bool {
+		return resArray[i]["name"].(string) < resArray[j]["name"].(string)
+	})
 	return resArray
 }
 
@@ -73,6 +77,9 @@ func GetSnapshot(ctx context.Context, c *client.Client) []map[string]interface{}
 		}
 		ResMap = append(ResMap, strMap)
 	}
+	sort.Slice(ResMap, func(i, j int) bool {
+		return ResMap[i]["name"].(string) < ResMap[j]["name"].(string)
+	})
 	return ResMap
 }
 
