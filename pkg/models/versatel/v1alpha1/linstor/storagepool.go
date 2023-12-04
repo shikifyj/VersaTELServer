@@ -3,7 +3,6 @@ package linstor
 import (
 	"context"
 	"github.com/LINBIT/golinstor/client"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -28,8 +27,12 @@ func GetSPData(ctx context.Context, c *client.Client) []map[string]interface{} {
 	resources, err := c.Resources.GetResourceView(ctx)
 	var spsInfo []map[string]interface{}
 	if err != nil {
-		log.Fatal(err)
+		errMap := map[string]interface{}{
+			"error": err.Error(),
+		}
+		return []map[string]interface{}{errMap}
 	}
+
 	sps, _ := c.Nodes.GetStoragePoolView(ctx)
 	for _, sp := range sps {
 		if sp.StoragePoolName == "DfltDisklessStorPool" {

@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -157,7 +156,15 @@ func (h *handler) handleListNodes(req *restful.Request, resp *restful.Response) 
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetNodeData(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
+
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -201,7 +208,14 @@ func (h *handler) handleListStorgePools(req *restful.Request, resp *restful.Resp
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetSPData(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -302,6 +316,13 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResources(ctx, client)
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
 	data2 := linstorv1alpha1.GetassignedNode(ctx, client)
 	for i := range data {
 		for j := range data2 {
@@ -312,7 +333,7 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 		}
 
 	}
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -321,7 +342,7 @@ func (h *handler) handleListResourcesDiskful(req *restful.Request, resp *restful
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResourcesDiskful(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -330,7 +351,7 @@ func (h *handler) handleListResourcesDiskless(req *restful.Request, resp *restfu
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResourceDiskless(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -370,7 +391,7 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	//	resp.WriteAsJson(err)
 	//	return
 	//}
-	fmt.Println("linstor audit run....")
+	//fmt.Println("linstor audit run....")
 	//lnau := auditing.GetLinstorAudit()
 	//isenable := lnau.Enabled()
 	//fmt.Println("isenable: ", isenable)
@@ -427,7 +448,7 @@ func (h *handler) handleListLvmDevices(req *restful.Request, resp *restful.Respo
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmDevices(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -436,7 +457,7 @@ func (h *handler) handleListLvmPVs(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmPVs(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -445,7 +466,7 @@ func (h *handler) handleListLvmVGs(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmVGs(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -455,7 +476,7 @@ func (h *handler) handleListLvmLVs(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmLVs(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -600,7 +621,7 @@ func (h *handler) handleListThinres(req *restful.Request, resp *restful.Response
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetThinResources(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -609,7 +630,7 @@ func (h *handler) handleListSnapshot(req *restful.Request, resp *restful.Respons
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetSnapshot(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -693,7 +714,7 @@ func (h *handler) Registered(req *restful.Request, resp *restful.Response) {
 func (h *handler) handleListRegistered(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
 	data := linstorv1alpha1.GetRegistered()
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -768,7 +789,7 @@ func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
 func (h *handler) handleListTarget(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
 	data := linstorv1alpha1.ShowTarget()
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -836,7 +857,7 @@ func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
 func (h *handler) handleListLun(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
 	data := linstorv1alpha1.ShowLun()
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }

@@ -4,16 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/LINBIT/golinstor/client"
-	"sort"
 	"strconv"
 	"strings"
 )
 
 func GetResources(ctx context.Context, c *client.Client) []map[string]interface{} {
-	resources, _ := c.Resources.GetResourceView(ctx)
+	resources, err := c.Resources.GetResourceView(ctx)
 	resMap := make(map[string]map[string]interface{})
 	mirrorWay := make(map[string]int)
 	var resArray []map[string]interface{}
+	if err != nil {
+		errMap := map[string]interface{}{
+			"error": err.Error(),
+		}
+		return []map[string]interface{}{errMap}
+	}
 
 	for _, res := range resources {
 		resName := res.Resource.Name
@@ -92,10 +97,6 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]interface{
 	//	}
 	//	return t1.After(t2)
 	//})
-
-	sort.Slice(resArray, func(i, j int) bool {
-		return resArray[i]["name"].(string) < resArray[j]["name"].(string)
-	})
 
 	return resArray
 }
