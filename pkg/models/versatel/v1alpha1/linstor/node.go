@@ -14,8 +14,12 @@ func GetNodeData(ctx context.Context, c *client.Client) []map[string]interface{}
 	resources, err := c.Resources.GetResourceView(ctx)
 	var nodesInfo []map[string]interface{}
 	if err != nil {
-		log.Fatal(err)
+		errMap := map[string]interface{}{
+			"error": err.Error(),
+		}
+		return []map[string]interface{}{errMap}
 	}
+
 	for _, node := range nodes {
 		resNum := 0
 		for _, res := range resources {
