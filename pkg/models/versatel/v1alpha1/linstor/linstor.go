@@ -18,31 +18,29 @@ type LinstorController struct {
 }
 
 type LinstorGetter struct {
-	Code  int                 `json:"code"`
-	Count int                 `json:"count"`
-	Data  []map[string]string `json:"data"`
+	Code  int                      `json:"code"`
+	Count int                      `json:"count"`
+	Data  []map[string]interface{} `json:"data"`
 }
 
 func (d *LinstorGetter) List(query *query.Query) {
 
 	if len(query.Filters) != 0 {
 		for k, v := range query.Filters {
-			newListData := make([]map[string]string, 0)
+			newListData := make([]map[string]interface{}, 0)
 			for _, mapData := range d.Data {
-				if strings.Contains(mapData[string(k)], string(v)) {
+				if strings.Contains(mapData[string(k)].(string), string(v)) {
 					newListData = append(newListData, mapData)
 				}
 			}
 			d.Data = newListData
 			d.Count = len(newListData)
-
 		}
 	}
 
 	startIndex, endIndex := query.Pagination.GetValidPagination(d.Count)
 	data := d.Data[startIndex:endIndex]
 	d.Data = data
-
 }
 
 func GetClient(ip string) (*client.Client, context.Context) {
@@ -108,11 +106,11 @@ func ParseSizeForLvm(size string) (string, error) {
 
 	matchsResult := reg.FindAllStringSubmatch(size, -1)
 
-	floatSize, err := strconv.ParseFloat(matchsResult[0][0],64)
+	floatSize, err := strconv.ParseFloat(matchsResult[0][0], 64)
 	finalSize := uint64(floatSize)
 
-	fmt.Println("matchsResult0:",matchsResult[0])
-	fmt.Println("matchsResult1:",matchsResult[1])
+	fmt.Println("matchsResult0:", matchsResult[0])
+	fmt.Println("matchsResult1:", matchsResult[1])
 	switch matchsResult[1][0] {
 	case "K", "KB", "KiB":
 		finalSize = finalSize
@@ -123,6 +121,6 @@ func ParseSizeForLvm(size string) (string, error) {
 	case "T", "TB", "TiB":
 		finalSize = finalSize * 1024 * 1024 * 1024
 	}
-	fmt.Println("finalSizeqqq:",finalSize)
+	fmt.Println("finalSizeqqq:", finalSize)
 	return strconv.FormatUint(finalSize, 10), err
 }

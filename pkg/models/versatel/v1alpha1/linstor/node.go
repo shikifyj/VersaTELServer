@@ -9,13 +9,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func GetNodeData(ctx context.Context, c *client.Client) []map[string]string {
+func GetNodeData(ctx context.Context, c *client.Client) []map[string]interface{} {
 	nodes, err := c.Nodes.GetAll(ctx)
 	resources, err := c.Resources.GetResourceView(ctx)
-	nodesInfo := []map[string]string{}
+	var nodesInfo []map[string]interface{}
 	if err != nil {
-		log.Fatal(err)
+		errMap := map[string]interface{}{
+			"error": err.Error(),
+		}
+		return []map[string]interface{}{errMap}
 	}
+
 	for _, node := range nodes {
 		resNum := 0
 		for _, res := range resources {
@@ -30,7 +34,7 @@ func GetNodeData(ctx context.Context, c *client.Client) []map[string]string {
 		defaultInterface := node.NetInterfaces[0]
 		addr := fmt.Sprintf("%s:%d (%s)", defaultInterface.Address, defaultInterface.SatellitePort, defaultInterface.SatelliteEncryptionType)
 
-		nodeInfo := map[string]string{
+		nodeInfo := map[string]interface{}{
 			"name":           node.Name,
 			"nodeType":       node.Type,
 			"resourceNum":    fmt.Sprintf("%d", resNum),

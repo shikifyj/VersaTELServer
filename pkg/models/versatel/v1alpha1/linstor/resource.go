@@ -4,23 +4,28 @@ import (
 	"context"
 	"fmt"
 	"github.com/LINBIT/golinstor/client"
-	"sort"
 	"strconv"
 	"strings"
 )
 
-func GetResources(ctx context.Context, c *client.Client) []map[string]string {
-	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := make(map[string]map[string]string)
+func GetResources(ctx context.Context, c *client.Client) []map[string]interface{} {
+	resources, err := c.Resources.GetResourceView(ctx)
+	resMap := make(map[string]map[string]interface{})
 	mirrorWay := make(map[string]int)
-	resArray := []map[string]string{}
+	var resArray []map[string]interface{}
+	if err != nil {
+		errMap := map[string]interface{}{
+			"error": err.Error(),
+		}
+		return []map[string]interface{}{errMap}
+	}
 
 	for _, res := range resources {
 		resName := res.Resource.Name
 		mirrorWay[resName]++
 
 		for _, vol := range res.Volumes {
-			resInfo := map[string]string{
+			resInfo := map[string]interface{}{
 				"name":         resName,
 				"size":         FormatSize(vol.AllocatedSizeKib),
 				"deviceName":   vol.DevicePath,
@@ -85,21 +90,25 @@ func GetResources(ctx context.Context, c *client.Client) []map[string]string {
 		resArray = append(resArray, v)
 	}
 
-	sort.SliceStable(resArray, func(i, j int) bool {
-		return resArray[i]["createTime"] > resArray[j]["createTime"]
-	})
+	//sort.SliceStable(resArray, func(i, j int) bool {
+	//	t1, err1 := time.Parse(time.RFC3339, resArray[i]["createTime"].(string))
+	//	t2, err2 := time.Parse(time.RFC3339, resArray[j]["createTime"].(string))
+	//	if err1 != nil || err2 != nil {
+	//	}
+	//	return t1.After(t2)
+	//})
 
 	return resArray
 }
 
-func GetassignedNode(ctx context.Context, c *client.Client) []map[string]string {
-	resArray := []map[string]string{}
+func GetassignedNode(ctx context.Context, c *client.Client) []map[string]interface{} {
+	var resArray []map[string]interface{}
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := make(map[string]map[string]string)
+	resMap := make(map[string]map[string]interface{})
 	for _, res := range resources {
 		resName := res.Resource.Name
 		for _, vol := range res.Volumes {
-			resInfo := map[string]string{
+			resInfo := map[string]interface{}{
 				"name": resName,
 			}
 			if vol.State.DiskState == "Diskless" {
@@ -114,9 +123,9 @@ func GetassignedNode(ctx context.Context, c *client.Client) []map[string]string 
 	return resArray
 }
 
-func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]string {
+func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]interface{} {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := []map[string]string{}
+	var resMap []map[string]interface{}
 	resMap = append(resMap)
 
 	for _, res := range resources {
@@ -125,7 +134,7 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 			mapFlag[v] = struct{}{}
 		}
 
-		resInfo := map[string]string{}
+		resInfo := map[string]interface{}{}
 
 		if res.State != nil {
 			if *res.State.InUse {
@@ -175,12 +184,12 @@ func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]str
 	return resMap
 }
 
-func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]string {
+func GetResourceDiskless(ctx context.Context, c *client.Client) []map[string]interface{} {
 	resources, _ := c.Resources.GetResourceView(ctx)
-	resMap := []map[string]string{}
+	var resMap []map[string]interface{}
 
 	for _, res := range resources {
-		resInfo := map[string]string{}
+		resInfo := map[string]interface{}{}
 
 		if res.State != nil && *res.State.InUse {
 			resInfo["usage"] = "InUse"
@@ -294,23 +303,15 @@ func CreateResource(ctx context.Context, c *client.Client, resName string, sps [
 
 func DeleteResource(ctx context.Context, c *client.Client, resName string) error {
 	snapshotResource, _ := c.Resources.GetSnapshots(ctx, resName)
-	if snapshotResource != nil {
-		return fmt.Errorf("resource %s has snapshot, please delete snapshot first", resName)
+	if len(snapshotResource) != 0 {
+		errInfo := fmt.Sprintf("resource %s has snapshot, please delete snapshot first", resName)
+		Message := client.ApiCallError{client.ApiCallRc{RetCode: -1, Message: errInfo}}
+		return Message
 	} else {
 		err := c.ResourceDefinitions.Delete(ctx, resName)
 		return err
 	}
-	//resources, _ := c.Resources.GetAll(ctx,resName)
-	//for _,res := range resources{
-	//	nodeName := res.NodeName
-	//err := c.Resources.Delete(ctx,resName,nodeName)
-	//if err != nil{
-	//	return err
-	//}
-	//resources, _ := c.Resources.GetAll(ctx,resName)
-	//if len(resources) == 0 {
-	//	err = c.ResourceDefinitions.Delete(ctx,resName)
-	//}
+
 }
 
 func CreateDisklessResource(ctx context.Context, c *client.Client, resName, nodeName string) error {

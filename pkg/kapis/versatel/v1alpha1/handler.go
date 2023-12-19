@@ -1,8 +1,8 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
@@ -116,6 +116,35 @@ type RestoreSnapshot struct {
 	Nodes        []string `json:"node"`
 }
 
+type Registered struct {
+	HostName string `json:"hostname"`
+	Iqn      string `json:"iqn"`
+}
+
+type Target struct {
+	Name     string   `json:"name"`
+	Iqn      string   `json:"iqn"`
+	NodeRun  []string `json:"nodeRun"`
+	NodeLess []string `json:"nodeLess"`
+	NodeOn   string   `json:"nodeOn"`
+	VipList  []string `json:"vipList"`
+}
+
+type TargetDRBD struct {
+	Name    string   `json:"name"`
+	ResName []string `json:"resName"`
+}
+
+type TargetLun struct {
+	HostName []string `json:"hostname"`
+	ResName  string   `json:"resName"`
+	UnMap    string   `json:"unMap"`
+}
+
+type Node struct {
+	TargetName string `json:"name"`
+}
+
 //func init(){
 //	gp.Initialize()
 //	gp.ImportSystemModule()
@@ -127,7 +156,15 @@ func (h *handler) handleListNodes(req *restful.Request, resp *restful.Response) 
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetNodeData(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
+
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -171,7 +208,14 @@ func (h *handler) handleListStorgePools(req *restful.Request, resp *restful.Resp
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetSPData(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -272,6 +316,13 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResources(ctx, client)
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
 	data2 := linstorv1alpha1.GetassignedNode(ctx, client)
 	for i := range data {
 		for j := range data2 {
@@ -282,7 +333,7 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 		}
 
 	}
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -291,7 +342,7 @@ func (h *handler) handleListResourcesDiskful(req *restful.Request, resp *restful
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResourcesDiskful(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -300,7 +351,7 @@ func (h *handler) handleListResourcesDiskless(req *restful.Request, resp *restfu
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetResourceDiskless(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -340,7 +391,7 @@ func (h *handler) CreateResource(req *restful.Request, resp *restful.Response) {
 	//	resp.WriteAsJson(err)
 	//	return
 	//}
-	fmt.Println("linstor audit run....")
+	//fmt.Println("linstor audit run....")
 	//lnau := auditing.GetLinstorAudit()
 	//isenable := lnau.Enabled()
 	//fmt.Println("isenable: ", isenable)
@@ -397,7 +448,7 @@ func (h *handler) handleListLvmDevices(req *restful.Request, resp *restful.Respo
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmDevices(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -406,7 +457,7 @@ func (h *handler) handleListLvmPVs(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmPVs(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -415,7 +466,7 @@ func (h *handler) handleListLvmVGs(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmVGs(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -425,7 +476,7 @@ func (h *handler) handleListLvmLVs(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetLvmLVs(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -570,7 +621,7 @@ func (h *handler) handleListThinres(req *restful.Request, resp *restful.Response
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetThinResources(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{0, len(data), data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -579,7 +630,7 @@ func (h *handler) handleListSnapshot(req *restful.Request, resp *restful.Respons
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetSnapshot(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
@@ -642,5 +693,232 @@ func (h *handler) RestoreSnapshot(req *restful.Request, resp *restful.Response) 
 		resp.WriteAsJson(err)
 	} else {
 		resp.WriteAsJson("快照恢复到资源成功:")
+	}
+}
+
+func (h *handler) Registered(req *restful.Request, resp *restful.Response) {
+	registered := new(Registered)
+	err := req.ReadEntity(&registered)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	err = linstorv1alpha1.Registered(registered.HostName, registered.Iqn)
+	if err != nil {
+		resp.WriteAsJson(err)
+	} else {
+		resp.WriteAsJson("注册成功:")
+	}
+}
+
+func (h *handler) handleListRegistered(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.GetRegistered()
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) CreateTarget(req *restful.Request, resp *restful.Response) {
+	target := new(Target)
+	err := req.ReadEntity(&target)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	tgn, _ := linstorv1alpha1.GetTgn()
+
+	err = linstorv1alpha1.CreatePortBlockOn(target.VipList, strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateVip(target.VipList, strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateTarget(target.VipList, strconv.Itoa(tgn), target.Iqn)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateResourceGroup(target.VipList, strconv.Itoa(tgn), target.NodeLess)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreatePortBlockOff(target.VipList, strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateResourceBond(target.VipList, strconv.Itoa(tgn))
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateNodeAway(ctx, client, strconv.Itoa(tgn), target.NodeRun)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+
+	err = linstorv1alpha1.CreateNodeOn(strconv.Itoa(tgn), target.NodeOn)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+	err = linstorv1alpha1.SaveTarget(target.Name, target.Iqn, tgn, target.VipList, target.NodeRun, target.NodeLess,
+		target.NodeOn, nil)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("创建Target成功:")
+	}
+}
+
+func (h *handler) handleListTarget(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowTarget()
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
+	targetDRBD := new(TargetDRBD)
+	err := req.ReadEntity(&targetDRBD)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	target, _ := linstorv1alpha1.FindTargetOfName(targetDRBD.Name)
+	err = linstorv1alpha1.ConfigureDRBD(ctx, client, target, targetDRBD.ResName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	}
+	for _, res := range targetDRBD.ResName {
+		num, _ := linstorv1alpha1.GetNum()
+		err = linstorv1alpha1.SaveLun(res, nil, num)
+		if err != nil {
+			resp.WriteAsJson(err)
+			return
+		}
+	}
+	resp.WriteAsJson("绑定资源成功:")
+
+}
+
+//func (h *handler) handleListDRBD(req *restful.Request, resp *restful.Response) {
+//	query := query.ParseQueryParameter(req)
+//	data := linstorv1alpha1.ShowDRBD()
+//	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+//	message.List(query)
+//	resp.WriteAsJson(message)
+//}
+
+func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
+	targetLun := new(TargetLun)
+	err := req.ReadEntity(&targetLun)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	lun, _ := linstorv1alpha1.FindLunOfRes(targetLun.ResName)
+	target, _ := linstorv1alpha1.FindTargetOfRes(targetLun.ResName)
+	for _, host := range targetLun.HostName {
+		node, _ := linstorv1alpha1.FindNodeOfHostName(host)
+		err = linstorv1alpha1.CreateISCSI(target, node, targetLun.UnMap, targetLun.ResName, strconv.Itoa(lun.Number))
+		if err != nil {
+			resp.WriteAsJson(err)
+		}
+	}
+	err = linstorv1alpha1.SaveLun(targetLun.ResName, targetLun.HostName, lun.Number)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("创建映射成功:")
+	}
+
+}
+
+func (h *handler) handleListLun(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowLun()
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListNode(req *restful.Request, resp *restful.Response) {
+	node := new(Node)
+	err := req.ReadEntity(&node)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	data := linstorv1alpha1.ShowNode(node.TargetName)
+	//message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+	resp.WriteAsJson(data)
+}
+
+func (h *handler) DeleteRegistered(req *restful.Request, resp *restful.Response) {
+	hostName := req.PathParameter("hostname")
+	err := linstorv1alpha1.DeleteRegistered(hostName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除注册成功")
+		return
+	}
+}
+
+func (h *handler) DeleteTarget(req *restful.Request, resp *restful.Response) {
+	targetName := req.PathParameter("name")
+	target, _ := linstorv1alpha1.FindTargetOfName(targetName)
+	err := linstorv1alpha1.DeleteTarget(target)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除Target成功")
+		return
+	}
+}
+
+func (h *handler) DeleteDRBD(req *restful.Request, resp *restful.Response) {
+	resName := req.PathParameter("resname")
+	err := linstorv1alpha1.DeleteDRBD(resName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除存储成功")
+		return
+	}
+}
+
+func (h *handler) DeleteLun(req *restful.Request, resp *restful.Response) {
+	lun := req.PathParameter("lun")
+	err := linstorv1alpha1.DeleteLun(lun)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("删除映射主机成功")
+		return
 	}
 }

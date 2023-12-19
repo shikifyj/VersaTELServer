@@ -331,6 +331,99 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(Snapshot{}))
 
+	webservice.Route(webservice.POST("/registered").
+		To(handler.Registered).
+		Doc("Registered hostname and iqn.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Registered{}))
+
+	webservice.Route(webservice.GET("/registered").
+		To(handler.handleListRegistered).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get registered").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.POST("/target").
+		To(handler.CreateTarget).
+		Doc("Create Target.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Target{}))
+
+	webservice.Route(webservice.GET("/target").
+		To(handler.handleListTarget).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get Target").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.POST("/storage").
+		To(handler.conDRBD).
+		Doc("Create DRBD.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(TargetDRBD{}))
+
+	webservice.Route(webservice.POST("/mapping").
+		To(handler.CreateLun).
+		Doc("Create Lun.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(TargetLun{}))
+
+	webservice.Route(webservice.GET("/mapping").
+		To(handler.handleListLun).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get Target").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
+
+	webservice.Route(webservice.POST("/getnode").
+		To(handler.handleListNode).
+		Doc("Create Lun.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Node{}))
+
+	webservice.Route(webservice.DELETE("/registered/{hostname}").
+		To(handler.DeleteRegistered).
+		Doc("Delete the registered.").
+		Param(webservice.PathParameter("hostname", "hostName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/target/{name}").
+		To(handler.DeleteTarget).
+		Doc("Delete the Target.").
+		Param(webservice.PathParameter("name", "targetName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/storage/{resname}").
+		To(handler.DeleteDRBD).
+		Doc("Delete the DRBD.").
+		Param(webservice.PathParameter("resname", "resName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
+	webservice.Route(webservice.DELETE("/mapping/{lun}").
+		To(handler.DeleteLun).
+		Doc("Delete the LUN.").
+		Param(webservice.PathParameter("lun", "resName")).
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
+
 	container.Add(webservice)
 
 	return nil
