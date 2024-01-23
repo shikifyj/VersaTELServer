@@ -145,6 +145,16 @@ type Node struct {
 	TargetName string `json:"name"`
 }
 
+type Remote struct {
+	TargetName string `json:"name"`
+	URL        string `json:"url"`
+	ClusterId  string `json:"clusterId"`
+}
+
+type Ship struct {
+	RemoteName string `json:"remoteName"`
+}
+
 //func init(){
 //	gp.Initialize()
 //	gp.ImportSystemModule()
@@ -921,4 +931,56 @@ func (h *handler) DeleteLun(req *restful.Request, resp *restful.Response) {
 		resp.WriteAsJson("删除映射主机成功")
 		return
 	}
+}
+
+func (h *handler) handleListRemote(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowLun()
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListSchedule(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowLun()
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) handleListBackup(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	data := linstorv1alpha1.ShowLun()
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
+}
+
+func (h *handler) CreateRemote(req *restful.Request, resp *restful.Response) {
+
+}
+
+func (h *handler) CreateShip(req *restful.Request, resp *restful.Response) {
+
+}
+
+func (h *handler) CreateSchedule(req *restful.Request, resp *restful.Response) {
+
+}
+
+func (h *handler) CreateBackup(req *restful.Request, resp *restful.Response) {
+
+}
+
+func (h *handler) DeleteRemote(req *restful.Request, resp *restful.Response) {
+
+}
+
+func (h *handler) DeleteSchedule(req *restful.Request, resp *restful.Response) {
+
+}
+
+func (h *handler) DeleteBackup(req *restful.Request, resp *restful.Response) {
+
 }
