@@ -809,7 +809,7 @@ func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	for _, res := range targetDRBD.ResName {
-		num, _ := linstorv1alpha1.GetNum()
+		num := len(target.Lun) - 1
 		err = linstorv1alpha1.SaveLun(res, nil, num)
 		if err != nil {
 			resp.WriteAsJson(err)
@@ -821,11 +821,11 @@ func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
 }
 
 //func (h *handler) handleListDRBD(req *restful.Request, resp *restful.Response) {
-//	query := query.ParseQueryParameter(req)
-//	data := linstorv1alpha1.ShowDRBD()
-//	message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
-//	message.List(query)
-//	resp.WriteAsJson(message)
+//      query := query.ParseQueryParameter(req)
+//      data := linstorv1alpha1.ShowDRBD()
+//      message := linstorv1alpha1.LinstorGetter{Count: len(data), Data: data}
+//      message.List(query)
+//      resp.WriteAsJson(message)
 //}
 
 func (h *handler) CreateLun(req *restful.Request, resp *restful.Response) {
