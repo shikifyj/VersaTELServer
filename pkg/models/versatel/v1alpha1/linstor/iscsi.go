@@ -1080,3 +1080,22 @@ func ShowNode(Name string) []map[string]interface{} {
 	}
 	return result
 }
+
+func FindLunOfRes(resName string) (*Mapping, error) {
+	var luns []Mapping
+	data, err := ioutil.ReadFile("/etc/iscsi/lun.yaml")
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(data, &luns)
+	if err != nil {
+		return nil, err
+	}
+	for _, lun := range luns {
+		if lun.Lun == resName {
+			return &lun, nil
+
+		}
+	}
+	return nil, fmt.Errorf("lun with resource %s not found", resName)
+}
