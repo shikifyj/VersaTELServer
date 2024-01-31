@@ -62,36 +62,52 @@ func CreateShip(ctx context.Context, c *client.Client, remoteName string, resNam
 
 func GetScheduleData() []map[string]interface{} {
 	sc, _ := GetIPAndConnect(22)
-	cmd := "linstor schedule list"
+	cmd := "linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $2}';" +
+		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $4}';" +
+		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $5}';" +
+		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $6}';" +
+		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $7}'"
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return []map[string]interface{}{{"error": Message}}
 	}
-	re := regexp.MustCompile(`\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|`)
-	matches := re.FindAllStringSubmatch(out, -1)
+
+	lines := strings.Split(out, "\n")
+	numSchedules := len(lines) / 5
 
 	var scheduleData []map[string]interface{}
-	for _, match := range matches {
-		if len(match) == 7 {
-			scheduleInfo := map[string]interface{}{
-				"scheduleName": match[1],
-				"incremental":  match[3],
-				"keepLocal":    match[4],
-				"keepRemote":   match[5],
-				"onFailure":    match[6],
-			}
+	for i := 0; i < numSchedules; i++ {
+		scheduleInfo := map[string]interface{}{
+			"scheduleName": strings.TrimSpace(lines[i]),
+			"incremental":  strings.TrimSpace(lines[i+numSchedules]),
+			"keepLocal":    strings.TrimSpace(lines[i+2*numSchedules]),
+			"keepRemote":   strings.TrimSpace(lines[i+3*numSchedules]),
+			"onFailure":    strings.TrimSpace(lines[i+4*numSchedules]),
+		}
+
+		if isValidScheduleInfo(scheduleInfo) {
 			scheduleData = append(scheduleData, scheduleInfo)
 		}
 	}
 	return scheduleData
 }
 
+func isValidScheduleInfo(scheduleInfo map[string]interface{}) bool {
+	for _, value := range scheduleInfo {
+		strValue := value.(string)
+		if strValue != "" && !strings.Contains(strValue, "===") {
+			return true
+		}
+	}
+	return false
+}
+
 func CreateSchedule(scheduleName, incremental, keepLocal, keepRemote, onFailure string) error {
 	sc, _ := GetIPAndConnect(22)
-	cmd := fmt.Sprintf("linstor schedule create --incremental-cron '%s' "+
-		"--keep-local %s --keep-remote %s --on-failure RETRY --max-retries %s %s", incremental, keepLocal, keepRemote, onFailure, scheduleName)
+	cmd := fmt.Sprintf("linstor schedule create --incremental-cron '%s' --keep-local %s --keep-remote %s --on-failure RETRY "+
+		"--max-retries %s %s", incremental, keepLocal, keepRemote, onFailure, scheduleName)
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -139,4 +155,46 @@ func GetBackupData() []map[string]interface{} {
 		}
 	}
 	return backupData
+}
+
+func CreateBackup(resName, remoteName, scheduleName string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := fmt.Sprintf("linstor schedule backup schedule enable --rd %s %s %s", resName, remoteName, scheduleName)
+	out, err := SshCmd(sc, cmd)
+	if err != nil {
+		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+		return Message
+	}
+	return nil
+}
+
+func DeleteBackup(resName, remoteName, scheduleName string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := fmt.Sprintf("linstor backup schedule delete  --rd %s %s %s", resName, remoteName, scheduleName)
+	out, err := SshCmd(sc, cmd)
+	if err != nil {
+		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+		return Message
+	}
+	return nil
+}
+
+func GetClusterId(ctx context.Context, c *client.Client) []map[string]interface{} {
+	propsInfos, err := c.Controller.GetProps(ctx)
+	if err != nil {
+		errMap := map[string]interface{}{
+			"error": err.Error(),
+		}
+		return []map[string]interface{}{errMap}
+	}
+	var datas []map[string]interface{}
+	localID, _ := propsInfos["Cluster/LocalID"]
+	data := map[string]interface{}{
+		"clusterid": localID,
+	}
+	datas = append(datas, data)
+	return datas
+
 }

@@ -146,13 +146,28 @@ type Node struct {
 }
 
 type Remote struct {
-	TargetName string `json:"name"`
+	RemoteName string `json:"remoteName"`
 	URL        string `json:"url"`
 	ClusterId  string `json:"clusterId"`
 }
 
 type Ship struct {
-	RemoteName string `json:"remoteName"`
+	RemoteName string   `json:"remoteName"`
+	ResName    []string `json:"resNames"`
+}
+
+type Schedule struct {
+	ScheduleName string `json:"scheduleName"`
+	Incremental  string `json:"incremental"`
+	KeepLocal    string `json:"keepLocal"`
+	KeepRemote   string `json:"keepRemote"`
+	OnFailure    string `json:"onFailure "`
+}
+
+type Backup struct {
+	ResName      string `json:"resName"`
+	ScheduleName string `json:"scheduleName"`
+	RemoteName   string `json:"remoteName"`
 }
 
 //func init(){
@@ -935,7 +950,8 @@ func (h *handler) DeleteLun(req *restful.Request, resp *restful.Response) {
 
 func (h *handler) handleListRemote(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	data := linstorv1alpha1.ShowLun()
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetRemoteData(ctx, client)
 	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
@@ -943,7 +959,7 @@ func (h *handler) handleListRemote(req *restful.Request, resp *restful.Response)
 
 func (h *handler) handleListSchedule(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	data := linstorv1alpha1.ShowLun()
+	data := linstorv1alpha1.GetScheduleData()
 	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
@@ -951,36 +967,134 @@ func (h *handler) handleListSchedule(req *restful.Request, resp *restful.Respons
 
 func (h *handler) handleListBackup(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
-	data := linstorv1alpha1.ShowLun()
+	data := linstorv1alpha1.GetBackupData()
 	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
 
 func (h *handler) CreateRemote(req *restful.Request, resp *restful.Response) {
+	remote := new(Remote)
+	err := req.ReadEntity(&remote)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreateRemote(ctx, client, remote.RemoteName, remote.URL, remote.ClusterId)
+
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("创建成功")
+		return
+	}
 
 }
 
 func (h *handler) CreateShip(req *restful.Request, resp *restful.Response) {
+	ship := new(Ship)
+	err := req.ReadEntity(&ship)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err = linstorv1alpha1.CreateShip(ctx, client, ship.RemoteName, ship.ResName)
+
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("Ship成功")
+		return
+	}
 
 }
 
 func (h *handler) CreateSchedule(req *restful.Request, resp *restful.Response) {
-
+	schedule := new(Schedule)
+	err := req.ReadEntity(&schedule)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	err = linstorv1alpha1.CreateSchedule(schedule.ScheduleName, schedule.Incremental, schedule.KeepLocal, schedule.KeepRemote, schedule.OnFailure)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("创建定时备份任务成功")
+		return
+	}
 }
 
 func (h *handler) CreateBackup(req *restful.Request, resp *restful.Response) {
+	backup := new(Backup)
+	err := req.ReadEntity(&backup)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	err = linstorv1alpha1.CreateBackup(backup.ResName, backup.RemoteName, backup.ScheduleName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("创建自动备份成功")
+		return
+	}
 
 }
 
 func (h *handler) DeleteRemote(req *restful.Request, resp *restful.Response) {
+	remoteName := req.PathParameter("remotename")
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	err := linstorv1alpha1.DeleteRemote(ctx, client, remoteName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("远程备份集群删除成功")
+		return
+	}
 
 }
 
 func (h *handler) DeleteSchedule(req *restful.Request, resp *restful.Response) {
-
+	scheduleName := req.PathParameter("schedulename")
+	err := linstorv1alpha1.DeleteSchedule(scheduleName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("定时备份任务删除成功")
+		return
+	}
 }
 
 func (h *handler) DeleteBackup(req *restful.Request, resp *restful.Response) {
+	resName := req.PathParameter("resname")
+	scheduleName := req.PathParameter("schedulename")
+	remoteName := req.PathParameter("remotename")
+	err := linstorv1alpha1.DeleteBackup(resName, remoteName, scheduleName)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("自动备份删除成功")
+		return
+	}
+}
 
+func (h *handler) handleClusterId(req *restful.Request, resp *restful.Response) {
+	query := query.ParseQueryParameter(req)
+	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
+	data := linstorv1alpha1.GetClusterId(ctx, client)
+	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	message.List(query)
+	resp.WriteAsJson(message)
 }

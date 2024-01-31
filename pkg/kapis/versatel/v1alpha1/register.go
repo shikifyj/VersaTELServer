@@ -425,7 +425,7 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 	webservice.Route(webservice.GET("/remote").
-		To(handler.handleListTarget).
+		To(handler.handleListRemote).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Get remote").
 		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
@@ -435,28 +435,28 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
 	webservice.Route(webservice.POST("/remote").
-		To(handler.CreateLun).
+		To(handler.CreateRemote).
 		Doc("Create remote.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(TargetLun{}))
+		Reads(Remote{}))
 
 	webservice.Route(webservice.DELETE("/remote/{remotename}").
-		To(handler.DeleteLun).
+		To(handler.DeleteRemote).
 		Doc("Delete remote.").
 		Param(webservice.PathParameter("remotename", "remoteName")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 	webservice.Route(webservice.POST("/ship").
-		To(handler.CreateLun).
+		To(handler.CreateShip).
 		Doc("Create ship.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(TargetLun{}))
+		Reads(Ship{}))
 
 	webservice.Route(webservice.GET("/schedule").
-		To(handler.handleListTarget).
+		To(handler.handleListSchedule).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Get schedule ").
 		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
@@ -466,21 +466,21 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
 	webservice.Route(webservice.POST("/schedule").
-		To(handler.CreateLun).
+		To(handler.CreateSchedule).
 		Doc("Create schedule.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(TargetLun{}))
+		Reads(Schedule{}))
 
 	webservice.Route(webservice.DELETE("/schedule/{schedulename}").
-		To(handler.DeleteLun).
+		To(handler.DeleteSchedule).
 		Doc("Delete schedule.").
 		Param(webservice.PathParameter("schedulename", "scheduleName")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
 	webservice.Route(webservice.GET("/backup").
-		To(handler.handleListTarget).
+		To(handler.handleListBackup).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Doc("Get backup ").
 		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
@@ -490,20 +490,30 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 
 	webservice.Route(webservice.POST("/backup").
-		To(handler.CreateLun).
+		To(handler.CreateBackup).
 		Doc("Create backup.").
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
-		Reads(TargetLun{}))
+		Reads(Backup{}))
 
-	webservice.Route(webservice.DELETE("/backup/{remotename}/{schedulename}").
-		To(handler.DeleteLun).
-		Doc("Delete schedule.").
+	webservice.Route(webservice.DELETE("/backup/{resname}/{remotename}/{schedulename}").
+		To(handler.DeleteBackup).
+		Doc("Delete backup.").
+		Param(webservice.PathParameter("resname", "ResourceName")).
 		Param(webservice.PathParameter("remotename", "remoteName")).
 		Param(webservice.PathParameter("schedulename", "scheduleName")).
 		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor))
 
+	webservice.Route(webservice.GET("/clusterid").
+		To(handler.handleClusterId).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Doc("Get LINSTOR ClusterID").
+		Param(webservice.QueryParameter(query.ParameterName, "name used to do filtering").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(webservice.QueryParameter(query.ParameterLimit, "limit").Required(false)).
+		Param(webservice.QueryParameter(query.ParameterAscending, "sort parameters, e.g. reverse=true").Required(false).DefaultValue("ascending=false")).
+		Returns(http.StatusOK, api.StatusOK, MessageList{}))
 	container.Add(webservice)
 
 	return nil
