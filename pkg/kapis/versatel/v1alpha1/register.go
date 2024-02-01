@@ -472,6 +472,13 @@ func AddToContainer(container *restful.Container, ip string) error {
 		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
 		Reads(Schedule{}))
 
+	webservice.Route(webservice.POST("/modify").
+		To(handler.ModifySchedule).
+		Doc("Modify schedule.").
+		Returns(http.StatusOK, api.StatusOK, MessageOP{}).
+		Metadata(restfulspec.KeyOpenAPITags, tagsLinstor).
+		Reads(Schedule{}))
+
 	webservice.Route(webservice.DELETE("/schedule/{schedulename}").
 		To(handler.DeleteSchedule).
 		Doc("Delete schedule.").

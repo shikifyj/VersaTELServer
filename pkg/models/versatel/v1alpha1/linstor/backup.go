@@ -116,6 +116,32 @@ func CreateSchedule(scheduleName, incremental, keepLocal, retries, full string) 
 	return nil
 }
 
+func ModifySchedule(scheduleName, incremental, keepLocal, retries, full string) error {
+	sc, _ := GetIPAndConnect(22)
+	cmd := "linstor schedule modify"
+
+	if incremental != "" {
+		cmd += fmt.Sprintf(" -i '%s'", incremental)
+	}
+	if keepLocal != "" {
+		cmd += fmt.Sprintf(" -l %s", keepLocal)
+	}
+	if retries != "" {
+		cmd += fmt.Sprintf(" --max-retries %s", retries)
+	}
+	if full != "" {
+		cmd += fmt.Sprintf(" -f '%s'", full)
+	}
+	cmd += fmt.Sprintf(" %s", scheduleName)
+	out, err := SshCmd(sc, cmd)
+	if err != nil {
+		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
+		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
+		return Message
+	}
+	return nil
+}
+
 func DeleteSchedule(scheduleName string) error {
 	sc, _ := GetIPAndConnect(22)
 	cmd := fmt.Sprintf("linstor schedule delete %s", scheduleName)

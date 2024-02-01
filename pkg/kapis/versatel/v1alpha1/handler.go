@@ -1032,6 +1032,23 @@ func (h *handler) CreateSchedule(req *restful.Request, resp *restful.Response) {
 	}
 }
 
+func (h *handler) ModifySchedule(req *restful.Request, resp *restful.Response) {
+	schedule := new(Schedule)
+	err := req.ReadEntity(&schedule)
+	if err != nil {
+		api.HandleBadRequest(resp, req, err)
+		return
+	}
+	err = linstorv1alpha1.ModifySchedule(schedule.ScheduleName, schedule.Incremental, schedule.KeepLocal, schedule.Retries, schedule.Full)
+	if err != nil {
+		resp.WriteAsJson(err)
+		return
+	} else {
+		resp.WriteAsJson("修改定时备份任务成功")
+		return
+	}
+}
+
 func (h *handler) CreateBackup(req *restful.Request, resp *restful.Response) {
 	backup := new(Backup)
 	err := req.ReadEntity(&backup)
