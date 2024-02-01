@@ -158,10 +158,10 @@ type Ship struct {
 
 type Schedule struct {
 	ScheduleName string `json:"scheduleName"`
+	Full         string `json:"full"`
 	Incremental  string `json:"incremental"`
 	KeepLocal    string `json:"keepLocal"`
-	KeepRemote   string `json:"keepRemote"`
-	OnFailure    string `json:"onFailure "`
+	Retries      string `json:"retries"`
 }
 
 type Backup struct {
@@ -1022,7 +1022,7 @@ func (h *handler) CreateSchedule(req *restful.Request, resp *restful.Response) {
 		api.HandleBadRequest(resp, req, err)
 		return
 	}
-	err = linstorv1alpha1.CreateSchedule(schedule.ScheduleName, schedule.Incremental, schedule.KeepLocal, schedule.KeepRemote, schedule.OnFailure)
+	err = linstorv1alpha1.CreateSchedule(schedule.ScheduleName, schedule.Incremental, schedule.KeepLocal, schedule.Retries, schedule.Full)
 	if err != nil {
 		resp.WriteAsJson(err)
 		return

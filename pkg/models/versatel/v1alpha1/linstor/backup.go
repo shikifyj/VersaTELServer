@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/LINBIT/golinstor/client"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -104,10 +103,10 @@ func isValidScheduleInfo(scheduleInfo map[string]interface{}) bool {
 	return false
 }
 
-func CreateSchedule(scheduleName, incremental, keepLocal, keepRemote, onFailure string) error {
+func CreateSchedule(scheduleName, incremental, keepLocal, retries, full string) error {
 	sc, _ := GetIPAndConnect(22)
-	cmd := fmt.Sprintf("linstor schedule create --incremental-cron '%s' --keep-local %s --keep-remote %s --on-failure RETRY "+
-		"--max-retries %s %s", incremental, keepLocal, keepRemote, onFailure, scheduleName)
+	cmd := fmt.Sprintf("linstor schedule create --incremental-cron '%s' --keep-local %s --keep-remote all --on-failure RETRY "+
+		"--max-retries %s %s '%s'", incremental, keepLocal, retries, scheduleName, full)
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
@@ -131,26 +130,30 @@ func DeleteSchedule(scheduleName string) error {
 
 func GetBackupData() []map[string]interface{} {
 	sc, _ := GetIPAndConnect(22)
-	cmd := "linstor schedule list-by-resource --active-only"
+	cmd := "linstor schedule list-by-resource --active-only | awk 'BEGIN{FS=\"|\"} NR>2 {print $2}';" +
+		"linstor schedule list-by-resource --active-only | awk 'BEGIN{FS=\"|\"} NR>2 {print $3}';" +
+		"linstor schedule list-by-resource --active-only | awk 'BEGIN{FS=\"|\"} NR>2 {print $4}';" +
+		"linstor schedule list-by-resource --active-only | awk 'BEGIN{FS=\"|\"} NR>2 {print $5}';" +
+		"linstor schedule list-by-resource --active-only | awk 'BEGIN{FS=\"|\"} NR>2 {print $6}'"
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
 		Message := client.ApiCallError{client.ApiCallRc{Message: errInfo}}
 		return []map[string]interface{}{{"error": Message}}
 	}
-	re := regexp.MustCompile(`\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|`)
-	matches := re.FindAllStringSubmatch(out, -1)
+	lines := strings.Split(out, "\n")
+	numBackups := len(lines) / 5
 
 	var backupData []map[string]interface{}
-	for _, match := range matches {
-		if len(match) == 9 {
-			backupInfo := map[string]interface{}{
-				"resName":      match[1],
-				"remoteName":   match[2],
-				"scheduleName": match[3],
-				"lastPlan":     match[4],
-				"nextPlan":     match[5],
-			}
+	for i := 0; i < numBackups; i++ {
+		backupInfo := map[string]interface{}{
+			"resName":      strings.TrimSpace(lines[i]),
+			"remoteName":   strings.TrimSpace(lines[i+numBackups]),
+			"scheduleName": strings.TrimSpace(lines[i+3*numBackups]),
+			"lastPlan":     strings.TrimSpace(lines[i+4*numBackups]),
+			"nextPlan":     strings.TrimSpace(lines[i+5*numBackups]),
+		}
+		if isValidScheduleInfo(backupInfo) {
 			backupData = append(backupData, backupInfo)
 		}
 	}
@@ -159,7 +162,7 @@ func GetBackupData() []map[string]interface{} {
 
 func CreateBackup(resName, remoteName, scheduleName string) error {
 	sc, _ := GetIPAndConnect(22)
-	cmd := fmt.Sprintf("linstor schedule backup schedule enable --rd %s %s %s", resName, remoteName, scheduleName)
+	cmd := fmt.Sprintf("linstor backup schedule enable --rd %s %s %s", resName, remoteName, scheduleName)
 	out, err := SshCmd(sc, cmd)
 	if err != nil {
 		errInfo := fmt.Sprintf(strings.Replace(strings.TrimSpace(out), "\n", "", -1))
