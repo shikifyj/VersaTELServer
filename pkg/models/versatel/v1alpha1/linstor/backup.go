@@ -62,6 +62,7 @@ func CreateShip(ctx context.Context, c *client.Client, remoteName string, resNam
 func GetScheduleData() []map[string]interface{} {
 	sc, _ := GetIPAndConnect(22)
 	cmd := "linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $2}';" +
+		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $3}';" +
 		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $4}';" +
 		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $5}';" +
 		"linstor schedule list | awk 'BEGIN{FS=\"|\"} NR>2 {print $6}';" +
@@ -74,16 +75,17 @@ func GetScheduleData() []map[string]interface{} {
 	}
 
 	lines := strings.Split(out, "\n")
-	numSchedules := len(lines) / 5
+	numSchedules := len(lines) / 6
 
 	var scheduleData []map[string]interface{}
 	for i := 0; i < numSchedules; i++ {
 		scheduleInfo := map[string]interface{}{
 			"scheduleName": strings.TrimSpace(lines[i]),
-			"incremental":  strings.TrimSpace(lines[i+numSchedules]),
-			"keepLocal":    strings.TrimSpace(lines[i+2*numSchedules]),
-			"keepRemote":   strings.TrimSpace(lines[i+3*numSchedules]),
-			"onFailure":    strings.TrimSpace(lines[i+4*numSchedules]),
+			"full":         strings.TrimSpace(lines[i+numSchedules]),
+			"incremental":  strings.TrimSpace(lines[i+2*numSchedules]),
+			"keepLocal":    strings.TrimSpace(lines[i+3*numSchedules]),
+			"keepRemote":   strings.TrimSpace(lines[i+4*numSchedules]),
+			"onFailure":    strings.TrimSpace(lines[i+5*numSchedules]),
 		}
 
 		if isValidScheduleInfo(scheduleInfo) {
