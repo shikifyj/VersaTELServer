@@ -6,6 +6,7 @@ import (
 	"github.com/LINBIT/golinstor/client"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,10 @@ func GetThinResources(ctx context.Context, c *client.Client) []map[string]interf
 
 	for _, res := range DRBDResource {
 		for _, vol := range res.Volumes {
+			resName := res.Resource.Name
+			if strings.Contains(resName, "pvc-") {
+				continue
+			}
 			if string(vol.ProviderKind) != "LVM_THIN" {
 				continue
 			}
