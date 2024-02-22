@@ -952,7 +952,14 @@ func (h *handler) handleListRemote(req *restful.Request, resp *restful.Response)
 	query := query.ParseQueryParameter(req)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	data := linstorv1alpha1.GetRemoteData(ctx, client)
-	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
+	code := 0
+	for _, item := range data {
+		if _, ok := item["error"]; ok {
+			code = 1
+			break
+		}
+	}
+	message := linstorv1alpha1.LinstorGetter{Code: code, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
 }
