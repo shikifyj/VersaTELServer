@@ -83,7 +83,10 @@ func GetSnapshot(ctx context.Context, c *client.Client) []map[string]interface{}
 		ResMap = append(ResMap, strMap)
 	}
 	sort.Slice(ResMap, func(i, j int) bool {
-		return ResMap[i]["name"].(string) < ResMap[j]["name"].(string)
+		if ResMap[i]["resource"].(string) == ResMap[j]["resource"].(string) {
+			return ResMap[i]["time"].(string) > ResMap[j]["time"].(string)
+		}
+		return ResMap[i]["resource"].(string) < ResMap[j]["resource"].(string)
 	})
 	return ResMap
 }
