@@ -254,10 +254,11 @@ func (h *handler) DescribeStoragePool(req *restful.Request, resp *restful.Respon
 
 func (h *handler) GetAvailableStoragePools(req *restful.Request, resp *restful.Response) {
 	reNodename := new(DiskfulSP)
+	name := ""
 	err := req.ReadEntity(&reNodename)
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
 	allSPs := linstorv1alpha1.GetSPData(ctx, client)
-	diskfulResources := linstorv1alpha1.GetResourcesDiskful(ctx, client)
+	diskfulResources := linstorv1alpha1.GetResourcesDiskful(ctx, client, name)
 	if err != nil {
 		api.HandleBadRequest(resp, req, err)
 		return
@@ -365,8 +366,9 @@ func (h *handler) handleListResources(req *restful.Request, resp *restful.Respon
 
 func (h *handler) handleListResourcesDiskful(req *restful.Request, resp *restful.Response) {
 	query := query.ParseQueryParameter(req)
+	name := req.QueryParameter("name")
 	client, ctx := linstorv1alpha1.GetClient(h.ControllerIP)
-	data := linstorv1alpha1.GetResourcesDiskful(ctx, client)
+	data := linstorv1alpha1.GetResourcesDiskful(ctx, client, name)
 	message := linstorv1alpha1.LinstorGetter{Code: 0, Count: len(data), Data: data}
 	message.List(query)
 	resp.WriteAsJson(message)
@@ -834,7 +836,7 @@ func (h *handler) conDRBD(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	for _, res := range targetDRBD.ResName {
-		num := len(target.Lun) - 1
+		num, _ := linstorv1alpha1.GetNum(target.Lun)
 		err = linstorv1alpha1.SaveLun(res, nil, num)
 		if err != nil {
 			resp.WriteAsJson(err)

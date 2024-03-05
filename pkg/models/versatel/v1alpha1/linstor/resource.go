@@ -130,12 +130,15 @@ func GetassignedNode(ctx context.Context, c *client.Client) []map[string]interfa
 	return resArray
 }
 
-func GetResourcesDiskful(ctx context.Context, c *client.Client) []map[string]interface{} {
+func GetResourcesDiskful(ctx context.Context, c *client.Client, name string) []map[string]interface{} {
 	resources, _ := c.Resources.GetResourceView(ctx)
 	var resMap []map[string]interface{}
 	resMap = append(resMap)
 
 	for _, res := range resources {
+		if name != "" && res.Resource.Name != name {
+			continue
+		}
 		mapFlag := make(map[string]struct{}, len(res.Flags))
 		for _, v := range res.Flags {
 			mapFlag[v] = struct{}{}
