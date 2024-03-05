@@ -806,11 +806,8 @@ func FindNodeOfHostName(hostName string) (*Node, error) {
 	return nil, fmt.Errorf("host with hostname %s not found", hostName)
 }
 
-func GetNum(targetLuns []string) (int, error) {
+func GetNum() (int, error) {
 	filePath := "/etc/iscsi/lun.yaml"
-	if len(targetLuns) == 0 {
-		return 0, nil
-	}
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return 1, nil
@@ -827,18 +824,11 @@ func GetNum(targetLuns []string) (int, error) {
 		return 0, err
 	}
 
-	usedNumbers := make(map[int]bool)
-	for _, lun := range numList {
-		for _, targetLun := range targetLuns {
-			if lun.Lun == targetLun {
-				usedNumbers[lun.Number] = true
-				break
-			}
+	number := 1
+	for _, num := range numList {
+		if contain(num.Number, number) {
+			number++
 		}
-	}
-
-	number := 0
-	for ; usedNumbers[number]; number++ {
 	}
 
 	return number, nil
